@@ -1,2 +1,2 @@
 # NAP
-New Analysis Pipeline to anaylze DREEM output.
+A New Analysis Pipeline (NAP) to anaylze DREEM output.
