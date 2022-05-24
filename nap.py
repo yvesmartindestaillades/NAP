@@ -10,8 +10,8 @@ from matplotlib.colors import LogNorm
 import string
 from os.path import exists
 import os
-from dreem_viz import *
 import datetime
+import seaborn as sns
 
 CONST_R = 1.98720425864083E-3 #Kcal.K^-1.mol^-1
 CONST_T = 310.15 #KELVINS
