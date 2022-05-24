@@ -92,9 +92,9 @@ class mutationHistogramManipulation():
         return main_dict
 
 class turner_overthrow:
-    def clean_dataset(df_rough, pickles, min_bases_cov):
+    def clean_dataset(df_rough, tubes, min_bases_cov):
         # Only keep desired pickle files
-        df_full = df_rough[df_rough['tube'].isin(pickles.keys())]
+        df_full = df_rough[df_rough['tube'].isin(tubes)]
 
         # Check how many tubes reach 1000 reads on each base for a given construct
         df_full['tubes_covered'] = pd.Series(dtype=int)
@@ -102,7 +102,7 @@ class turner_overthrow:
             df_full['tubes_covered'].loc[construct[1].index] = construct[1]['sequence'].count()
 
         # Only keep constructs that reach 1000 reads in every tube    
-        df = df_full[df_full['tubes_covered'] == len(pickles)].reset_index().drop(columns='index')
+        df = df_full[df_full['tubes_covered'] == len(tubes)].reset_index().drop(columns='index')
 
         number_of_void_dropped = (utils.added_content_per_construct(df, 'var_deltaG' )=='void').apply(int).sum()
         print(f"{number_of_void_dropped} constructs were dropped because deltaG was 'void'")
@@ -181,12 +181,12 @@ class data_wrangler:
         if verbose: print("Done!")
 
 
-    def load_data_from_firebase(pickles, user):
+    def load_data_from_firebase(tubes, user):
         print('No local file found, load data from Firebase')
         utils.connect_to_firebase()
         df = {}
         missed_tubes = []
-        for tube in pickles:
+        for tube in tubes:
             try:
                 ref = db.reference(f"{user}/{tube}")
                 df[tube] = pd.DataFrame.from_dict(ref.get('/')[0], orient='index')
