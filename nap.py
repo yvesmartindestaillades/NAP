@@ -14,7 +14,6 @@ import datetime
 import seaborn as sns
 from os.path import exists, dirname
 import os, sys
-sys.path.append(dirname('libs/dreem/dreem'))
 from libs import dreem
 
 CONST_R = 1.98720425864083E-3 #Kcal.K^-1.mol^-1
@@ -538,3 +537,8 @@ class utils:
                             title=f"about_{study}",
                             path=f"data/figs/date/{study}"
                             )
+
+    def deltaG_vs_construct_to_csv(df, title, path, tubes):
+        full_path = utils.make_path(path)
+        df[df['tube']==tubes[0]][['construct','var_deltaG','full_deltaG']].reset_index().drop(columns=['index']).to_csv(f"{full_path}/{title}")
+        
