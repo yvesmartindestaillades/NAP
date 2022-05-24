@@ -12,6 +12,10 @@ from os.path import exists
 import os
 import datetime
 import seaborn as sns
+from os.path import exists, dirname
+import os, sys
+sys.path.append(dirname('libs/dreem/dreem'))
+from libs import dreem
 
 CONST_R = 1.98720425864083E-3 #Kcal.K^-1.mol^-1
 CONST_T = 310.15 #KELVINS
@@ -152,6 +156,7 @@ class data_wrangler:
         for tube in pickles:
             # Load a tube from a pickle file
             mhs = pickle.load(open(pickles[tube], "rb"))
+
             df_tube = pd.DataFrame.from_dict(mutationHistogramManipulation.pickle2dict(mhs, dropAttribute = ['structure','_MutationHistogram__bases']),
                     orient='index').rename(columns={'name':'construct'}).set_index('construct')
 
@@ -162,6 +167,7 @@ class data_wrangler:
             # Count base coverage in the variable part and in the second half
             df_temp['cov_bases_var'] = df_temp.apply(lambda row: np.array(np.array(row['cov_bases'])[row['var_start_index']:row['var_end_index']]).min(),axis=1)
             df_temp['cov_bases_sec_half'] = df_temp.apply(lambda row: np.array(np.array(row['cov_bases'])[int(len(row['cov_bases'])/2):]).min(),axis=1)
+            df_temp.head()
 
             # Filter out the constructs that don't reach 1000 reads for each base of the ROI 
             df_temp = df_temp[df_temp['cov_bases_var'] >= min_bases_cov]
@@ -172,6 +178,7 @@ class data_wrangler:
             # Give yourself hope to wait by showing the progress
             print(tube, end=' ')
         print('Done!')
+
 
     def push_data_to_firebase(dict_df, ref, user, verbose = True):
         if verbose: print("Push data to firebase")
@@ -261,7 +268,7 @@ class plot:
         plt.plot(np.arange(0,int(df.construct.count()),1), [min_bases_cov]*int(df.construct.count()))
         plt.legend(['Dataframe', '1000 reads line'])
         plt.xlabel('Constructs (sorted)')
-        plt.ylabel('# of reads of the worst covered base for a given structure in a given tube')
+        plt.ylabel('# of reads of the worst covered base in the var part for a given structure in a given tube')
 
     def random_base_coverage_plot_wise(df, min_bases_cov):
         random_selection = np.random.randint(len(df), size=(9))
@@ -274,6 +281,7 @@ class plot:
             plt.plot(np.arange(0, len(df['cov_bases'].iloc[random_selection[i]])), len(df['cov_bases'].iloc[random_selection[i]])*[min_bases_cov])
             plt.xlabel("Bases")
             plt.ylabel("Coverage")
+            plt.title(f"Construct {df['construct'].iloc[random_selection[i]]}, tube {df['tube'].iloc[random_selection[i]]} ")
             plt.grid()
             plt.legend(["Base coverage (all)", 'Base coverage (var)', 'min_bases_cov'])
             axes2 = axes1.twinx()   # mirror them
