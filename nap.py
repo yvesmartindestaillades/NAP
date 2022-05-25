@@ -145,7 +145,7 @@ class data_wrangler:
 
         return pickles
 
-    def push_pickles_to_firebase(pickles, RNAstructureFile, min_bases_cov, user):
+    def push_pickles_to_firebase(pickles, RNAstructureFile, min_bases_cov, username):
         # Load additional content
         df_additional_content = pd.read_csv(RNAstructureFile)
         df_additional_content.construct = df_additional_content.construct.astype(str)
@@ -172,29 +172,29 @@ class data_wrangler:
             df_temp = df_temp[df_temp['cov_bases_var'] >= min_bases_cov]
 
             # Push this tube to firebase
-            data_wrangler.push_data_to_firebase(df_temp.to_dict(orient='index'), ref=tube, user=user, verbose=False)
+            data_wrangler.push_data_to_firebase(df_temp.to_dict(orient='index'), ref=tube, username=username, verbose=False)
 
             # Give yourself hope to wait by showing the progress
             print(tube, end=' ')
         print('Done!')
 
 
-    def push_data_to_firebase(dict_df, ref, user, verbose = True):
+    def push_data_to_firebase(dict_df, ref, username, verbose = True):
         if verbose: print("Push data to firebase")
         utils.connect_to_firebase()
-        ref_obj = db.reference(f"{user}/{ref}")
+        ref_obj = db.reference(f"{username}/{ref}")
         ref_obj.set(dict_df)
         if verbose: print("Done!")
 
 
-    def load_data_from_firebase(tubes, user):
+    def load_data_from_firebase(tubes, username):
         print('No local file found, load data from Firebase')
         utils.connect_to_firebase()
         df = {}
         missed_tubes = []
         for tube in tubes:
             try:
-                ref = db.reference(f"{user}/{tube}")
+                ref = db.reference(f"{username}/{tube}")
                 df[tube] = pd.DataFrame.from_dict(ref.get('/')[0], orient='index')
                 print(tube, end=' ')
             except:
