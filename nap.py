@@ -1,3 +1,4 @@
+from matplotlib import colors
 import pandas as pd
 import pickle
 import json
@@ -330,7 +331,7 @@ class plot:
             if index == 'base':
                 df_hist.index = mut_per_base.reset_index()['base']
 
-            ax = df_hist.plot.bar(stacked=True, figsize=(35,7))
+            ax = df_hist.plot.bar(stacked=True, figsize=(35,7), colors=['r','b','y','g'])
             plt.title(f"tube {tube}, construct {construct}")
 
         if plot_type == 'partition': # Plot the partition of mutations for each base along the sequence
@@ -341,7 +342,7 @@ class plot:
             if index == 'base':
                 df_hist.index = list(df_use['sequence'].loc[tube,construct])
 
-            ax = df_hist.plot.bar(stacked=True, figsize=(35,7))
+            ax = df_hist.plot.bar(stacked=True, figsize=(35,7), colors=['r','b','y','g'])
 
     def deltaG(df, tube):
         df_use = df.set_index(['tube','construct'])
