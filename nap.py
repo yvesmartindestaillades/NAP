@@ -127,7 +127,7 @@ class turner_overthrow:
 
 class data_wrangler:
 
-    def generate_pickles(path_to_data,  pickles_list= None, letters_boundaries=[1,0], number_boundaries=['B','A'], remove_pickles=None):
+    def generate_pickles(path_to_data,  pickles_list= None, letters_boundaries=['B','A'], number_boundaries=[1,0], remove_pickles=[]):
         list_of_pickles, pickles = pickles_list, {}
         alphabet = list(string.ascii_uppercase)
         for letter in alphabet[alphabet.index(letters_boundaries[0]):alphabet.index(letters_boundaries[1])+1]:
@@ -152,7 +152,7 @@ class data_wrangler:
         df_additional_content = df_additional_content.set_index('construct')
 
         print('Push pickles to firebase!')
-        for tube in pickles:
+        for count, tube in enumerate(pickles):
             # Load a tube from a pickle file
             mhs = pickle.load(open(pickles[tube], "rb"))
 
@@ -172,7 +172,7 @@ class data_wrangler:
             df_temp = df_temp[df_temp['cov_bases_var'] >= min_bases_cov]
 
             # Push this tube to firebase
-            data_wrangler.push_data_to_firebase(df_temp.to_dict(orient='index'), ref=tube, username=username, verbose=False)
+            data_wrangler.push_data_to_firebase(df_temp.to_dict(orient='index'), ref=tube, username=username, verbose= not bool(count))
 
             # Give yourself hope to wait by showing the progress
             print(tube, end=' ')
@@ -180,12 +180,9 @@ class data_wrangler:
 
 
     def push_data_to_firebase(dict_df, ref, username, verbose = True):
-        if verbose: print("Push data to firebase")
-        utils.connect_to_firebase()
+        utils.connect_to_firebase(verbose = verbose)
         ref_obj = db.reference(f"{username}/{ref}")
         ref_obj.set(dict_df)
-        if verbose: print("Done!")
-
 
     def load_data_from_firebase(tubes, username):
         print('No local file found, load data from Firebase')
