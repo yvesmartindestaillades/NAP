@@ -127,8 +127,8 @@ class turner_overthrow:
 
 class data_wrangler:
 
-    def generate_pickles(path_to_data, letters_boundaries, number_boundaries, add_pickles= None, remove_pickles=None):
-        list_of_pickles, pickles = add_pickles, {}
+    def generate_pickles(path_to_data,  pickles_list= None, letters_boundaries=[1,0], number_boundaries=['B','A'], remove_pickles=None):
+        list_of_pickles, pickles = pickles_list, {}
         alphabet = list(string.ascii_uppercase)
         for letter in alphabet[alphabet.index(letters_boundaries[0]):alphabet.index(letters_boundaries[1])+1]:
             for number in range(number_boundaries[0],number_boundaries[1]+1):
@@ -145,9 +145,9 @@ class data_wrangler:
 
         return pickles
 
-    def push_pickles_to_firebase(pickles, deltaG_brackets_file, min_bases_cov, user):
+    def push_pickles_to_firebase(pickles, RNAstructureFile, min_bases_cov, user):
         # Load additional content
-        df_additional_content = pd.read_csv(deltaG_brackets_file)
+        df_additional_content = pd.read_csv(RNAstructureFile)
         df_additional_content.construct = df_additional_content.construct.astype(str)
         df_additional_content = df_additional_content.set_index('construct')
 
