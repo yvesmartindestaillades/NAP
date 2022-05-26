@@ -35,20 +35,20 @@ class data_wrangler:
         # Only keep constructs that reach 1000 reads in every tube    
         df = df_full[df_full['tubes_covered'] == len(tubes)].reset_index().drop(columns='index')
 
-        number_of_void_dropped = (added_content_per_construct(df, 'var_deltaG' )=='void').apply(int).sum()
+        number_of_void_dropped = (added_content_per_construct(df, 'roi_deltaG' )=='void').apply(int).sum()
         print(f"{number_of_void_dropped} constructs were dropped because deltaG was 'void'")
-        df = df[df['var_deltaG'] != 'void']
+        df = df[df['roi_deltaG'] != 'void']
 
-        df = df.astype(dtype={'tube': str, 'construct':int, 'var_sequence':str, 'full_sequence':str, 'var_start_index':int,
-        'var_end_index':int, 'var_deltaG':float, 'full_deltaG':float,
-        'var_structure_comparison':str, 'full_structure':str, 'sequence':str, 'data_type':str,
+        df = df.astype(dtype={'tube': str, 'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
+        'roi_end_index':int, 'roi_deltaG':float, 'full_deltaG':float,
+        'roi_structure_comparison':str, 'full_structure':str, 'sequence':str, 'data_type':str,
         'num_reads':int, 'num_aligned':int, 'num_of_mutations':object, 'mut_bases':object,
         'info_bases':object, 'del_bases':object, 'ins_bases':object, 'cov_bases':object, 'start':int, 'end':int,
         'mod_bases_A':object, 'mod_bases_C':object, 'mod_bases_G':object, 'mod_bases_T':object,
         'skips_low_mapq':int, 'skips_short_read':int, 'skips_too_many_muts':int,
-        'cov_bases_var':object, 'cov_bases_sec_half':object, 'tubes_covered':int,'var_structure_comparison':str})
+        'cov_bases_roi':object, 'cov_bases_sec_half':object, 'tubes_covered':int,'roi_structure_comparison':str})
 
-        print(f"{df.groupby('construct')['tubes_covered'].count().count()} constructs have more than {min_bases_cov} reads for each base of their var part on each tube")
+        print(f"{df.groupby('construct')['tubes_covered'].count().count()} constructs have more than {min_bases_cov} reads for each base of their ROI on each tube")
 
         return df, df_full
 
@@ -185,13 +185,13 @@ class firebase:
             df_temp = pd.merge(df_additional_content, df_tube, left_index=True, right_index=True, how='inner')
             assert not df_temp.apply(lambda row: not (str(row['full_sequence']).replace('U','T') in str(row['sequence'])) ,axis=1).sum(), "A sequence didn't match in the fusion"
 
-            # Count base coverage in the variable part and in the second half
-            df_temp['cov_bases_var'] = df_temp.apply(lambda row: np.array(np.array(row['cov_bases'])[row['var_start_index']:row['var_end_index']]).min(),axis=1)
+            # Count base coverage in the ROI and in the second half
+            df_temp['cov_bases_roi'] = df_temp.apply(lambda row: np.array(np.array(row['cov_bases'])[row['roi_start_index']:row['roi_end_index']]).min(),axis=1)
             df_temp['cov_bases_sec_half'] = df_temp.apply(lambda row: np.array(np.array(row['cov_bases'])[int(len(row['cov_bases'])/2):]).min(),axis=1)
             df_temp.head()
 
             # Filter out the constructs that don't reach 1000 reads for each base of the ROI 
-            df_temp = df_temp[df_temp['cov_bases_var'] >= min_bases_cov]
+            df_temp = df_temp[df_temp['cov_bases_roi'] >= min_bases_cov]
 
             # Push this tube to firebase
             firebase.push(df_temp.to_dict(orient='index'), ref=tube, username=username, verbose= not bool(count))
@@ -237,11 +237,11 @@ class plot:
 
     def base_coverage_for_all_constructs(df, min_bases_cov):
         plt.figure(figsize=(20, 8))
-        plt.plot(np.array(df['cov_bases_var'].sort_values(ascending=False).reset_index())[:,1])
+        plt.plot(np.array(df['cov_bases_roi'].sort_values(ascending=False).reset_index())[:,1])
         plt.plot(np.arange(0,int(df.construct.count()),1), [min_bases_cov]*int(df.construct.count()))
         plt.legend(['Dataframe', '1000 reads line'])
         plt.xlabel('Constructs (sorted)')
-        plt.ylabel('# of reads of the worst covered base in the var part for a given structure in a given tube')
+        plt.ylabel('# of reads of the worst covered base in the ROI for a given structure in a given tube')
 
     def random_9_base_coverage(df, min_bases_cov):
         random_selection = np.random.randint(len(df), size=(9))
@@ -249,7 +249,7 @@ class plot:
         for i in range(9):
             axes1 = plt.subplot(int('33'+str(i+1)))
             plt.plot(np.array(df['cov_bases'].iloc[random_selection[i]]))
-            start, end = df['var_start_index'].iloc[random_selection[i]], df['var_end_index'].iloc[random_selection[i]]
+            start, end = df['roi_start_index'].iloc[random_selection[i]], df['roi_end_index'].iloc[random_selection[i]]
             plt.plot(np.arange(start, end, 1), np.array(df['cov_bases'].iloc[random_selection[i]])[start:end])
             plt.plot(np.arange(0, len(df['cov_bases'].iloc[random_selection[i]])), len(df['cov_bases'].iloc[random_selection[i]])*[min_bases_cov])
             plt.xlabel("Bases")
@@ -266,7 +266,7 @@ class plot:
         fig = plt.figure(figsize=figsize)
         serie = df.set_index(['tube','construct']).loc[tube, construct]
         plt.plot(np.array(serie['cov_bases']))
-        start, end = serie['var_start_index'], serie['var_end_index']
+        start, end = serie['roi_start_index'], serie['roi_end_index']
         plt.plot(np.arange(start, end, 1), np.array(serie['cov_bases'])[start:end])
         if min_bases_cov != None:
             plt.plot(np.arange(0, len(serie['cov_bases'])), len(serie['cov_bases'])*[min_bases_cov])
@@ -350,20 +350,20 @@ class plot:
         stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
 
         for construct in df.construct.unique():
-            var_part = get_var_info(df=df, tube=tube, construct=construct)
+            roi_part = get_roi_info(df=df, tube=tube, construct=construct)
             for base in ['A','C']:
-                for var_struct_comp in ['0','1']:
+                for roi_struct_comp in ['0','1']:
                     try:    
-                        this_base_mut =  var_part.xs((base,True,var_struct_comp), level=('base','paired','var_structure_comparison'))
-                        stack_for_plot[var_struct_comp]['x'].extend(this_base_mut['var_deltaG'].to_list())
-                        stack_for_plot[var_struct_comp]['y'].extend(this_base_mut['mut_rate'].to_list())
+                        this_base_mut =  roi_part.xs((base,True,roi_struct_comp), level=('base','paired','roi_structure_comparison'))
+                        stack_for_plot[roi_struct_comp]['x'].extend(this_base_mut['roi_deltaG'].to_list())
+                        stack_for_plot[roi_struct_comp]['y'].extend(this_base_mut['mut_rate'].to_list())
                     except:
                         continue
         plt.plot(stack_for_plot['0']['x'],stack_for_plot['0']['y'],'b.')
         plt.plot(stack_for_plot['1']['x'],stack_for_plot['1']['y'],'r.')
         plot.fit_deltaG(df_use, tube)
-        plt.legend(['A and C bases of the variable part, predicted paired by RNAstructure for both the var part sequence and the full sequence',\
-                    'A and C bases of the variable part, predicted paired by RNAstructure for the full sequence but not for the variable part sequence'])
+        plt.legend(['A and C bases of the ROI, predicted paired by RNAstructure for both the ROI sequence and the full sequence',\
+                    'A and C bases of the ROI part, predicted paired by RNAstructure for the full sequence but not for the ROI sequence'])
         plt.ylim([0,0.15])
         fig.tight_layout()
 
@@ -372,14 +372,14 @@ class plot:
             fig, axs = plt.subplots(1,1)
 
         paired = {True: '.',False:'x'}
-        var_structure_comparison = {'0':'b','1':'r'}
+        roi_structure_comparison = {'0':'b','1':'r'}
         x_all, y_all = [], []
         for is_paired in paired: 
-            for vsc in var_structure_comparison:
+            for vsc in roi_structure_comparison:
                 try:
-                    x, y = np.array(get_var_info(df, tubes[1], construct)['mut_rate'].xs((is_paired,vsc), level=('paired','var_structure_comparison')), dtype=float),\
-                            np.array(get_var_info(df, tubes[0], construct)['mut_rate'].xs((is_paired,vsc),level=('paired','var_structure_comparison')), dtype=float)
-                    axs.plot(x,y,f"{var_structure_comparison[vsc]}{paired[is_paired]}")
+                    x, y = np.array(get_roi_info(df, tubes[1], construct)['mut_rate'].xs((is_paired,vsc), level=('paired','roi_structure_comparison')), dtype=float),\
+                            np.array(get_roi_info(df, tubes[0], construct)['mut_rate'].xs((is_paired,vsc),level=('paired','roi_structure_comparison')), dtype=float)
+                    axs.plot(x,y,f"{roi_structure_comparison[vsc]}{paired[is_paired]}")
                     x_all.extend(x), y_all.extend(y)
                 except:
                     axs.plot()
@@ -397,10 +397,10 @@ class plot:
                 if x != y:
                     plot.compare_2_tubes(df, (tubes[x], tubes[y]), construct, axs[x-1][y])
         axs[0,len(tubes)-2].plot(0,0,'b.',0,0,'r.',0,0,'bx',0,0,'rx',0,0,'g-')            
-        axs[0,len(tubes)-2].legend(['Paired in full sequence RNAstructure, paired in var sequence RNAstructure',
-                    'Paired in full sequence RNAstructure, not paired in var sequence RNAstructure',
-                    'Not paired in full sequence RNAstructure, not paired in var sequence RNAstructure',
-                    'Not paired in full sequence RNAstructure, paired in var sequence RNAstructure',
+        axs[0,len(tubes)-2].legend(['Paired in full sequence RNAstructure, paired in ROI RNAstructure',
+                    'Paired in full sequence RNAstructure, not paired in ROI RNAstructure',
+                    'Not paired in full sequence RNAstructure, not paired in ROI RNAstructure',
+                    'Not paired in full sequence RNAstructure, paired in ROI RNAstructure',
                     'Fit'])
 
 
@@ -433,17 +433,17 @@ def added_content_per_construct(df, attribute):
     return df.set_index('construct').sort_values(attribute)[attribute].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
 
-def get_var_info(df, tube, construct):
+def get_roi_info(df, tube, construct):
     df_use = df.set_index(['tube','construct'])
-    start, end = df_use['var_start_index'].loc[(tube,construct)] , df_use['var_end_index'].loc[(tube,construct)]     
+    start, end = df_use['roi_start_index'].loc[(tube,construct)] , df_use['roi_end_index'].loc[(tube,construct)]     
     mut_per_base = pd.DataFrame({'mut_rate':pd.Series(np.array(df_use[f"mut_bases"].loc[tube, construct][1:])/np.array(df_use[f"info_bases"].loc[tube, construct][1:]), dtype=object),
                             'base':list(df_use['sequence'].loc[tube, construct]),
                             'paired': np.array([bool(x != '.') for x in list(df_use['full_structure'].loc[tube,construct])]),\
-                            'var_structure_comparison': pd.Series(list(df_use['var_structure_comparison'].loc[tube,construct]), index=list(range(start, end)))\
-                            ,'var_deltaG':df_use['var_deltaG'].loc[tube, construct]})\
+                            'roi_structure_comparison': pd.Series(list(df_use['roi_structure_comparison'].loc[tube,construct]), index=list(range(start, end)))\
+                            ,'roi_deltaG':df_use['roi_deltaG'].loc[tube, construct]})\
                             .dropna()\
                             .reset_index()\
-                            .set_index(['base', 'paired', 'var_structure_comparison','index'])
+                            .set_index(['base', 'paired', 'roi_structure_comparison','index'])
     return mut_per_base
 
 
@@ -457,7 +457,7 @@ def columns_to_csv(df, tubes, columns, title, path):
 
 def deltaG_vs_construct_to_csv(df, title, path, tubes):
     full_path = make_path(path)
-    df[df['tube']==tubes[0]][['construct','var_deltaG','full_deltaG']].reset_index().drop(columns=['index']).to_csv(f"{full_path}/{title}")
+    df[df['tube']==tubes[0]][['construct','roi_deltaG','full_deltaG']].reset_index().drop(columns=['index']).to_csv(f"{full_path}/{title}")
 
 
 def big_script(df, tubes, constructs, analyse, study):
@@ -499,12 +499,12 @@ def big_script(df, tubes, constructs, analyse, study):
         print('Push deltaG vs construct to csv')
         columns_to_csv(df=df,
                         tubes=tubes,
-                        columns=['tube', 'construct','full_sequence','var_sequence','mut_bases','info_bases'],
+                        columns=['tube', 'construct','full_sequence','roi_sequence','mut_bases','info_bases'],
                         title=f"about_{study}",
                         path=f"data/figs/date/{study}"
                         )
 
 def deltaG_vs_construct_to_csv(df, title, path, tubes):
     full_path = make_path(path)
-    df[df['tube']==tubes[0]][['construct','var_deltaG','full_deltaG']].reset_index().drop(columns=['index']).to_csv(f"{full_path}/{title}")
+    df[df['tube']==tubes[0]][['construct','roi_deltaG','full_deltaG']].reset_index().drop(columns=['index']).to_csv(f"{full_path}/{title}")
     
