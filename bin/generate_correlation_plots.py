@@ -4,7 +4,7 @@ import matplotlib as mpl
 from os.path import exists, dirname
 import os, sys
 from scipy.stats import linregress
-from nap import *
+from NAP.nap import *
 try:
     sys.path.append(dirname('libs/dreem/dreem')) 
 except:
@@ -111,7 +111,7 @@ for study in tubes_per_study:
         constructs_name = constructs
         df_global_corr = correlation_n_tubes(df, tubes, constructs)
         plt.title(f"Correlation between tubes for study: {study}, constructs: {constructs_name}")
-        plot.save_fig(path=f"data/figs/date/correlation/{study}/{constructs_name}", 
+        plot.save_fig(path=f"data/output/date/correlation/{study}/{constructs_name}", 
                         title=f"correlation_fit_{study}_{constructs_name}")
         plt.close(not show_plots)
 
@@ -120,7 +120,7 @@ for study in tubes_per_study:
             f, ax = plt.subplots(figsize=(28, 10))
             sns.heatmap(pivot, annot=False, linewidths=0, ax=ax)#, norm=LinNorm())
             plt.title(f"{plt_type} of the correlation between tubes for study: {study}, constructs: {constructs_name}")
-            plot.save_fig(path=f"data/figs/date/correlation/{study}/{constructs_name}", 
+            plot.save_fig(path=f"data/output/date/correlation/{study}/{constructs_name}", 
                             title=f"correlation_{plt_type}_{study}_{constructs_name}")
             plt.close(not show_plots)
               
