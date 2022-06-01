@@ -12,7 +12,11 @@ import shutil
 sys.path.append(os.path.abspath(""))
 from nap import data_wrangler, utils, firebase, plot
 
-shutil.rmtree('data/test_output')
+try:
+    shutil.rmtree('data/test_output')
+except:
+    'no previous test_output dir'
+os.mkdir('data/test_output')
 
 # Set your username for the database (at the moment, keep Yves)
 username = 'test'
@@ -48,7 +52,7 @@ pickles = data_wrangler.generate_pickles(path_to_data='data/FULLSET',
 RNAstructureFile = 'data/RNAstructureFile.csv'
 
 # If the user gives some new pickles files, push them to the firebase, then pull the entire firebase
-if len(pickles) and 0 : 
+if len(pickles): 
     data_wrangler.push_pickles_to_firebase(pickles = pickles,
                                             RNAstructureFile = RNAstructureFile,
                                             min_bases_cov = min_bases_cov, 
