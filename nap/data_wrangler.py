@@ -30,7 +30,6 @@ CONST_R = 1.98720425864083E-3 #Kcal.K^-1.mol^-1
 CONST_T = 310.15 #KELVINS
 
 
-
 def clean_dataset(df_firebase, tubes):
     """Process the content of the Firebase into Pandas dataframes.
 
@@ -145,7 +144,7 @@ def json_load(json_file):
     return df
 
 
-def push_pickle_to_firebase(pickles, RNAstructureFile, min_bases_cov, firebase_folder, print_end=' '):
+def push_tubes_to_firebase(pickles, RNAstructureFile, min_bases_cov, firebase_folder, print_end=' '):
     """Pushes new tubes to Firebase.
 
     DREEM module outputs MutationHistogram objects, compressed under the pickle format. 
@@ -198,7 +197,7 @@ def push_pickle_to_firebase(pickles, RNAstructureFile, min_bases_cov, firebase_f
         df_temp = df_temp.set_index('construct')
 
         # Push this tube to firebase
-        firebase.push(df_temp.to_dict(orient='index'), ref=tube, username=firebase_folder, verbose= not bool(count))
+        firebase.push(df_temp.to_dict(orient='index'), ref=tube, firebase_folder=firebase_folder, verbose= not bool(count))
 
         # Give yourself hope to wait by showing the progress
         print(tube, end=print_end)

@@ -53,20 +53,20 @@ def connect(verbose = True):
     except:
         if verbose: print('Re-used the previous firebase connection')
 
-def push(dict_df, ref, username, verbose = True):
+def push(dict_df, ref, firebase_folder, verbose = True):
     connect(verbose = verbose)
-    ref_obj = db.reference(f"{username}/{ref}")
+    ref_obj = db.reference(f"{firebase_folder}/{ref}")
     ref_obj.set(dict_df)
 
 
-def load(tubes, username):
+def load(tubes, firebase_folder):
     print('Load data from Firebase')
     connect()
     df = {}
     missed_tubes = []
     for tube in tubes:
         try:
-            ref = db.reference(f"{username}/{tube}")
+            ref = db.reference(f"{firebase_folder}/{tube}")
             df[tube] = pd.DataFrame.from_dict(ref.get('/')[0], orient='index')
             print(tube, end=' ')
         except:
