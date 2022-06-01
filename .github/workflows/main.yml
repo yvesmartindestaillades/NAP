@@ -30,7 +30,7 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Run a test routine
-      - working-directory: tests
+        working-directory: tests
         run: |
           ls -la
           python DREEM_firebase_plots.py
