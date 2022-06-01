@@ -27,5 +27,4 @@ jobs:
 
       # Runs a set of commands using the runners shell
       - name: Run a test routine
-        run: |
-          tests/DREEM_firebase_plots.py
+        run: python tests/DREEM_firebase_plots.py
