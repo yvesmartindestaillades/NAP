@@ -3,12 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from os.path import exists, dirname
 import os, sys
-
-script_dir = os.path.dirname( __file__ )
-mymodule_dir = os.path.join( script_dir, '..' )
-sys.path.append( mymodule_dir )
-
-from NAP.nap import *
+sys.path.append(os.path.abspath(""))
 
 try:
     sys.path.append(dirname('libs/dreem/dreem')) 
