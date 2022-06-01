@@ -31,9 +31,20 @@ CONST_T = 310.15 #KELVINS
 
 
 
-def clean_dataset(df_rough, tubes, min_bases_cov):
+def clean_dataset(df_firebase, tubes):
+    """Process the content of the Firebase into Pandas dataframes.
+
+    Args:
+        df_firebase: the dataframe downloaded from the Firebase.
+        tubes: the tubes that you will use. Under the form of a list, ex: ['A1','B3']).
+
+    Returns:
+        A subset of df_firebase, in which every construct had a good-enough reading quality for each tube.
+        The same content as df_firebase, with an additional 'tubes_covered' column, corresponding to the amount of tubes for containing this construct.
+    """
+
     # Only keep desired pickle files
-    df_full = df_rough[df_rough['tube'].isin(tubes)]
+    df_full = df_firebase[df_firebase['tube'].isin(tubes)]
 
     # Check how many tubes reach 1000 reads on each base for a given construct
     df_full['tubes_covered'] = pd.Series(dtype=int)
@@ -57,81 +68,70 @@ def clean_dataset(df_rough, tubes, min_bases_cov):
     'cov_bases_roi':int, 'cov_bases_sec_half':int, 'tubes_covered':int,
     'sub-library':str, 'flank':str})
 
-    print(f"{df.groupby('construct')['tubes_covered'].count().count()} constructs have more than {min_bases_cov} reads for each base of their ROI on each tube")
-
     return df, df_full
 
 
-def pickle2dict(mhs, dropAttribute):
-    localDict = {}
+def mhs2dict(mhs, drop_attribute):
+    """Turns the output of Prof. Joe Yesselman's DREEM into a construct-wise index dictionary.
+
+    Args:
+        mhs: one tube's content under DREEM's MutationHistogram class format. 
+        drop_attribute: a list of attributes from MutationHistogram class that you don't want into your dictionary
+    
+    Returns:
+        A dictionary form of the MutationHistogram class.
+    """
+    tube_dict = {}
     for construct in mhs:
-        localDict[construct] = mhs[construct].__dict__
-        for attribute in dropAttribute:
-            del localDict[construct][attribute]
+        tube_dict[construct] = mhs[construct].__dict__
+        for attribute in drop_attribute:
+            del tube_dict[construct][attribute]
 
         np_arrays = ['mut_bases', 'info_bases', 'del_bases', 'ins_bases',
                     'cov_bases']
         for array in np_arrays:
-            localDict[construct][array] = tuple(localDict[construct][array])
+            tube_dict[construct][array] = tuple(tube_dict[construct][array])
         
         np_bases_arrays = ['A', 'C', 'G', 'T']
         for array in np_bases_arrays:
-            localDict[construct]['mod_bases_'+array] = tuple(localDict[construct]['mod_bases'][array])
-        del localDict[construct]['mod_bases']
+            tube_dict[construct]['mod_bases_'+array] = tuple(tube_dict[construct]['mod_bases'][array])
+        del tube_dict[construct]['mod_bases']
 
         skips = ['low_mapq', 'short_read', 'too_many_muts']
         for sk in skips:
-            localDict[construct]['skips_'+sk] = localDict[construct]['skips'][sk]
-        del localDict[construct]['skips']
-    return localDict
+            tube_dict[construct]['skips_'+sk] = tube_dict[construct]['skips'][sk]
+        del tube_dict[construct]['skips']
+    return tube_dict
 
-
-def generate_pickles(path_to_data,  pickles_list= None, letters_boundaries=['B','A'], number_boundaries=[1,0], remove_pickles=[]):
-    list_of_pickles, pickles = pickles_list, {}
-    alphabet = list(string.ascii_uppercase)
-    for letter in alphabet[alphabet.index(letters_boundaries[0]):alphabet.index(letters_boundaries[1])+1]:
-        for number in range(number_boundaries[0],number_boundaries[1]+1):
-            list_of_pickles.append(letter+str(number))
+def json_dump(df, json_file):
+    """A simple function to dump a Pandas dataframe into a (tube, construct)-wise indexed json file.
     
-    for items in remove_pickles:  
-        try:
-            list_of_pickles.remove(items)
-        except:
-            continue
-            
-    for pickle in list_of_pickles:
-        pickles[pickle] = f"{path_to_data}/{pickle}/mutation_histos.p"
-
-    return pickles
-
+    Args:
+        df: the Pandas dataframe that you want to dump into a json.
+        json_file: a string containing the relative path + name of the json to dump.
     
-def dump_string_json(JSONFileString, df):
-    print(f"Dumping df as a string to a JSON file {JSONFileString}")
-    with open(JSONFileString, 'w') as outfile:
-        json.dump(df.to_json(orient='index'), outfile) 
-    print("Done!")
-
-def load_string_json(JSONFileString):
-    print("Load from JSON file")
-    with open(JSONFileString) as json_file:
-        my_json = json.load(json_file)
-        df = pd.read_json(my_json, orient='index')
-    print("Done!")
-    return df
-
-def dump_dict_json(JSONFileDict, df):
-    print(f"Dumping df as a dict to a JSON file {JSONFileDict}")
-    with open(JSONFileDict, 'w') as outfile:
+    Returns:
+        None
+    """
+    print(f"Dumping df as a dict to a JSON file {json_file}")
+    with open(json_file, 'w') as outfile:
         this_dict = df.set_index(['tube', 'construct']).groupby(level=0)\
             .apply(lambda d: d.reset_index().set_index('construct').to_dict(orient='index')).to_dict()
         json.dump(this_dict , outfile)
     print("Done!")
-    return this_dict
 
-def load_dict_json(JSONFileDict):
+def json_load(json_file):
+    """A simple function to load data from a (tube, construct)-wise indexed json file.
+    
+    Args:
+        json_file: a string containing the relative path + name of the json to load.
+    
+    Returns:
+        Loaded Pandas dataframe.
+    """
     print("Load from dict-type JSON file")
-    with open(JSONFileDict) as json_file:
-        dictionary = json.load(json_file)
+    with open(json_file) as file:
+        dictionary = json.load(file)
     # dictionary = pd.DataFrame.from_dict(my_json, orient='columns')
         df = pd.DataFrame.from_dict({(i,j): dictionary[i][j] 
                                 for i in dictionary.keys() 
@@ -145,7 +145,23 @@ def load_dict_json(JSONFileDict):
     return df
 
 
-def push_pickles_to_firebase(pickles, RNAstructureFile, min_bases_cov, username, print_end=' '):
+def push_pickle_to_firebase(pickles, RNAstructureFile, min_bases_cov, firebase_folder, print_end=' '):
+    """Pushes new tubes to Firebase.
+
+    DREEM module outputs MutationHistogram objects, compressed under the pickle format. 
+    For each pickle in pickles, this function turns it into dictionaries, filters out unvalid constructs and pushes the resulting (tube, construct)-wise indexed dictionary to the Firebase.
+    The construct high-pass filter filters out a construct if which at least one base in its Region of Interest (ROI) doesn't reach `min_bases_cov` of base coverage.
+    
+    Args:
+        pickles: a dictionary s.t  {'name of the tube': 'path to the file'}
+        RNAstructureFile: string containing the name of a csv file with additional content. Its columns are: ['construct','roi_sequence','full_sequence','roi_start_index','roi_end_index','roi_deltaG','full_deltaG','roi_structure_comparison','full_structure','flank','sub-library']
+        min_bases_cov: int type. Mutation rates of bases below this threshold will be considered irrelevant.
+        firebase_folder: where to push the data in the firebase.
+
+    Returns:
+        None
+    """
+    
     # Load additional content
     df_additional_content = pd.read_csv(RNAstructureFile)
     df_additional_content.construct = df_additional_content.construct.astype(int).astype(str)
@@ -156,7 +172,7 @@ def push_pickles_to_firebase(pickles, RNAstructureFile, min_bases_cov, username,
         # Load a tube from a pickle file
         mhs = pickle.load(open(pickles[tube], "rb"))
 
-        df_tube = pd.DataFrame.from_dict(pickle2dict(mhs, dropAttribute = ['structure','_MutationHistogram__bases','sequence']),
+        df_tube = pd.DataFrame.from_dict(mhs2dict(mhs, dropAttribute = ['structure','_MutationHistogram__bases','sequence']),
                 orient='index').rename(columns={'name':'construct'})
 
         # Merge with additional content (excel sheet content) and check the data sanity by sequences comparison
@@ -182,7 +198,7 @@ def push_pickles_to_firebase(pickles, RNAstructureFile, min_bases_cov, username,
         df_temp = df_temp.set_index('construct')
 
         # Push this tube to firebase
-        firebase.push(df_temp.to_dict(orient='index'), ref=tube, username=username, verbose= not bool(count))
+        firebase.push(df_temp.to_dict(orient='index'), ref=tube, username=firebase_folder, verbose= not bool(count))
 
         # Give yourself hope to wait by showing the progress
         print(tube, end=print_end)
