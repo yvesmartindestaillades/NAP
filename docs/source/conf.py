@@ -28,12 +28,10 @@ author = 'Yves Martin des Taillades'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx_rtd_theme',
-    'sphinx.ext.duration',
-    'sphinx.ext.doctest',
+    'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
- 'sphinx.ext.napoleon']
+    'sphinx.ext.viewcode',
+    'sphinx.ext.coverage']
 
 # Napoleon settings
 napoleon_google_docstring = True
