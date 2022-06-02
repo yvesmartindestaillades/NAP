@@ -9,8 +9,8 @@ Welcome to New Analysis Pipeline (NAP)'s documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
-
+      
+   modules
 
 Indices and tables
 ==================
