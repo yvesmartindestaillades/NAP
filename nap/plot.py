@@ -1,55 +1,69 @@
-from matplotlib import colors
 import pandas as pd
-import pickle
-import json
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import db
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
-import string
-from os.path import exists
-import os
-import datetime
 import seaborn as sns
 from os.path import exists, dirname
 import os, sys
-
-try:
-    sys.path.append(dirname('/libs/dreem/dreem')) 
-except:
-    "If dreem isn't installed on your computer, the code won't run"
-
-
-from libs import dreem
 from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
 sys.path.append(os.path.abspath(""))
 from nap import utils
 
+strList, intList = list[str], list[int]
 
-def tube_coverage_distribution(df):
+
+def tube_coverage_distribution(df:pd.DataFrame)->None:
+    """Plot each construct vs its number of tubes covered, i.e the number of tubes containing this construct.
+    
+    Args:
+        df: a Pandas dataframe.
+    """
+
     plt.figure()
-    plt.plot(np.array(df['tubes_covered'].sort_values(ascending=False)))
+    plt.plot(np.array(df.groupby['construct']['tubes_covered'].mean().sort_values(ascending=False)))
     plt.xlabel('Constructs (sorted)')
     plt.ylabel('Amount of tubes covered')
     plt.grid()
 
-def valid_construct_per_tube(df, min_bases_cov):
-    df.groupby('tube').count().reset_index().plot(kind='bar',x='tube', y='construct', figsize=figsize )
-    plt.ylabel(f"Number of construct above {min_bases_cov} reads")
+
+def valid_construct_per_tube(df:pd.DataFrame)->None:
+    """Plot how many valid constructs each tube has.
+
+    Args:
+        df: a Pandas dataframe.
+    
+    Raises:
+        If the min_bases_cov value isn't the same for every tubes.
+    """
+    
+    df.groupby('tube').count().reset_index().plot(kind='bar',x='tube', y='construct')
+    assert len(df.min_bases.cov.unique()) == 1, "min_bases_cov isn't unique"
+    plt.ylabel(f"Number of construct above {int(df.min_bases_cov.unique())} reads")
     plt.grid()
 
-def base_coverage_for_all_constructs(df, min_bases_cov):
+
+def base_coverage_ROI_for_all_constructs(df:pd.DataFrame)->None:
+    """Plot the base-coverage of the worst-covered base of the Region of Interest, for each construct. 
+    
+    Args:
+        df: a Pandas dataframe.   
+    """
     plt.figure()
     plt.plot(np.array(df['cov_bases_roi'].sort_values(ascending=False).reset_index())[:,1])
-    plt.plot(np.arange(0,int(df.construct.count()),1), [min_bases_cov]*int(df.construct.count()))
+    plt.plot(np.arange(0,int(df.construct.count()),1), [int(df.min_base_cov.unique())]*int(df.construct.count()))
     plt.legend(['Dataframe', '1000 reads line'])
     plt.xlabel('Constructs (sorted)')
-    plt.ylabel('# of reads of the worst covered base in the ROI for a given structure in a given tube')
+    plt.ylabel('# of reads of the worst covered base in the ROI for each (tube, construct)')
 
-def random_9_base_coverage(df, min_bases_cov):
+
+def random_9_base_coverage(df:pd.DataFrame)->None:
+    """Plot the base coverage of 9 randomly picked (tube, construct).
+
+    Args:
+        df: a Pandas dataframe.
+    """
+
     random_selection = np.random.randint(len(df), size=(9))
     fig = plt.figure()
     for i in range(9):
@@ -57,7 +71,7 @@ def random_9_base_coverage(df, min_bases_cov):
         plt.plot(np.array(df['cov_bases'].iloc[random_selection[i]]))
         start, end = df['roi_start_index'].iloc[random_selection[i]], df['roi_end_index'].iloc[random_selection[i]]
         plt.plot(np.arange(start, end, 1), np.array(df['cov_bases'].iloc[random_selection[i]])[start:end])
-        plt.plot(np.arange(0, len(df['cov_bases'].iloc[random_selection[i]])), len(df['cov_bases'].iloc[random_selection[i]])*[min_bases_cov])
+        plt.plot(np.arange(0, len(df['cov_bases'].iloc[random_selection[i]])), len(df['cov_bases'].iloc[random_selection[i]])*[int(df.min_bases_cov.unique())])
         plt.xlabel("Bases")
         plt.ylabel("Coverage")
         plt.title(f"Construct {df['construct'].iloc[random_selection[i]]}, tube {df['tube'].iloc[random_selection[i]]} ")
@@ -68,14 +82,22 @@ def random_9_base_coverage(df, min_bases_cov):
         axes2.set_ylim((0,100*max(df['cov_bases'].iloc[random_selection[i]]))/df['num_reads'].iloc[random_selection[i]])
     fig.tight_layout()
 
-def base_coverage(df, tube, construct, min_bases_cov=None):
+
+def base_coverage(df:pd.DataFrame, tube:str, construct:int)->None:
+    """Plot the base coverage of a specific (tube, construct).
+    
+    Args:
+        df: a Pandas dataframe.
+        tube: a specific tube.
+        construct: a specific construct.    
+    """
+
     ax1 = plt.subplot()
     serie = df.set_index(['tube','construct']).loc[tube, construct]
     plt.plot(np.array(serie['cov_bases']))
     start, end = serie['roi_start_index'], serie['roi_end_index']
     plt.plot(np.arange(start, end, 1), np.array(serie['cov_bases'])[start:end])
-    if min_bases_cov != None:
-        plt.plot(np.arange(0, len(serie['cov_bases'])), len(serie['cov_bases'])*[min_bases_cov])
+    plt.plot(np.arange(0, len(serie['cov_bases'])), len(serie['cov_bases'])*[int(df.min_bases_cov.unique())])
     plt.xlabel("Bases")
     plt.ylabel("Coverage")
     plt.title(f"Construct {construct}, tube {tube} ")
@@ -87,29 +109,31 @@ def base_coverage(df, tube, construct, min_bases_cov=None):
     plt.tight_layout()
 
 
-def heatmap(df, column):
+def heatmap(df:pd.DataFrame, column:str)->None:
+    """Plot the heatmap of a specific column of your dataframe, w.r.t the tubes and constructs.
+
+    Args:
+        df: a Pandas dataframe.
+        column: a specific column of your dataframe.    
+    """
+
     base_cov_plot = df.pivot("tube","construct", column).astype(float)
     f, ax = plt.subplots()
     sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
 
-def fit_deltaG(df, tube): #TODO
-            # Fit
-    fit = lambda a, b, c, dG: a/(1+b*np.exp(-dG/(R*T))) + c
+def mutation_rate(plot_type:str, df:pd.DataFrame, tube:str, construct:int)->None:
+    """Plot the mutation rate of a specific (tube, construct).
 
-        ## Max mut freq
-    #a = np.array(df_use['mod_bases_A'].loc[tube][-1]+df_use['mod_bases_C'].loc[tube][-1]).mean()/np.array(df_use['info_bases'].loc[tube][-1]).mean()
-        ## Baseline mut freq
-    #   c = np.array(df_use['mod_bases_A'].loc[tube][0]+df_use['mod_bases_C'].loc[tube][0]).mean()/np.array(df_use['info_bases'].loc[tube][0]).mean()
-        ## #TODO b
-    # b = 1
-    #  print(f"For tube {tube}, max mut freq a is {a}, b is {b}, baseline mut freq c is {c}")
-    # plt.plot(t, fit(a, b, c, t))
+    Args:
+        plot_type: 'sequence' or 'partition'. 
+            - 'sequence' uses bases numbers as index and the original construct bases as colors.
+            - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
+        df: a Pandas dataframe.
+        tube: a specific tube.
+        construct: a specific construct.
+    """
 
-
-
-def mutation_rate(df, tube, construct, plot_type, index):
-    
     df_use = df.set_index(['tube','construct'])
     
     if not plot_type in ['sequence','partition']:
@@ -129,8 +153,7 @@ def mutation_rate(df, tube, construct, plot_type, index):
             df_hist[base] = pd.Series(dtype=float)
             df_hist[base] = mut_per_base.loc[base]
 
-        if index == 'base':
-            df_hist.index = mut_per_base.reset_index()['base']
+        df_hist.index = mut_per_base.reset_index()['base']
 
         ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
         plt.title(f"tube {tube}, construct {construct}")
@@ -140,15 +163,18 @@ def mutation_rate(df, tube, construct, plot_type, index):
         for base in ['A','C','G','T']:
             df_hist[f"mod_bases_{base}"]  = np.array(df_use[f"mod_bases_{base}"].loc[tube, construct][1:])/df_use['info_bases'].loc[tube, construct][1:]
 
-        if index == 'base':
-            df_hist.index = list(df_use['full_sequence'].loc[tube,construct])
+        df_hist.index = list(df_use['full_sequence'].loc[tube,construct])
 
         ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
 
 
-
-def deltaG(df, tube):
-    df_use = df.set_index(['tube','construct'])
+def deltaG(df:pd.DataFrame, tube:str)->None:
+    """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a tube, w.r.t the deltaG estimation.
+    
+    Args:
+        df: a Pandas dataframe.
+        tube: a specific tube.
+    """
 
     fig = define_figure(title=tube,
                             xlabel='deltaG [kcal]',
@@ -169,17 +195,24 @@ def deltaG(df, tube):
                     continue
     plt.plot(stack_for_plot['0']['x'],stack_for_plot['0']['y'],'b.')
     plt.plot(stack_for_plot['1']['x'],stack_for_plot['1']['y'],'r.')
-    fit_deltaG(df_use, tube)
     plt.legend(['A and C bases of the ROI, predicted paired by RNAstructure for both the ROI sequence and the full sequence',\
                 'A and C bases of the ROI part, predicted paired by RNAstructure for the full sequence but not for the ROI sequence'])
     plt.ylim([0,0.15])
     fig.tight_layout()
 
 
-def correlation_2_tubes(df, tubes, constructs, axs=None):
+def correlation_2_tubes(df:pd.DataFrame, tubes:tuple(str,str), constructs:intList, axs:plt.axes=None)->pd.DataFrame:
+    """Plot the mutation rate of each paired-predicted base of the ROI for a tube vs the same base in another tube, and this for specific constructs.
 
-    if type(constructs) != list:
-        constructs = [constructs]
+    Args:
+        df: a Pandas dataframe.
+        tubes: two specific tubes.
+        constructs: specific constructs.
+        axs: a plt.axes object to use - for example for subplotting.
+    
+    Returns:
+        A single-lined Pandas dataframe with values for r_value and slope.
+    """
 
     if axs is None:
         fig, axs = plt.subplots(1,1)
@@ -208,10 +241,22 @@ def correlation_2_tubes(df, tubes, constructs, axs=None):
     axs.set(xlabel=f"Mutation rate of tube {tubes[1]}", ylabel=f"Mutation rate of tube {tubes[0]}")
     anchored_text = AnchoredText(f"R = {round(result.rvalue,3)}, slope = {round(result.slope,3)}", loc=2)
     axs.add_artist(anchored_text)
-    df_global_corr = pd.DataFrame({'tube_0':tubes[0], 'tube_1':tubes[1], 'r_value':result.rvalue, 'slope':result.slope}, index=[0])
-    return df_global_corr
+    df_corr = pd.DataFrame({'tube_0':tubes[0], 'tube_1':tubes[1], 'r_value':result.rvalue, 'slope':result.slope}, index=[0])
+    return df_corr
 
-def correlation_n_tubes(df, tubes, constructs):  
+
+def correlation_n_tubes(df:pd.DataFrame, tubes:strList, constructs:intList)->pd.DataFrame:  
+    """Plot correlation_2_tubes() for each possible pair in the tubes list, and this for specific constructs, in a single plot.
+
+    Args:
+        df: a Pandas dataframe.
+        tubes: specific tubes.
+        constructs: specific constructs.
+
+    Returns:
+        A Pandas dataframe with values for r_value and slope for each possible pair in the tubes list.
+    """
+
     df_global_corr = pd.DataFrame(columns=['tube_0', 'tube_1', 'r_value', 'slope'])
     plt.figure(figsize=(30*len(tubes), 30*len(tubes)))
     fig, axs = plt.subplots(len(tubes)+1,len(tubes), figsize= (30,30), sharex=True, sharey=True)
@@ -229,11 +274,29 @@ def correlation_n_tubes(df, tubes, constructs):
                 'Fit'])
     return df_global_corr
 
-def save_fig(path,title):
+
+def save_fig(path:str,title:str)->None:
+    """Save a matplotlib figure and create the directory if it doesn't exists.
+
+    Args:
+        path: where to store your figure.
+        title: your figure name.    
+    """
+
     full_path = utils.make_path(path)
     plt.savefig(f"{full_path}/{title}")
 
-def define_figure(title, xlabel, ylabel, figsize):
+
+def define_figure(title:str, xlabel:str, ylabel:str, figsize:tuple(float, float))->plt.figure:
+    """Define title, labels and size of your figure.
+
+    Args:
+        title: matplotlib title
+        xlabel: matplotlib xlabel
+        ylabel: matplotlib ylabel
+        figsize: matplotlib figsize
+    """
+
     fig = plt.figure(figsize=figsize)
     plt.title(title)
     plt.xlabel(xlabel)

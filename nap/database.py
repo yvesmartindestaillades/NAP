@@ -1,36 +1,21 @@
-from matplotlib import colors
 import pandas as pd
-import pickle
-import json
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
-import string
-from os.path import exists
-import os
-import datetime
-import seaborn as sns
 from os.path import exists, dirname
 import os, sys
-try:
-    sys.path.append(dirname('/libs/dreem/dreem')) 
-except:
-    "If dreem isn't installed on your computer, the code won't run"
-
-
-from libs import dreem
-from scipy.stats import linregress
-from matplotlib.offsetbox import AnchoredText
-
 sys.path.append(os.path.abspath(""))
+from nap import utils
 
-from nap import utils,  data_wrangler
+strList = list[str]
 
+def connect(verbose:bool = True)->None:
+    """Initiate connection with the database.
 
-def connect(verbose = True):
+    Args:
+        verbose: print when connection was already set.
+    """
+
     cred = credentials.Certificate({
     "type": "service_account",
     "project_id": "dreem-542b7",
@@ -51,32 +36,51 @@ def connect(verbose = True):
             'databaseURL':'https://dreem-542b7-default-rtdb.firebaseio.com/'
             })
     except:
-        if verbose: print('Re-used the previous firebase connection')
+        if verbose: print('Re-used the previous Firebase connection')
 
-def push(dict_df, ref, firebase_folder, verbose = True):
+def push(dict_df:pd.DataFrame, folder:str, ref:str, verbose:bool = True)->None:
+    """Push a dictionary to the database, in a given folder, for a given reference.
+    
+    Args:
+        dict_df: the dictionary you want to push
+        folder: string, root folder in the database. Corresponds to a user, a version, a project, etc.
+        ref: string, path to w
+    """
+
     connect(verbose = verbose)
-    ref_obj = db.reference(f"{firebase_folder}/{ref}")
+    ref_obj = db.reference(f"{folder}/{ref}")
     ref_obj.set(dict_df)
 
 
-def load(tubes, firebase_folder):
-    print('Load data from Firebase')
+def load(folder:str, tubes:strList, verbose:bool = True)->pd.DataFrame:
+    """Download a Pandas dataframe from the database.
+    
+    Args:
+        folder: string, root folder in the database. Corresponds to a user, a version, a project, etc.
+        tubes: list of the tubes that you want to use.
+        verbose: print relevant information.
+    
+    Returns:
+        Dataframe of the targeted tubes.
+    """
+    
+    if verbose: print('Load data from database')
     connect()
     df = {}
     missed_tubes = []
     for tube in tubes:
         try:
-            ref = db.reference(f"{firebase_folder}/{tube}")
+            ref = db.reference(f"{folder}/{tube}")
             df[tube] = pd.DataFrame.from_dict(ref.get('/')[0], orient='index')
-            print(tube, end=' ')
+            if verbose: print(tube, end=' ')
         except:
-            print(f"\nTube {tube} not found on Firebase")
+            if verbose: print(f"\nTube {tube} not found on database")
             missed_tubes.append(tube)
 
     if missed_tubes != []:
-        print(f"Tubes {missed_tubes} couldn't be loaded from Firebase")
+        if verbose: print(f"Tubes {missed_tubes} couldn't be loaded from database")
 
     df = pd.concat(df)
     df = df.reset_index().rename(columns={'level_0':'tube', 'level_1':'construct'})
-    print('Done!')
+    if verbose: print('Done!')
     return df

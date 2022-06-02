@@ -1,38 +1,20 @@
-from matplotlib import colors
 import pandas as pd
-import pickle
-import json
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import db
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
-import string
+import datetime
 from os.path import exists
 import os
-import datetime
-import seaborn as sns
-from os.path import exists, dirname
-import os, sys
-
-from sqlalchemy import except_all
-try:
-    sys.path.append(os.path.abspath(""))
-except:
-    "If dreem isn't installed on your computer, the code won't run"
 
 
-from libs import dreem
-from scipy.stats import linregress
-from matplotlib.offsetbox import AnchoredText
+def make_path(path:str)->str:
+    """Create directories until path exists on your computer. Turns the keyword 'date' into today's date.
 
+    Args:
+        path: series of directories that you want to create.
+    
+    Returns:
+        Updated path with today's date instead of the keyword 'date'  
+    """
 
-CONST_R = 1.98720425864083E-3 #Kcal.K^-1.mol^-1
-CONST_T = 310.15 #KELVINS
-
-
-def make_path(path):
     path = os.path.normpath(path)
     path=path.split(os.sep)
     try:
@@ -47,8 +29,17 @@ def make_path(path):
     return full_path
 
 
-def added_content_per_construct(df, attribute):          
-    return df.set_index('construct').sort_values(attribute)[attribute].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+def get_construct_content(df:pd.DataFrame, column:str):   #TODO I don't know wwhat output    
+    """Read columns values that are common to each constructs among the tubes - typically, from the RNAstructure output file. 
+    
+    Args:
+        df: a Pandas dataframe.
+        column: the dataframe's column values that you want to look at.
+    Returns:
+        #TODO
+    """   
+
+    return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
 
 def get_roi_info(df, tube, construct):

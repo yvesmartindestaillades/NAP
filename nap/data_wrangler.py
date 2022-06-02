@@ -1,20 +1,12 @@
-from matplotlib import colors
 import pandas as pd
 import pickle
 import json
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import db
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
-import string
-from os.path import exists
-import os
-import datetime
-import seaborn as sns
-from os.path import exists, dirname
-import os, sys
+from os.path import dirname
+import sys
+from nap import utils, database
+
+strList = list[str]
 
 try:
     sys.path.append(dirname('../libs/dreem/dreem')) 
@@ -22,15 +14,8 @@ except:
     "If dreem isn't installed on your computer, the code won't run"
 
 from libs import dreem
-from scipy.stats import linregress
-from matplotlib.offsetbox import AnchoredText
-from nap import utils, firebase
 
-CONST_R = 1.98720425864083E-3 #Kcal.K^-1.mol^-1
-CONST_T = 310.15 #KELVINS
-
-
-def clean_dataset(df_firebase, tubes):
+def clean_dataset(df_database:pd.DataFrame, tubes:strList)-> tuple[pd.DataFrame, pd.DataFrame]:
     """Process the content of the Firebase into Pandas dataframes.
 
     Args:
@@ -43,7 +28,7 @@ def clean_dataset(df_firebase, tubes):
     """
 
     # Only keep desired pickle files
-    df_full = df_firebase[df_firebase['tube'].isin(tubes)]
+    df_full = df_database[df_database['tube'].isin(tubes)]
 
     # Check how many tubes reach 1000 reads on each base for a given construct
     df_full['tubes_covered'] = pd.Series(dtype=int)
@@ -70,7 +55,7 @@ def clean_dataset(df_firebase, tubes):
     return df, df_full
 
 
-def mhs2dict(mhs, drop_attribute):
+def mhs2dict(mhs:dreem.bit_vector, drop_attribute:strList)->dict:
     """Turns the output of Prof. Joe Yesselman's DREEM into a construct-wise index dictionary.
 
     Args:
@@ -102,7 +87,8 @@ def mhs2dict(mhs, drop_attribute):
         del tube_dict[construct]['skips']
     return tube_dict
 
-def json_dump(df, json_file):
+
+def json_dump(df:pd.DataFrame, json_file:str)->None:
     """A simple function to dump a Pandas dataframe into a (tube, construct)-wise indexed json file.
     
     Args:
@@ -119,7 +105,8 @@ def json_dump(df, json_file):
         json.dump(this_dict , outfile)
     print("Done!")
 
-def json_load(json_file):
+
+def json_load(json_file:str)->pd.DataFrame:
     """A simple function to load data from a (tube, construct)-wise indexed json file.
     
     Args:
@@ -144,7 +131,7 @@ def json_load(json_file):
     return df
 
 
-def push_tubes_to_firebase(pickles, RNAstructureFile, min_bases_cov, firebase_folder, print_end=' '):
+def push_tubes_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:int, folder:str, print_end:str=' ')->None:
     """Pushes new tubes to Firebase.
 
     DREEM module outputs MutationHistogram objects, compressed under the pickle format. 
@@ -152,7 +139,7 @@ def push_tubes_to_firebase(pickles, RNAstructureFile, min_bases_cov, firebase_fo
     The construct high-pass filter filters out a construct if which at least one base in its Region of Interest (ROI) doesn't reach `min_bases_cov` of base coverage.
     
     Args:
-        pickles: a dictionary s.t  {'name of the tube': 'path to the file'}
+        pickles: a dictionary with names of the tubes and location of their pickle file: {'name of the tube': 'path to the file'}
         RNAstructureFile: string containing the name of a csv file with additional content. Its columns are: ['construct','roi_sequence','full_sequence','roi_start_index','roi_end_index','roi_deltaG','full_deltaG','roi_structure_comparison','full_structure','flank','sub-library']
         min_bases_cov: int type. Mutation rates of bases below this threshold will be considered irrelevant.
         firebase_folder: where to push the data in the firebase.
@@ -185,19 +172,20 @@ def push_tubes_to_firebase(pickles, RNAstructureFile, min_bases_cov, firebase_fo
 
         # Filter out the constructs that don't reach 1000 reads for each base of the ROI 
         df_temp = df_temp[df_temp['cov_bases_roi'] >= min_bases_cov]
-        
+        df_temp['min_bases_cov'] = min_bases_cov
+
         df_temp = df_temp.astype(dtype={'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
         'roi_end_index':int, 'roi_structure_comparison':str, 'full_structure':str, 'data_type':str,
         'num_reads':int, 'num_aligned':int, 'num_of_mutations':object, 'mut_bases':object,
         'info_bases':object, 'del_bases':object, 'ins_bases':object, 'cov_bases':object, 'start':int, 'end':int,
         'mod_bases_A':object, 'mod_bases_C':object, 'mod_bases_G':object, 'mod_bases_T':object,
         'skips_low_mapq':int, 'skips_short_read':int, 'skips_too_many_muts':int,
-        'cov_bases_roi':int, 'cov_bases_sec_half':int, 'sub-library':str, 'flank':str})
+        'cov_bases_roi':int, 'cov_bases_sec_half':int, 'sub-library':str, 'flank':str, 'min_bases_cov':int})
 
         df_temp = df_temp.set_index('construct')
 
         # Push this tube to firebase
-        firebase.push(df_temp.to_dict(orient='index'), ref=tube, firebase_folder=firebase_folder, verbose= not bool(count))
+        database.push(df_temp.to_dict(orient='index'), ref=tube, folder=folder, verbose= not bool(count))
 
         # Give yourself hope to wait by showing the progress
         print(tube, end=print_end)
