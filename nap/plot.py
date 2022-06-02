@@ -51,7 +51,7 @@ def base_coverage_ROI_for_all_constructs(df:pd.DataFrame)->None:
     """
     plt.figure()
     plt.plot(np.array(df['cov_bases_roi'].sort_values(ascending=False).reset_index())[:,1])
-    plt.plot(np.arange(0,int(df.construct.count()),1), [int(df.min_base_cov.unique())]*int(df.construct.count()))
+    plt.plot(np.arange(0,int(df.construct.count()),1), [int(df.min_bases_cov.unique())]*int(df.construct.count()))
     plt.legend(['Dataframe', '1000 reads line'])
     plt.xlabel('Constructs (sorted)')
     plt.ylabel('# of reads of the worst covered base in the ROI for each (tube, construct)')
@@ -65,9 +65,9 @@ def random_9_base_coverage(df:pd.DataFrame)->None:
     """
 
     random_selection = np.random.randint(len(df), size=(9))
-    fig = plt.figure()
+    fig = plt.figure(figsize=(75,75))
     for i in range(9):
-        axes1 = plt.subplot(int('33'+str(i+1)))
+        axes1 = plt.subplot(int('33'+str(i+1)), figsize=(25,25))
         plt.plot(np.array(df['cov_bases'].iloc[random_selection[i]]))
         start, end = df['roi_start_index'].iloc[random_selection[i]], df['roi_end_index'].iloc[random_selection[i]]
         plt.plot(np.arange(start, end, 1), np.array(df['cov_bases'].iloc[random_selection[i]])[start:end])
