@@ -4,6 +4,7 @@ import datetime
 from os.path import exists
 import os
 
+strList, intList = list[str], list[int]
 
 def make_path(path:str)->str:
     """Create directories until path exists on your computer. Turns the keyword 'date' into today's date.
@@ -29,8 +30,8 @@ def make_path(path:str)->str:
     return full_path
 
 
-def get_construct_content(df:pd.DataFrame, column:str):   #TODO I don't know wwhat output    
-    """Read columns values that are common to each constructs among the tubes - typically, from the RNAstructure output file. 
+def get_construct_attribute(df:pd.DataFrame, attribute:str):   #TODO I don't know wwhat output    
+    """Returns columns values that are common to each constructs among the tubes - typically, from the RNAstructure output file. 
     
     Args:
         df: a Pandas dataframe.
@@ -39,10 +40,28 @@ def get_construct_content(df:pd.DataFrame, column:str):   #TODO I don't know wwh
         #TODO
     """   
 
-    return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+    return df.set_index('construct').sort_values(attribute)[attribute].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
 
-def get_roi_info(df, tube, construct):
+def get_roi_info(df:pd.DataFrame, tube:str, construct:int)->pd.DataFrame:
+    """Returns a dataframe of the ROI of a specific (tube, construct).
+
+    Args:
+        df: a Pandas dataframe.
+        tube: a specific tube.
+        construct: a specific construct.
+    
+    Returns:
+        Indexes:
+            base: A, C, G, T.
+            paired: pairing prediction of an RNA structure prediction software.
+            roi_structure_comparison: comparison between the pairing prediction of the ROI sequence alone and the entire sequence. 0 means no difference, 1 means difference. 
+            index: base 0-index
+        Columns:
+            mut_rate: mutation rate of this base.
+            roi_deltaG: the deltaG of the ROI sequence predicted b a RNA structure prediction software. 
+    """
+
     np.seterr(invalid='ignore')
     df_use = df.set_index(['tube','construct'])
     start, end = df_use['roi_start_index'].loc[(tube,construct)] , df_use['roi_end_index'].loc[(tube,construct)]     
@@ -57,25 +76,42 @@ def get_roi_info(df, tube, construct):
     return mut_per_base
 
 
-def columns_to_csv(df, tubes, columns, title, path):
+def columns_to_csv(df:pd.DataFrame, tubes:strList, columns:strList, title:str, path:str)->None:
+    """Save a subset of a Dataframe to a csv file.
+
+    Args:
+        df: a Pandas dataframe.
+        tubes: tubes to save.
+        columns: columns to save.
+        title: how to name your file.
+        path: where to store your file.
+    
+    Returns:
+        The csv file content under the dataframe format.    
+    """
+
     np.seterr(invalid='ignore')
     full_path = make_path(path)
     df_print = df[df.tube.isin(tubes)]
     df_print = df_print[columns] 
     np.set_printoptions(suppress=True)
-    df_print['mut_rate'] = df_print.apply(lambda row: np.float32(np.array(row['mut_bases'])/np.array(row['info_bases'])), axis=1)
-    df_print.to_csv(f"{full_path}/{title}.csv")
+    if 'mut_rate' in columns:
+        df_print['mut_rate'] = df_print.apply(lambda row: np.float32(np.array(row['mut_bases'])/np.array(row['info_bases'])), axis=1)
+    df_print = df_print.reset_index().drop(columns='index')
+    df_print.to_csv(f"{full_path}/{title}")
+    return df_print
 
-def deltaG_vs_construct_to_csv(df, title, path, tubes):
-    full_path = make_path(path)
-    df[df['tube']==tubes[0]][['construct','roi_deltaG','full_deltaG']].reset_index().drop(columns=['index']).to_csv(f"{full_path}/{title}")
+def rand_tube_construct(df:pd.DataFrame, n_tubes:int=1, n_constructs:int=1)->tuple((strList, intList)):
+    """Pick randomly n_tubes tubes and n_constructs constructs.
 
-def deltaG_vs_construct_to_csv(df, title, path, tubes):
-    full_path = make_path(path)
-    df[df['tube']==tubes[0]][['construct','roi_deltaG','full_deltaG']].reset_index().drop(columns=['index']).to_csv(f"{full_path}/{title}")
+    Args:
+        df: a Pandas dataframe to pick tubes and constructs from.
+        n_tubes: the number of tubes that you want
+        n_construct: the number of constructs that you want. 
     
-
-def rand_tube_construct(df, n_tubes=1, n_constructs=1):
+    Returns:
+        Two lists containing the randomly picked elements (resp., tubes and constructs).
+    """
     all_tubes, constructs = list(df.tube.unique()), list(df.construct.unique())
     these_tubes, these_constructs = np.array(all_tubes)[np.random.randint(0, len(all_tubes),n_tubes)] , np.array(constructs)[np.random.randint(0, len(constructs), n_constructs)]
     if n_tubes == 1:

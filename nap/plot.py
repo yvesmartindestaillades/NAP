@@ -201,7 +201,7 @@ def deltaG(df:pd.DataFrame, tube:str)->None:
     fig.tight_layout()
 
 
-def correlation_2_tubes(df:pd.DataFrame, tubes:tuple(str,str), constructs:intList, axs:plt.axes=None)->pd.DataFrame:
+def correlation_2_tubes(df:pd.DataFrame, tubes:tuple((str,str)), constructs:intList, axs:plt.axes=None)->pd.DataFrame:
     """Plot the mutation rate of each paired-predicted base of the ROI for a tube vs the same base in another tube, and this for specific constructs.
 
     Args:
@@ -287,7 +287,7 @@ def save_fig(path:str,title:str)->None:
     plt.savefig(f"{full_path}/{title}")
 
 
-def define_figure(title:str, xlabel:str, ylabel:str, figsize:tuple(float, float))->plt.figure:
+def define_figure(title:str, xlabel:str, ylabel:str, figsize:tuple((float, float)))->plt.figure:
     """Define title, labels and size of your figure.
 
     Args:
