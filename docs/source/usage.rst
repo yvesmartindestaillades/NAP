@@ -1,5 +1,14 @@
 Usage
 =====
 
-.. _installation:
+.. include:: installation.rst
+
+Creating Routines
+-----------------
+
+
+
+Creating Jupyter Notebooks
+--------------------------
+
 

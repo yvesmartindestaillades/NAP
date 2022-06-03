@@ -5,10 +5,9 @@ from firebase_admin import db
 from os.path import exists, dirname
 import os, sys
 sys.path.append(os.path.abspath(""))
-import utils
+from nap import utils
 
 strList = list[str]
-
 def connect(verbose:bool = True)->None:
     """Initiate connection with the database.
 

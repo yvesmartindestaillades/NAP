@@ -8,10 +8,9 @@ import os, sys
 from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
 sys.path.append(os.path.abspath(""))
-import utils
+from nap import utils
 
 strList, intList = list[str], list[int]
-
 
 def tube_coverage_distribution(df:pd.DataFrame)->None:
     """Plot each construct vs its number of tubes covered, i.e the number of tubes containing this construct.
