@@ -1,8 +1,0 @@
-Plots
-=====
-
-.. autoclass:: nap.database
-
-
-
-
