@@ -8,7 +8,6 @@ sys.path.append(os.path.abspath(""))
 from nap import utils
 
 strList = list[str]
-
 def connect(verbose:bool = True)->None:
     """Initiate connection with the database.
 

@@ -4,13 +4,12 @@ import json
 import numpy as np
 from os.path import dirname
 import sys, os
-sys.path.append(os.path.abspath(""))
-sys.path.append(os.path.abspath("../libs/dreem"))
+
+sys.path.append(f"{os.path.abspath('')}/libs/dreem")
 from nap import utils, database
 from dreem.bit_vector import MutationHistogram
 
 strList = list[str]
-
 
 def json_dump(df:pd.DataFrame, json_file:str, verbose:bool=True)->None:
     """A simple function to dump a Pandas dataframe into a (tube, construct)-wise indexed json file.
