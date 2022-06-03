@@ -1,4 +1,4 @@
-New Analysis Pipeline (NAP) to analyse DREEM output.
+New Analysis Pipeline (NAP) is written to analyse DREEM output.
 
 # Installation Guide
 
