@@ -22,5 +22,4 @@ NAP provides plots and data selection functions to analyse this dataset.
    This project is under active development.
 
 
-
 NAP has its documentation hosted on Read the Docs.
