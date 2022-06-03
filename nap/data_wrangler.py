@@ -4,9 +4,9 @@ import json
 import numpy as np
 from os.path import dirname
 import sys, os
-sys.path.append(os.path.abspath(""))
-sys.path.append(os.path.abspath("../libs/dreem"))
-from nap import utils, database
+
+sys.path.append(f"{os.path.abspath('')}/libs/dreem")
+import utils, database
 from dreem.bit_vector import MutationHistogram
 
 strList = list[str]

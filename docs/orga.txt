@@ -1,0 +1,17 @@
+
+Organisation of the readthedocs
+
+
+usage
+- installation
+- download template
+- add data qualitu verification plots
+- add data analysis plots
+
+modules
+- plots
+- database
+- data_wrangler
+- utils 
+
+

@@ -5,7 +5,7 @@ from firebase_admin import db
 from os.path import exists, dirname
 import os, sys
 sys.path.append(os.path.abspath(""))
-from nap import utils
+import utils
 
 strList = list[str]
 
