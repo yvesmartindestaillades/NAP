@@ -3,6 +3,7 @@ import numpy as np
 import datetime
 from os.path import exists
 import os
+import matplotlib.pyplot as plt
 
 strList, intList = list[str], list[int]
 
@@ -120,3 +121,32 @@ def rand_tube_construct(df:pd.DataFrame, n_tubes:int=1, n_constructs:int=1)->tup
         these_constructs = these_constructs[0]
 
     return these_tubes, these_constructs
+
+
+def save_fig(path:str,title:str)->None:
+    """Save a matplotlib figure and create the directory if it doesn't exists.
+
+    Args:
+        path: where to store your figure.
+        title: your figure name.    
+    """
+
+    full_path = make_path(path)
+    plt.savefig(f"{full_path}/{title}")
+
+
+def define_figure(title:str, xlabel:str, ylabel:str, figsize:tuple((float, float)))->plt.figure:
+    """Define title, labels and size of your figure.
+
+    Args:
+        title: matplotlib title
+        xlabel: matplotlib xlabel
+        ylabel: matplotlib ylabel
+        figsize: matplotlib figsize
+    """
+
+    fig = plt.figure(figsize=figsize)
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    return fig
