@@ -16,6 +16,7 @@ NAP provides plots and data\_selection functions to visualize DREEM's output.
 .. toctree::
    usage
    nap
+   dreem
 
 .. note::
 
