@@ -2,13 +2,14 @@ Usage
 =====
 
 .. include:: installation.rst
+ 
 
-Creating Routines
------------------
+Getting started with Routines
+-----------------------------
 
 
 
-Creating Jupyter Notebooks
---------------------------
+Getting started with Jupyter Notebooks
+--------------------------------------
 
 

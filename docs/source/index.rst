@@ -15,7 +15,7 @@ NAP provides plots and data selection functions to analyse this dataset.
 
 .. toctree::
    usage
-   NAP
+   dreem_nap
    animals_test_class
 
 .. note::

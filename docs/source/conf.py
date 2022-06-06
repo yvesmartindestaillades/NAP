@@ -13,6 +13,9 @@
 import os
 import sys
 import mock
+import matplotlib
+matplotlib.use('agg')
+
 sys.path.append(os.path.abspath("..")+'/..')	
  
 MOCK_MODULES = ['scipy', 'pandas','pickle-mixin', 'firebase_admin', 'numpy', 'matplotlib.pyplot','matplotlib', 'python-string-utils','seaborn']
@@ -22,7 +25,7 @@ for mod_name in MOCK_MODULES:
 
 # -- Project information -----------------------------------------------------
 
-project = 'NAP'
+project = 'dreem_nap'
 copyright = '2022, Yves Martin des Taillades'
 author = 'Yves Martin des Taillades'
 
@@ -74,3 +77,6 @@ html_theme = 'sphinx_rtd_theme'
 
 # -- Options for EPUB output
 epub_show_urls = 'footnote'
+
+# Fix matplotlib non import
+autodoc_mock_imports = ['matplotlib']

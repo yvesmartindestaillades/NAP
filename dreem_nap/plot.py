@@ -8,7 +8,7 @@ import os, sys
 from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
 sys.path.append(os.path.abspath(""))
-from NAP import utils
+from dreem_nap import utils
 
 strList, intList = list[str], list[int]
 

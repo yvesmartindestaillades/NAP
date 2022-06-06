@@ -5,7 +5,7 @@ from firebase_admin import db
 from os.path import exists, dirname
 import os, sys
 sys.path.append(os.path.abspath(""))
-from NAP import *
+from dreem_nap import *
 
 strList = list[str]
 def connect(verbose:bool = True)->None:
