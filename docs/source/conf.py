@@ -12,7 +12,13 @@
 #
 import os
 import sys
-sys.path.append(os.path.abspath("..")+'/..')
+import mock
+sys.path.append(os.path.abspath("..")+'/..')	
+ 
+#MOCK_MODULES = ['scipy', 'pandas','pickle-mixin', 'firebase_admin', 'numpy', 'matplotlib.pyplot','matplotlib', 'python-string-utils','seaborn']
+
+#for mod_name in MOCK_MODULES:
+#    sys.modules[mod_name] = mock.Mock()
 
 # -- Project information -----------------------------------------------------
 
@@ -64,7 +70,6 @@ intersphinx_disabled_domains = ['std']
 templates_path = ['_templates']
 
 # -- Options for HTML output
-
 html_theme = 'sphinx_rtd_theme'
 
 # -- Options for EPUB output
