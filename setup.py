@@ -2,7 +2,7 @@ from pkg_resources import Requirement
 from setuptools import setup
 import os
 
-with open('requirements.txt') as f:
+with open('../requirements.txt') as f:
     requirements = f.read().splitlines()
 
 version = '1.0'
