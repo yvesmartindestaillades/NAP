@@ -1,25 +1,10 @@
-Modules
+nap package
 ===========
 
+Submodules
+----------
 
-Plot
----------------
-
-.. automodule:: nap.plot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Database
--------------------
-
-.. automodule:: nap.database
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
-Data\_wrangler
+nap.data\_wrangler module
 -------------------------
 
 .. automodule:: nap.data_wrangler
@@ -27,11 +12,34 @@ Data\_wrangler
    :undoc-members:
    :show-inheritance:
 
+nap.database module
+-------------------
 
-Utils
+.. automodule:: nap.database
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+nap.plot module
+---------------
+
+.. automodule:: nap.plot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+nap.utils module
 ----------------
 
 .. automodule:: nap.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Module contents
+---------------
+
+.. automodule:: nap
    :members:
    :undoc-members:
    :show-inheritance:
