@@ -1,12 +1,15 @@
 from pkg_resources import Requirement
 from setuptools import setup
+import os
 
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
+version = '1.0'
+
 setup(
    name='NAP',
-   version='1.0',
+   version=version,
    description='New Analysis Pipeline: visualize the output of DREEM',
    author='Yves Martin des Taillades',
    author_email='yves@martin.yt',
