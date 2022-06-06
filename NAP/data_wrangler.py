@@ -5,6 +5,8 @@ import numpy as np
 from os.path import dirname
 import sys, os
 
+sys.path.append(f"{os.path.abspath('')}/../libs/dreem")
+
 sys.path.append(f"{os.path.abspath('')}/libs/dreem")
 from NAP import utils, database
 from dreem.bit_vector import MutationHistogram

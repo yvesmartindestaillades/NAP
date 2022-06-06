@@ -11,5 +11,13 @@ setup(
    author='Yves Martin des Taillades',
    author_email='yves@martin.yt',
    packages=['NAP'],  #same as name
+   package_dir={'NAP': 'NAP'},
+   py_modules=[
+       'NAP/data_wrangler',
+       'NAP/database',
+       'NAP/plot',
+       'NAP/utils'
+   ],
+   include_package_data=True,
    install_requires=requirements, #external packages as dependencies
 )
