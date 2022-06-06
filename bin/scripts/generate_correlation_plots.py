@@ -4,7 +4,7 @@ import matplotlib as mpl
 from os.path import exists, dirname
 import os, sys
 from scipy.stats import linregress
-from NAP.nap import *
+from NAP.NAP import *
 try:
     sys.path.append(dirname('libs/dreem/dreem')) 
 except:
