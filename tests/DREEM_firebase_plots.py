@@ -10,7 +10,7 @@ import shutil
 #sys.path.append(os.path.abspath(".."))
 
 sys.path.append(os.path.abspath(""))
-from nap import data_wrangler, utils, firebase, plot
+from NAP import data_wrangler, utils, firebase, plot
 
 try:
     shutil.rmtree('data/test_output')
