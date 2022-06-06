@@ -1,6 +1,6 @@
 from pkg_resources import Requirement
 from setuptools import setup
-import os
+import os, sys
 
 try:
     with open('requirements.txt') as f:

@@ -1,4 +1,4 @@
-dreem-nap
+dreem_nap
 =========
 
 .. toctree::

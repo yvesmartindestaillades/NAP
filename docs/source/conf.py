@@ -14,7 +14,11 @@ import os
 import sys
 import mock
 import matplotlib
+import scipy
 matplotlib.use('agg')
+sys.path.append('/home/ymdt/anaconda3/bin/python')
+
+
 
 sys.path.append(os.path.abspath("..")+'/..')	
  
