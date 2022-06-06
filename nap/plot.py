@@ -16,7 +16,7 @@ def tube_coverage_distribution(df:pd.DataFrame)->None:
     """Plot each construct vs its number of tubes covered, i.e the number of tubes containing this construct.
     
     Args:
-        df: a Pandas dataframe.
+        df: dataframe of interest.
     """
 
     plt.figure()
@@ -30,7 +30,7 @@ def valid_construct_per_tube(df:pd.DataFrame)->None:
     """Plot how many valid constructs each tube has.
 
     Args:
-        df: a Pandas dataframe.
+        df: dataframe of interest.
     
     Raises:
         If the min_bases_cov value isn't the same for every tubes.
@@ -46,7 +46,7 @@ def base_coverage_ROI_for_all_constructs(df:pd.DataFrame)->None:
     """Plot the base-coverage of the worst-covered base of the Region of Interest, for each construct. 
     
     Args:
-        df: a Pandas dataframe.   
+        df: dataframe of interest.
     """
     plt.figure()
     plt.plot(np.array(df['cov_bases_roi'].sort_values(ascending=False).reset_index())[:,1])
@@ -60,7 +60,7 @@ def random_9_base_coverage(df:pd.DataFrame)->None:
     """Plot the base coverage of 9 randomly picked (tube, construct).
 
     Args:
-        df: a Pandas dataframe.
+        df: dataframe of interest.
     """
 
     random_selection = np.random.randint(len(df), size=(9))
@@ -86,9 +86,9 @@ def base_coverage(df:pd.DataFrame, tube:str, construct:int)->None:
     """Plot the base coverage of a specific (tube, construct).
     
     Args:
-        df: a Pandas dataframe.
-        tube: a specific tube.
-        construct: a specific construct.    
+        df: dataframe of interest.
+        tube: tube of interest.
+        construct: construct of interest.   
     """
 
     ax1 = plt.subplot()
@@ -128,9 +128,9 @@ def mutation_rate(plot_type:str, df:pd.DataFrame, tube:str, construct:int)->None
         plot_type: 'sequence' or 'partition'. 
             - 'sequence' uses bases numbers as index and the original construct bases as colors.
             - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
-        df: a Pandas dataframe.
-        tube: a specific tube.
-        construct: a specific construct.
+        df: dataframe of interest.
+        tube: tube of interest.
+        construct: construct of interest.
     """
 
     df_use = df.set_index(['tube','construct'])
@@ -171,11 +171,11 @@ def deltaG(df:pd.DataFrame, tube:str)->None:
     """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a tube, w.r.t the deltaG estimation.
     
     Args:
-        df: a Pandas dataframe.
-        tube: a specific tube.
+        df: dataframe of interest.
+        tube: tube of interest.
     """
 
-    fig = define_figure(title=tube,
+    fig = utils.define_figure(title=tube,
                             xlabel='deltaG [kcal]',
                             ylabel='Mutation ratio',
                             figsize=(20,5))
@@ -204,9 +204,9 @@ def correlation_2_tubes(df:pd.DataFrame, tubes:tuple((str,str)), constructs:intL
     """Plot the mutation rate of each paired-predicted base of the ROI for a tube vs the same base in another tube, and this for specific constructs.
 
     Args:
-        df: a Pandas dataframe.
-        tubes: two specific tubes.
-        constructs: specific constructs.
+        df: dataframe of interest.
+        tubes: tubes of interest.
+        constructs: constructs of interest.
         axs: a plt.axes object to use - for example for subplotting.
     
     Returns:
@@ -248,9 +248,9 @@ def correlation_n_tubes(df:pd.DataFrame, tubes:strList, constructs:intList)->pd.
     """Plot correlation_2_tubes() for each possible pair in the tubes list, and this for specific constructs, in a single plot.
 
     Args:
-        df: a Pandas dataframe.
-        tubes: specific tubes.
-        constructs: specific constructs.
+        df: dataframe of interest.
+        tubes: tubes of interest.
+        constructs: constructs of interest.
 
     Returns:
         A Pandas dataframe with values for r_value and slope for each possible pair in the tubes list.
@@ -273,31 +273,31 @@ def correlation_n_tubes(df:pd.DataFrame, tubes:strList, constructs:intList)->pd.
                 'Fit'])
     return df_global_corr
 
-
-def save_fig(path:str,title:str)->None:
-    """Save a matplotlib figure and create the directory if it doesn't exists.
-
-    Args:
-        path: where to store your figure.
-        title: your figure name.    
-    """
-
-    full_path = utils.make_path(path)
-    plt.savefig(f"{full_path}/{title}")
-
-
-def define_figure(title:str, xlabel:str, ylabel:str, figsize:tuple((float, float)))->plt.figure:
-    """Define title, labels and size of your figure.
+def mut_rate_along_study(df:pd.DataFrame, tubes:list[str], study:dict):
+    """Plot the mean of the mutation rate of the ROI bases, for each tube of the study.
 
     Args:
-        title: matplotlib title
-        xlabel: matplotlib xlabel
-        ylabel: matplotlib ylabel
-        figsize: matplotlib figsize
+        df (pd.DataFrame): dataframe of interest.
+        tubes (list[str]): tubes of interest.
+        study (dict): a dictionnary with the following informations about the study:
+            'name': what condition changes with the study.
+            'values': how this condition changes along the tubes.
+            'unit': unit used for this condition.
+            
+            ex:
+                {'name':'60 mM DMS kinestics',
+                'tubes':['D8', 'E8', 'F8', 'G8', 'H8', 'A9'],
+                'unit':'min',
+                'values':[1, 3, 9, 27, 81] }
     """
-
-    fig = plt.figure(figsize=figsize)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    return fig
+    paired, unpaired = np.zeros(len(tubes)), np.zeros(len(tubes))
+    for count, tube in enumerate(tubes):
+        for construct in df.construct.unique():
+            df_roi = utils.get_roi_info(df, tube, construct)
+            paired[count] += df_roi.xs(True, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
+            unpaired[count] += df_roi.xs(False, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
+    plt.plot(study['values'], paired, 'r.-')
+    plt.plot(study['values'], unpaired, 'b.-')
+    plt.xlabel(f"{study['name']} for each tube [{study['unit']}]")
+    plt.ylabel('Mean mutation rate for the ROI')
+    plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])
