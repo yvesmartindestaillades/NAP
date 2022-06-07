@@ -151,7 +151,7 @@ def push_tubes_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:int
     print('Done!')
 
 
-def clean_dataset(df_database:pd.DataFrame, tubes:strList, verbose:bool = True)-> tuple[pd.DataFrame, pd.DataFrame]:
+def clean_dataset(df_database:pd.DataFrame, tubes:list(str), verbose:bool = True)-> tuple((pd.DataFrame, pd.DataFrame)):
     """Process the content of the Firebase into Pandas dataframes.
 
     Args:
