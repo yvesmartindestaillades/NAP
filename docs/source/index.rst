@@ -17,9 +17,11 @@ NAP provides plots and data selection functions to analyse this dataset.
    installation
    getting_started
    plot
+   study
    data_wrangler
    database
    utils
+
 
 .. note::
 

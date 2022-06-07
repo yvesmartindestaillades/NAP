@@ -18,7 +18,13 @@ class Study:
 
         Raises:
             f: if conditions don't match the samples, or if the unit is missing.
+
+        Example:
+        >>> study = Study('example',['A1', 'B2', 'B3'], [10, 20, 30], 'arbitrary unit', 'Just an example study')
+        >>> study.description
+        'Just an example study'
         """
+
         self.name = name
         self.description = description
         self.samples = samples
@@ -37,7 +43,16 @@ class Study:
 
         Returns:
             dict: a dictionary form of the Study object
+        Example:
+        >>> study = Study('example',['A1', 'B2', 'B3'], [10, 20, 30], 'arbitrary unit', 'Just an example study')
+        >>> study.to_dict()
+        {'name': 'example', 
+         'description': 'Just an example study', 
+         'samples': ['A1', 'B2', 'B3'], 
+         'conditions_unit': 'arbitrary unit', 
+         'conditions': [10, 20, 30]}
         """
+
         out_dict = {}
         for attr in self.attr_list:
             if getattr(self, attr) != None:
@@ -45,7 +60,7 @@ class Study:
         return out_dict
 
     def from_dict(self, di:dict[str:str]):
-        f"""_summary_
+        f"""Set attributes of this Study object from a dictionary.
 
         Args:
             di (dict): a dictionary containing keys such as {self.attr_list}.
