@@ -14,7 +14,8 @@ file from a RNA structure prediction as a dataset. The data is stored online usi
 NAP provides plots and data selection functions to analyse this dataset. 
 
 .. toctree::
-   usage
+   installation
+   getting_started
    plot
    data_wrangler
    database

@@ -1,5 +1,5 @@
 Installation Guide
-------------------
+==================
 
 Clone this repo on your computer:
 ::
