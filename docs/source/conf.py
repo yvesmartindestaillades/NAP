@@ -22,7 +22,7 @@ matplotlib.use('agg')
 
 sys.path.append(os.path.abspath("..")+'/..')	
  
-MOCK_MODULES = ['seaborn']#, 'scipy', 'pandas','pickle-mixin', 'firebase_admin', 'numpy', 'matplotlib.pyplot','matplotlib', 'python-string-utils']
+MOCK_MODULES = ['seaborn', 'dreem']#, 'scipy', 'pandas','pickle-mixin', 'firebase_admin', 'numpy', 'matplotlib.pyplot','matplotlib', 'python-string-utils']
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
