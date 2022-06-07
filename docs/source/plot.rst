@@ -5,7 +5,7 @@ In this section, will be presented which plots you can use to visualize DREEM's 
 
 .. note:: 
 
-   Most plots requires a Pandas dataframe, a (list of) tube(s), a (list of) construct(s) and/or a study.
+   Most plots requires a Pandas dataframe, a specific sample or a study, and sometimes a (list of) construct(s).
 
 .. note:: 
 

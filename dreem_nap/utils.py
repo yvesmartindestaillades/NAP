@@ -6,6 +6,9 @@ import os
 import matplotlib.pyplot as plt
 from typing import Tuple, List
 from dreem_nap.study import Study
+import dreem_nap as nap
+
+
 
 def make_path(path:str)->str:
     """Create directories until path exists on your computer. Turns the keyword 'date' into today's date.
@@ -37,6 +40,7 @@ def get_construct_attribute(df:pd.DataFrame, attribute:str):   #TODO I don't kno
     Args:
         df: a Pandas dataframe.
         column: the dataframe's column values that you want to look at.
+
     Returns:
         #TODO
     """   
