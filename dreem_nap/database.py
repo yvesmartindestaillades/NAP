@@ -51,35 +51,35 @@ def push(dict_df:pd.DataFrame, folder:str, ref:str, verbose:bool = True)->None:
     ref_obj.set(dict_df)
 
 
-def load(folder:str, tubes:list(str), verbose:bool = True)->pd.DataFrame:
+def load(folder:str, samples:list(str), verbose:bool = True)->pd.DataFrame:
     """Download a Pandas dataframe from the database.
     
     Args:
         folder: string, root folder in the database. Corresponds to a user, a version, a project, etc.
-        tubes: list of the tubes that you want to use.
+        samples: list of the samples that you want to use.
         verbose: print relevant information.
     
     Returns:
-        Dataframe of the targeted tubes.
+        Dataframe of the targeted samples.
     """
     
     if verbose: print('Load data from database')
     connect()
     df = {}
-    missed_tubes = []
-    for tube in tubes:
+    missed_samples = []
+    for sample in samples:
         try:
-            ref = db.reference(f"{folder}/{tube}")
-            df[tube] = pd.DataFrame.from_dict(ref.get('/')[0], orient='index')
-            if verbose: print(tube, end=' ')
+            ref = db.reference(f"{folder}/{sample}")
+            df[sample] = pd.DataFrame.from_dict(ref.get('/')[0], orient='index')
+            if verbose: print(sample, end=' ')
         except:
-            if verbose: print(f"\nTube {tube} not found on database")
-            missed_tubes.append(tube)
+            if verbose: print(f"\nsample {sample} not found on database")
+            missed_samples.append(sample)
 
-    if missed_tubes != []:
-        if verbose: print(f"Tubes {missed_tubes} couldn't be loaded from database")
+    if missed_samples != []:
+        if verbose: print(f"samples {missed_samples} couldn't be loaded from database")
 
     df = pd.concat(df)
-    df = df.reset_index().rename(columns={'level_0':'tube', 'level_1':'construct'})
+    df = df.reset_index().rename(columns={'level_0':'sample', 'level_1':'construct'})
     if verbose: print('Done!')
     return df
