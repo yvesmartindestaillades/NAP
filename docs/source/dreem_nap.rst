@@ -1,45 +1,32 @@
-dreem\_nap package
-==================
-
-Submodules
-----------
-
-dreem\_nap.data\_wrangler module
---------------------------------
-
-.. automodule:: dreem_nap.data_wrangler
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dreem\_nap.database module
---------------------------
-
-.. automodule:: dreem_nap.database
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-dreem\_nap.plot module
-----------------------
+Plots
+=====
 
 .. automodule:: dreem_nap.plot
    :members:
    :undoc-members:
    :show-inheritance:
 
-dreem\_nap.utils module
------------------------
 
-.. automodule:: dreem_nap.utils
+Data wrangler
+=============
+
+.. automodule:: dreem_nap.data_wrangler
    :members:
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
+Database
+========
 
-.. automodule:: dreem_nap
+.. automodule:: dreem_nap.database
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Utils
+=====
+
+.. automodule:: dreem_nap.utils
    :members:
    :undoc-members:
    :show-inheritance:
