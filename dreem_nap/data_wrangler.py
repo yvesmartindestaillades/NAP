@@ -4,8 +4,10 @@ import json
 import numpy as np
 from os.path import dirname
 import sys, os
+from typing import Tuple, List
 
-sys.path.append(os.path.abspath(""))
+
+#sys.path.append(os.path.abspath(""))
 
 from dreem_nap import utils, database
 from dreem.bit_vector import MutationHistogram
@@ -56,7 +58,7 @@ def json_load(json_file:str, verbose:bool = True)->pd.DataFrame:
     return df
 
 
-def mhs2dict(mhs:MutationHistogram, drop_attribute:list(str))->dict:
+def mhs2dict(mhs:MutationHistogram, drop_attribute:List[str])->dict:
     """Turns the output of Prof. Joe Yesselman's DREEM into a construct-wise index dictionary.
 
     Args:
@@ -151,7 +153,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
     print('Done!')
 
 
-def clean_dataset(df_database:pd.DataFrame, samples:list(str), verbose:bool = True)-> tuple((pd.DataFrame, pd.DataFrame)):
+def clean_dataset(df_database:pd.DataFrame, samples:List[str], verbose:bool = True)-> Tuple[pd.DataFrame, pd.DataFrame]:
     """Process the content of the Firebase into Pandas dataframes.
 
     Args:

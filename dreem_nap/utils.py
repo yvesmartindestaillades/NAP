@@ -4,8 +4,7 @@ import datetime
 from os.path import exists
 import os
 import matplotlib.pyplot as plt
-
-strList, intList = list(str), list(int)
+from typing import Tuple, List
 
 def make_path(path:str)->str:
     """Create directories until path exists on your computer. Turns the keyword 'date' into today's date.
@@ -76,8 +75,7 @@ def get_roi_info(df:pd.DataFrame, sample:str, construct:int)->pd.DataFrame:
                             .set_index(['base', 'paired', 'roi_structure_comparison','index'])
     return mut_per_base
 
-
-def columns_to_csv(df:pd.DataFrame, samples:strList, columns:strList, title:str, path:str)->None:
+def columns_to_csv(df:pd.DataFrame, samples:List[str], columns:List[str], title:str, path:str)->None:
     """Save a subset of a Dataframe to a csv file.
 
     Args:
@@ -102,7 +100,7 @@ def columns_to_csv(df:pd.DataFrame, samples:strList, columns:strList, title:str,
     df_print.to_csv(f"{full_path}/{title}")
     return df_print
 
-def rand_sample_construct(df:pd.DataFrame, n_samples:int=1, n_constructs:int=1)->tuple((strList, intList)):
+def rand_sample_construct(df:pd.DataFrame, n_samples:int=1, n_constructs:int=1)->Tuple[List[str], List[int]]:
     """Pick randomly n_samples samples and n_constructs constructs.
 
     Args:
@@ -135,7 +133,7 @@ def save_fig(path:str,title:str)->None:
     plt.savefig(f"{full_path}/{title}")
 
 
-def define_figure(title:str, xlabel:str, ylabel:str, figsize:tuple((float, float)))->plt.figure:
+def define_figure(title:str, xlabel:str, ylabel:str, figsize:Tuple[float, float])->plt.figure:
     """Define title, labels and size of your figure.
 
     Args:

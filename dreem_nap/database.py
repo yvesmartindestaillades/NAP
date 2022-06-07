@@ -6,6 +6,7 @@ from os.path import exists, dirname
 import os, sys
 sys.path.append(os.path.abspath(""))
 from dreem_nap import *
+from typing import Tuple, List
 
 
 def connect(verbose:bool = True)->None:
@@ -51,7 +52,7 @@ def push(dict_df:pd.DataFrame, folder:str, ref:str, verbose:bool = True)->None:
     ref_obj.set(dict_df)
 
 
-def load(folder:str, samples:list(str), verbose:bool = True)->pd.DataFrame:
+def load(folder:str, samples:List[str], verbose:bool = True)->pd.DataFrame:
     """Download a Pandas dataframe from the database.
     
     Args:

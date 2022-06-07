@@ -9,6 +9,8 @@ from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
 sys.path.append(os.path.abspath(""))
 from dreem_nap import utils
+from typing import Tuple, List
+
 
 
 def sample_coverage_distribution(df:pd.DataFrame)->None:
@@ -199,7 +201,7 @@ def deltaG(df:pd.DataFrame, sample:str)->None:
     fig.tight_layout()
 
 
-def correlation_2_samples(df:pd.DataFrame, samples:tuple((str,str)), constructs:list(int), axs:plt.axes=None)->pd.DataFrame:
+def correlation_2_samples(df:pd.DataFrame, samples:Tuple[str,str], constructs:List[int], axs:plt.axes=None)->pd.DataFrame:
     """Plot the mutation rate of each paired-predicted base of the ROI for a sample vs the same base in another sample, and this for specific constructs.
 
     Args:
@@ -243,7 +245,7 @@ def correlation_2_samples(df:pd.DataFrame, samples:tuple((str,str)), constructs:
     return df_corr
 
 
-def correlation_n_samples(df:pd.DataFrame, samples:list(str), constructs:list(int))->pd.DataFrame:  
+def correlation_n_samples(df:pd.DataFrame, samples:List[str], constructs:List[int])->pd.DataFrame:  
     """Plot correlation_2_samples() for each possible pair in the samples list, and this for specific constructs, in a single plot.
 
     Args:
@@ -272,7 +274,7 @@ def correlation_n_samples(df:pd.DataFrame, samples:list(str), constructs:list(in
                 'Fit'])
     return df_global_corr
 
-def mut_rate_along_study(df:pd.DataFrame, samples:list(str), study:dict):
+def mut_rate_along_study(df:pd.DataFrame, samples:List[str], study:dict):
     """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
     Args:
