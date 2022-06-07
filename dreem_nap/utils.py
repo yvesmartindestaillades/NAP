@@ -5,7 +5,7 @@ from os.path import exists
 import os
 import matplotlib.pyplot as plt
 
-strList, intList = list[str], list[int]
+strList, intList = list(str), list(int)
 
 def make_path(path:str)->str:
     """Create directories until path exists on your computer. Turns the keyword 'date' into today's date.

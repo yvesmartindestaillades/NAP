@@ -7,7 +7,7 @@ import os, sys
 sys.path.append(os.path.abspath(""))
 from dreem_nap import *
 
-strList = list[str]
+
 def connect(verbose:bool = True)->None:
     """Initiate connection with the database.
 
