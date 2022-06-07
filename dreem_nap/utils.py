@@ -1,3 +1,4 @@
+from random import sample
 import pandas as pd
 import numpy as np
 import datetime
@@ -5,6 +6,7 @@ from os.path import exists
 import os
 import matplotlib.pyplot as plt
 from typing import Tuple, List
+from dreem_nap.study import Study
 
 def make_path(path:str)->str:
     """Create directories until path exists on your computer. Turns the keyword 'date' into today's date.
@@ -75,12 +77,12 @@ def get_roi_info(df:pd.DataFrame, sample:str, construct:int)->pd.DataFrame:
                             .set_index(['base', 'paired', 'roi_structure_comparison','index'])
     return mut_per_base
 
-def columns_to_csv(df:pd.DataFrame, samples:List[str], columns:List[str], title:str, path:str)->None:
+def columns_to_csv(df:pd.DataFrame, study:Study, columns:List[str], title:str, path:str)->None:
     """Save a subset of a Dataframe to a csv file.
 
     Args:
         df: a Pandas dataframe.
-        samples: samples to save.
+        study: object containing the samples to save.
         columns: columns to save.
         title: how to name your file.
         path: where to store your file.
@@ -88,7 +90,7 @@ def columns_to_csv(df:pd.DataFrame, samples:List[str], columns:List[str], title:
     Returns:
         The csv file content under the dataframe format.    
     """
-
+    samples = study.samples
     np.seterr(invalid='ignore')
     full_path = make_path(path)
     df_print = df[df.sample.isin(samples)]

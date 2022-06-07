@@ -9,8 +9,10 @@ from typing import Tuple, List
 
 #sys.path.append(os.path.abspath(""))
 
-from dreem_nap import utils, database
+from dreem_nap import database, utils
 from dreem.bit_vector import MutationHistogram
+
+from dreem_nap.study import Study
 
 
 def json_dump(df:pd.DataFrame, json_file:str, verbose:bool=True)->None:
@@ -45,7 +47,6 @@ def json_load(json_file:str, verbose:bool = True)->pd.DataFrame:
     if verbose: print("Load from dict-type JSON file")
     with open(json_file) as file:
         dictionary = json.load(file)
-    # dictionary = pd.DataFrame.from_dict(my_json, orient='columns')
         df = pd.DataFrame.from_dict({(i,j): dictionary[i][j] 
                                 for i in dictionary.keys() 
                                 for j in dictionary[i].keys()},
@@ -153,18 +154,19 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
     print('Done!')
 
 
-def clean_dataset(df_database:pd.DataFrame, samples:List[str], verbose:bool = True)-> Tuple[pd.DataFrame, pd.DataFrame]:
+def clean_dataset(df_database:pd.DataFrame, study:Study, verbose:bool = True)-> Tuple[pd.DataFrame, pd.DataFrame]:
     """Process the content of the Firebase into Pandas dataframes.
 
     Args:
         df_database: the dataframe downloaded from the Firebase.
-        samples: the samples that you will use. Under the form of a list, ex: ['A1','B3']).
+        study: class containing a list of samples that you want to use.
         verbose: print relevant information
 
     Returns:
         A subset of df_database, in which every construct had a good-enough reading quality for each sample.
         The same content as df_database, with an additional 'samples_covered' column, corresponding to the amount of samples for containing this construct.
     """
+    samples = study.samples
 
     # Only keep desired pickle files
     df_full = df_database[df_database['sample'].isin(samples)]
@@ -192,3 +194,13 @@ def clean_dataset(df_database:pd.DataFrame, samples:List[str], verbose:bool = Tr
     'sub-library':str, 'flank':str})
 
     return df, df_full
+
+
+def load_studies(studies_file_path:str):
+  studies_dict, studies_data = {}, pd.read_csv(studies_file_path)
+
+  for col in studies_data.groupby('name')[Study().attr_list]:
+    solo_item = lambda x: x[0] if len(set(x)) == 1 else x  
+    studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
+
+  return pd.DataFrame.from_dict(studies_dict, orient='index').drop(columns='name')

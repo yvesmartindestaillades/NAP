@@ -1,3 +1,4 @@
+from random import sample
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +8,8 @@ from os.path import exists, dirname
 import os, sys
 from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
+
+from dreem_nap.study import Study
 sys.path.append(os.path.abspath(""))
 from dreem_nap import utils
 from typing import Tuple, List
@@ -201,7 +204,7 @@ def deltaG(df:pd.DataFrame, sample:str)->None:
     fig.tight_layout()
 
 
-def correlation_2_samples(df:pd.DataFrame, samples:Tuple[str,str], constructs:List[int], axs:plt.axes=None)->pd.DataFrame:
+def _correlation_2_samples(df:pd.DataFrame, samples:Tuple[str,str], constructs:List[int], axs:plt.axes=None)->pd.DataFrame:
     """Plot the mutation rate of each paired-predicted base of the ROI for a sample vs the same base in another sample, and this for specific constructs.
 
     Args:
@@ -245,24 +248,25 @@ def correlation_2_samples(df:pd.DataFrame, samples:Tuple[str,str], constructs:Li
     return df_corr
 
 
-def correlation_n_samples(df:pd.DataFrame, samples:List[str], constructs:List[int])->pd.DataFrame:  
+def correlation_n_samples(df:pd.DataFrame, study:Study, constructs:List[int])->pd.DataFrame:  
     """Plot correlation_2_samples() for each possible pair in the samples list, and this for specific constructs, in a single plot.
 
     Args:
         df: dataframe of interest.
-        samples: samples of interest.
+        study: class containing a list of samples that you want to use.
         constructs: constructs of interest.
 
     Returns:
         A Pandas dataframe with values for r_value and slope for each possible pair in the samples list.
     """
+    samples = study.samples
 
     df_global_corr = pd.DataFrame(columns=['sample_0', 'sample_1', 'r_value', 'slope'])
     plt.figure(figsize=(30*len(samples), 30*len(samples)))
     fig, axs = plt.subplots(len(samples)+1,len(samples), figsize= (30,30), sharex=True, sharey=True)
     for x in range(1,len(samples)+1):
         for y in range(0,len(samples)):
-            df_global_corr = pd.concat((df_global_corr, correlation_2_samples(df, (samples[x-1], samples[y]), constructs, axs[x][y])),
+            df_global_corr = pd.concat((df_global_corr, _correlation_2_samples(df, (samples[x-1], samples[y]), constructs, axs[x][y])),
                                         axis = 0,
                                         join="outer",
                                         ignore_index=True)
@@ -274,31 +278,23 @@ def correlation_n_samples(df:pd.DataFrame, samples:List[str], constructs:List[in
                 'Fit'])
     return df_global_corr
 
-def mut_rate_along_study(df:pd.DataFrame, samples:List[str], study:dict):
+def mut_rate_along_study(df:pd.DataFrame, study:Study):
     """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
     Args:
         df (pd.DataFrame): dataframe of interest.
         samples (list[str]): samples of interest.
-        study (dict): a dictionnary with the following informations about the study:
-            'name': what condition changes with the study.
-            'values': how this condition changes along the samples.
-            'unit': unit used for this condition.
-            
-            ex:
-                {'name':'60 mM DMS kinestics',
-                'samples':['D8', 'E8', 'F8', 'G8', 'H8', 'A9'],
-                'unit':'min',
-                'values':[1, 3, 9, 27, 81] }
+        study: class containing relevant information about the series of sample that you want to use.
     """
+    samples = study.samples
     paired, unpaired = np.zeros(len(samples)), np.zeros(len(samples))
     for count, sample in enumerate(samples):
         for construct in df.construct.unique():
             df_roi = utils.get_roi_info(df, sample, construct)
             paired[count] += df_roi.xs(True, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
             unpaired[count] += df_roi.xs(False, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
-    plt.plot(study['values'], paired, 'r.-')
-    plt.plot(study['values'], unpaired, 'b.-')
-    plt.xlabel(f"{study['name']} for each sample [{study['unit']}]")
+    plt.plot(study.conditions, paired, 'r.-')
+    plt.plot(study.conditions, unpaired, 'b.-')
+    plt.xlabel(f"{study.name} for each sample [{study.condition_unit}]")
     plt.ylabel('Mean mutation rate for the ROI')
     plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])

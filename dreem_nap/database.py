@@ -7,7 +7,7 @@ import os, sys
 sys.path.append(os.path.abspath(""))
 from dreem_nap import *
 from typing import Tuple, List
-
+from dreem_nap.study import Study
 
 def connect(verbose:bool = True)->None:
     """Initiate connection with the database.
@@ -52,17 +52,18 @@ def push(dict_df:pd.DataFrame, folder:str, ref:str, verbose:bool = True)->None:
     ref_obj.set(dict_df)
 
 
-def load(folder:str, samples:List[str], verbose:bool = True)->pd.DataFrame:
+def load(folder:str, study:Study, verbose:bool = True)->pd.DataFrame:
     """Download a Pandas dataframe from the database.
     
     Args:
         folder: string, root folder in the database. Corresponds to a user, a version, a project, etc.
-        samples: list of the samples that you want to use.
+        study: class containing a list of samples that you want to use.
         verbose: print relevant information.
     
     Returns:
         Dataframe of the targeted samples.
     """
+    samples = study.samples
     
     if verbose: print('Load data from database')
     connect()
