@@ -3,8 +3,22 @@ from typing import Tuple, List, Dict
 
 
 class Study:
+    """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
+    """
+
     def __init__(self, name:str=None, samples:List[str]=None, conditions:List[float]=None, conditions_unit:str= None, description:str = None) -> None:
-        
+        """Creates a Study object.
+
+        Args:
+            name (str, optional): Short description (<~20 char) of your study. Defaults to None.
+            samples (List[str], optional): names of your study's samples. Defaults to None.
+            conditions (List[float], optional): values of the experimental condition that changes between the samples. Defaults to None.
+            conditions_unit (str, optional): unit of the condition that changes between the samples. Defaults to None.
+            description (str, optional): More information about your study. Defaults to None.
+
+        Raises:
+            f: if conditions don't match the samples, or if the unit is missing.
+        """
         self.name = name
         self.description = description
         self.samples = samples
@@ -18,14 +32,33 @@ class Study:
         if conditions != None and conditions_unit == None:
             raise "Conditions were given without a unit."
 
-    def to_dict(self):
+    def to_dict(self)->dict:
+        """Casts the Study object into a dictionary.
+
+        Returns:
+            dict: a dictionary form of the Study object
+        """
         out_dict = {}
         for attr in self.attr_list:
             if getattr(self, attr) != None:
                 out_dict[attr] = getattr(self, attr)
         return out_dict
 
-    def from_dict(self, di):
+    def from_dict(self, di:dict[str:str]):
+        f"""_summary_
+
+        Args:
+            di (dict): a dictionary containing keys such as {self.attr_list}.
+
+        Returns:
+            Study: a study object
+
+        Example:
+        >>> di = {'name':'temperature','samples':['A1','B2','B3']}
+        >>> study = Study().from_dict(di)
+        >>> print(study.name, study.samples)
+        temperature ['A1', 'B2', 'B3']
+        """
         for attr in  self.attr_list:
             try: 
                 di[attr]

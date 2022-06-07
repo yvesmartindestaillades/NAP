@@ -7,7 +7,7 @@ import sys, os
 from typing import Tuple, List
 
 
-sys.path.append(os.path.abspath(""))
+sys.path.append(os.path.abspath("")+'/libs/dreem')
 
 from dreem_nap import database, utils
 from dreem.bit_vector import MutationHistogram
@@ -203,3 +203,6 @@ def load_studies(studies_file_path:str):
     studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
 
   return pd.DataFrame.from_dict(studies_dict, orient='index')
+
+
+
