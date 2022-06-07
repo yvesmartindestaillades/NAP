@@ -67,9 +67,9 @@ def random_9_base_coverage(df:pd.DataFrame)->None:
     """
 
     random_selection = np.random.randint(len(df), size=(9))
-    fig = plt.figure(figsize=(75,75))
+    fig = plt.figure(figsize=(25,10))
     for i in range(9):
-        axes1 = plt.subplot(int('33'+str(i+1)), figsize=(25,25))
+        axes1 = plt.subplot(int('33'+str(i+1)))
         plt.plot(np.array(df['cov_bases'].iloc[random_selection[i]]))
         start, end = df['roi_start_index'].iloc[random_selection[i]], df['roi_end_index'].iloc[random_selection[i]]
         plt.plot(np.arange(start, end, 1), np.array(df['cov_bases'].iloc[random_selection[i]])[start:end])
