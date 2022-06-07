@@ -203,4 +203,4 @@ def load_studies(studies_file_path:str):
     solo_item = lambda x: x[0] if len(set(x)) == 1 else x  
     studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
 
-  return pd.DataFrame.from_dict(studies_dict, orient='index').drop(columns='name')
+  return pd.DataFrame.from_dict(studies_dict, orient='index')
