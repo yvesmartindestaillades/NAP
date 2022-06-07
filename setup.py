@@ -1,6 +1,7 @@
 from pkg_resources import Requirement
 from setuptools import setup
 import os, sys
+from dreem_nap import __version__
 
 try:
     with open('requirements.txt') as f:
@@ -8,11 +9,11 @@ try:
 except:
     with open('../requirements.txt') as f:
         requirements = f.read().splitlines()
-version = '1.0'
+
 
 setup(
    name='dreem_nap',
-   version=version,
+   version=__version__,
    description='New Analysis Pipeline: visualize the output of DREEM',
    author='Yves Martin des Taillades',
    author_email='yves@martin.yt',
