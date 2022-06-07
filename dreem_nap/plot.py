@@ -199,7 +199,7 @@ def deltaG(df:pd.DataFrame, tube:str)->None:
     fig.tight_layout()
 
 
-def correlation_2_tubes(df:pd.DataFrame, tubes:tuple((str,str)), constructs:intList, axs:plt.axes=None)->pd.DataFrame:
+def correlation_2_tubes(df:pd.DataFrame, tubes:tuple((str,str)), constructs:list(int), axs:plt.axes=None)->pd.DataFrame:
     """Plot the mutation rate of each paired-predicted base of the ROI for a tube vs the same base in another tube, and this for specific constructs.
 
     Args:
@@ -243,7 +243,7 @@ def correlation_2_tubes(df:pd.DataFrame, tubes:tuple((str,str)), constructs:intL
     return df_corr
 
 
-def correlation_n_tubes(df:pd.DataFrame, tubes:strList, constructs:intList)->pd.DataFrame:  
+def correlation_n_tubes(df:pd.DataFrame, tubes:list(str), constructs:list(int))->pd.DataFrame:  
     """Plot correlation_2_tubes() for each possible pair in the tubes list, and this for specific constructs, in a single plot.
 
     Args:
@@ -272,7 +272,7 @@ def correlation_n_tubes(df:pd.DataFrame, tubes:strList, constructs:intList)->pd.
                 'Fit'])
     return df_global_corr
 
-def mut_rate_along_study(df:pd.DataFrame, tubes:list[str], study:dict):
+def mut_rate_along_study(df:pd.DataFrame, tubes:list(str), study:dict):
     """Plot the mean of the mutation rate of the ROI bases, for each tube of the study.
 
     Args:

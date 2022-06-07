@@ -51,7 +51,7 @@ def push(dict_df:pd.DataFrame, folder:str, ref:str, verbose:bool = True)->None:
     ref_obj.set(dict_df)
 
 
-def load(folder:str, tubes:strList, verbose:bool = True)->pd.DataFrame:
+def load(folder:str, tubes:list(str), verbose:bool = True)->pd.DataFrame:
     """Download a Pandas dataframe from the database.
     
     Args:

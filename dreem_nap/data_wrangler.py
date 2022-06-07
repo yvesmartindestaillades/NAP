@@ -56,7 +56,7 @@ def json_load(json_file:str, verbose:bool = True)->pd.DataFrame:
     return df
 
 
-def mhs2dict(mhs:MutationHistogram, drop_attribute:strList)->dict:
+def mhs2dict(mhs:MutationHistogram, drop_attribute:list(str))->dict:
     """Turns the output of Prof. Joe Yesselman's DREEM into a construct-wise index dictionary.
 
     Args:
