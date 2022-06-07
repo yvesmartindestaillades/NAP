@@ -32,7 +32,7 @@ def make_path(path:str)->str:
 
 
 def get_construct_attribute(df:pd.DataFrame, attribute:str):   #TODO I don't know wwhat output    
-    """Returns columns values that are common to each constructs among the tubes - typically, from the RNAstructure output file. 
+    """Returns columns values that are common to each constructs among the samples - typically, from the RNAstructure output file. 
     
     Args:
         df: a Pandas dataframe.
@@ -44,12 +44,12 @@ def get_construct_attribute(df:pd.DataFrame, attribute:str):   #TODO I don't kno
     return df.set_index('construct').sort_values(attribute)[attribute].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
 
-def get_roi_info(df:pd.DataFrame, tube:str, construct:int)->pd.DataFrame:
-    """Returns a dataframe of the ROI of a specific (tube, construct).
+def get_roi_info(df:pd.DataFrame, sample:str, construct:int)->pd.DataFrame:
+    """Returns a dataframe of the ROI of a specific (sample, construct).
 
     Args:
         df: a Pandas dataframe.
-        tube: a specific tube.
+        sample: a specific sample.
         construct: a specific construct.
     
     Returns:
@@ -64,25 +64,25 @@ def get_roi_info(df:pd.DataFrame, tube:str, construct:int)->pd.DataFrame:
     """
 
     np.seterr(invalid='ignore')
-    df_use = df.set_index(['tube','construct'])
-    start, end = df_use['roi_start_index'].loc[(tube,construct)] , df_use['roi_end_index'].loc[(tube,construct)]     
-    mut_per_base = pd.DataFrame({'mut_rate':pd.Series(np.array(df_use[f"mut_bases"].loc[tube, construct][1:])/np.array(df_use[f"info_bases"].loc[tube, construct][1:]), dtype=object),
-                            'base':list(df_use['full_sequence'].loc[tube, construct]),
-                            'paired': np.array([bool(x != '.') for x in list(df_use['full_structure'].loc[tube,construct])]),\
-                            'roi_structure_comparison': pd.Series(list(df_use['roi_structure_comparison'].loc[tube,construct]), index=list(range(start, end)))\
-                            ,'roi_deltaG':df_use['roi_deltaG'].loc[tube, construct]})\
+    df_use = df.set_index(['sample','construct'])
+    start, end = df_use['roi_start_index'].loc[(sample,construct)] , df_use['roi_end_index'].loc[(sample,construct)]     
+    mut_per_base = pd.DataFrame({'mut_rate':pd.Series(np.array(df_use[f"mut_bases"].loc[sample, construct][1:])/np.array(df_use[f"info_bases"].loc[sample, construct][1:]), dtype=object),
+                            'base':list(df_use['full_sequence'].loc[sample, construct]),
+                            'paired': np.array([bool(x != '.') for x in list(df_use['full_structure'].loc[sample,construct])]),\
+                            'roi_structure_comparison': pd.Series(list(df_use['roi_structure_comparison'].loc[sample,construct]), index=list(range(start, end)))\
+                            ,'roi_deltaG':df_use['roi_deltaG'].loc[sample, construct]})\
                             .dropna()\
                             .reset_index()\
                             .set_index(['base', 'paired', 'roi_structure_comparison','index'])
     return mut_per_base
 
 
-def columns_to_csv(df:pd.DataFrame, tubes:strList, columns:strList, title:str, path:str)->None:
+def columns_to_csv(df:pd.DataFrame, samples:strList, columns:strList, title:str, path:str)->None:
     """Save a subset of a Dataframe to a csv file.
 
     Args:
         df: a Pandas dataframe.
-        tubes: tubes to save.
+        samples: samples to save.
         columns: columns to save.
         title: how to name your file.
         path: where to store your file.
@@ -93,7 +93,7 @@ def columns_to_csv(df:pd.DataFrame, tubes:strList, columns:strList, title:str, p
 
     np.seterr(invalid='ignore')
     full_path = make_path(path)
-    df_print = df[df.tube.isin(tubes)]
+    df_print = df[df.sample.isin(samples)]
     df_print = df_print[columns] 
     np.set_printoptions(suppress=True)
     if 'mut_rate' in columns:
@@ -102,25 +102,25 @@ def columns_to_csv(df:pd.DataFrame, tubes:strList, columns:strList, title:str, p
     df_print.to_csv(f"{full_path}/{title}")
     return df_print
 
-def rand_tube_construct(df:pd.DataFrame, n_tubes:int=1, n_constructs:int=1)->tuple((strList, intList)):
-    """Pick randomly n_tubes tubes and n_constructs constructs.
+def rand_sample_construct(df:pd.DataFrame, n_samples:int=1, n_constructs:int=1)->tuple((strList, intList)):
+    """Pick randomly n_samples samples and n_constructs constructs.
 
     Args:
-        df: a Pandas dataframe to pick tubes and constructs from.
-        n_tubes: the number of tubes that you want
+        df: a Pandas dataframe to pick samples and constructs from.
+        n_samples: the number of samples that you want
         n_construct: the number of constructs that you want. 
     
     Returns:
-        Two lists containing the randomly picked elements (resp., tubes and constructs).
+        Two lists containing the randomly picked elements (resp., samples and constructs).
     """
-    all_tubes, constructs = list(df.tube.unique()), list(df.construct.unique())
-    these_tubes, these_constructs = np.array(all_tubes)[np.random.randint(0, len(all_tubes),n_tubes)] , np.array(constructs)[np.random.randint(0, len(constructs), n_constructs)]
-    if n_tubes == 1:
-        these_tubes = these_tubes[0]
+    all_samples, constructs = list(df.sample.unique()), list(df.construct.unique())
+    these_samples, these_constructs = np.array(all_samples)[np.random.randint(0, len(all_samples),n_samples)] , np.array(constructs)[np.random.randint(0, len(constructs), n_constructs)]
+    if n_samples == 1:
+        these_samples = these_samples[0]
     if n_constructs == 1:
         these_constructs = these_constructs[0]
 
-    return these_tubes, these_constructs
+    return these_samples, these_constructs
 
 
 def save_fig(path:str,title:str)->None:
