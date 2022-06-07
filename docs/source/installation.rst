@@ -1,17 +1,11 @@
 Installation Guide
 ==================
 
-Clone this repo on your computer:
+Install dreem_nap module on your computer using pip:
 ::
 
-   cd [path_to_repo]
-   git clone https://github.com/yvesmartindestaillades/NAP
+   sudo pip install dreem_nap
 
-If you don't have Joe Yesselman's dreem installed on your computer, download a local copy.
-::
-
-   cd libs
-   git clone https://github.com/jyesselm/dreem
 
 Make sure that you have all of the Python libraries dependencies.
 ::

@@ -6,13 +6,44 @@ from os.path import dirname
 import sys, os
 from typing import Tuple, List
 
-
-sys.path.append(os.path.abspath("")+'/libs/dreem')
-
 from dreem_nap import database, utils
-from dreem.bit_vector import MutationHistogram
-
 from dreem_nap.study import Study
+
+
+
+
+class _MutationHistogram(object):
+    def __init__(self, name, sequence, data_type, start=None, end=None):
+        self.__bases = ["A", "C", "G", "T"]
+        self.name = name
+        self.sequence = sequence
+        self.structure = None
+        self.data_type = data_type
+        self.num_reads = 0
+        self.num_aligned = 0
+        self.skips = {
+            'low_mapq'     : 0,
+            'short_read'   : 0,
+            'too_many_muts': 0
+        }
+        self.num_of_mutations = [0] * (len(sequence) + 1)
+        self.mut_bases = np.zeros(len(sequence) + 1)
+        self.info_bases = np.zeros(len(sequence) + 1)
+        self.del_bases = np.zeros(len(sequence) + 1)
+        self.ins_bases = np.zeros(len(sequence) + 1)
+        self.cov_bases = np.zeros(len(sequence) + 1)
+        self.mod_bases = {
+            "A": np.zeros(len(sequence) + 1),
+            "C": np.zeros(len(sequence) + 1),
+            "G": np.zeros(len(sequence) + 1),
+            "T": np.zeros(len(sequence) + 1),
+        }
+        self.start = start
+        self.end = end
+        if self.start is None:
+            self.start = 1
+        if self.end is None:
+            self.end = len(self.sequence)
 
 def json_dump(df:pd.DataFrame, json_file:str, verbose:bool=True)->None:
     """A simple function to dump a Pandas dataframe into a (sample, construct)-wise indexed json file.
@@ -58,7 +89,7 @@ def json_load(json_file:str, verbose:bool = True)->pd.DataFrame:
     return df
 
 
-def mhs2dict(mhs:MutationHistogram, drop_attribute:List[str])->dict:
+def mhs2dict(mhs:_MutationHistogram, drop_attribute:List[str])->dict:
     """Turns the output of Prof. Joe Yesselman's DREEM into a construct-wise index dictionary.
 
     Args:
@@ -203,6 +234,5 @@ def load_studies(studies_file_path:str):
     studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
 
   return pd.DataFrame.from_dict(studies_dict, orient='index')
-
 
 
