@@ -15,7 +15,10 @@ NAP provides plots and data selection functions to analyse this dataset.
 
 .. toctree::
    usage
-   dreem_nap
+   plot
+   data_wrangler
+   database
+   utils
 
 .. note::
 

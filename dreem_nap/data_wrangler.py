@@ -5,6 +5,8 @@ import numpy as np
 from os.path import dirname
 import sys, os
 
+sys.path.append(os.path.abspath(""))
+
 from dreem_nap import utils, database
 from dreem.bit_vector import MutationHistogram
 
