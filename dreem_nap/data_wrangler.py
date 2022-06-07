@@ -28,7 +28,7 @@ def json_dump(df:pd.DataFrame, json_file:str, verbose:bool=True)->None:
     """
     if verbose: print(f"Dumping df as a dict to a JSON file {json_file}")
     with open(json_file, 'w') as outfile:
-        this_dict = df.set_index(['sample', 'construct']).groupby(level=0)\
+        this_dict = df.set_index(['samp', 'construct']).groupby(level=0)\
             .apply(lambda d: d.reset_index().set_index('construct').to_dict(orient='index')).to_dict()
         json.dump(this_dict , outfile)
     if verbose: print("Done!")
@@ -51,10 +51,10 @@ def json_load(json_file:str, verbose:bool = True)->pd.DataFrame:
                                 for i in dictionary.keys() 
                                 for j in dictionary[i].keys()},
                             orient='columns').transpose()\
-                            .drop(columns='sample')\
+                            .drop(columns='samp')\
                             .dropna()\
                             .reset_index()\
-                            .rename({'level_0': 'sample', 'level_1': 'construct'}, axis=1)
+                            .rename({'level_0': 'samp', 'level_1': 'construct'}, axis=1)
     if verbose: print("Done!")
     return df
 
@@ -116,9 +116,9 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
     df_additional_content.full_sequence = df_additional_content.full_sequence.apply(lambda seq: seq.replace('U','T'))
 
     if verbose: print('Push pickles to firebase!')
-    for count, sample in enumerate(pickles):
+    for count, samp in enumerate(pickles):
         # Load a sample from a pickle file
-        mhs = pickle.load(open(pickles[sample], "rb"))
+        mhs = pickle.load(open(pickles[samp], "rb"))
 
         df_sample = pd.DataFrame.from_dict(mhs2dict(mhs, drop_attribute = ['structure','_MutationHistogram__bases','sequence']),
                 orient='index').rename(columns={'name':'construct'})
@@ -147,10 +147,10 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
         df_temp = df_temp.set_index('construct')
 
         # Push this sample to firebase
-        database.push(df_temp.to_dict(orient='index'), ref=sample, folder=folder, verbose= not bool(count))
+        database.push(df_temp.to_dict(orient='index'), ref=samp, folder=folder, verbose= not bool(count))
 
         # Give yourself hope to wait by showing the progress
-        print(sample, end=print_end)
+        print(samp, end=print_end)
     print('Done!')
 
 
@@ -169,7 +169,7 @@ def clean_dataset(df_database:pd.DataFrame, study:Study, verbose:bool = True)-> 
     samples = study.samples
 
     # Only keep desired pickle files
-    df_full = df_database[df_database['sample'].isin(samples)]
+    df_full = df_database[df_database['samp'].isin(samples)]
 
     # Check how many samples reach 1000 reads on each base for a given construct
     df_full['samples_covered'] = pd.Series(dtype=int)
@@ -183,7 +183,7 @@ def clean_dataset(df_database:pd.DataFrame, study:Study, verbose:bool = True)-> 
     if verbose: print(f"{number_of_void_dropped} constructs were dropped because deltaG was 'void'")
     df = df[df['roi_deltaG'] != 'void']
 
-    df = df.astype(dtype={'sample': str, 'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
+    df = df.astype(dtype={'samp': str, 'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
     'roi_end_index':int, 'roi_deltaG':float, 'full_deltaG':float,
     'roi_structure_comparison':str, 'full_structure':str, 'data_type':str,
     'num_reads':int, 'num_aligned':int, 'num_of_mutations':object, 'mut_bases':object,

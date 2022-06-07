@@ -1,4 +1,3 @@
-from random import sample
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -40,7 +39,7 @@ def valid_construct_per_sample(df:pd.DataFrame)->None:
         If the min_bases_cov value isn't the same for every samples.
     """
     
-    df.groupby('sample').count().reset_index().plot(kind='bar',x='sample', y='construct')
+    df.groupby('samp').count().reset_index().plot(kind='bar',x='samp', y='construct')
     assert len(df.min_bases.cov.unique()) == 1, "min_bases_cov isn't unique"
     plt.ylabel(f"Number of construct above {int(df.min_bases_cov.unique())} reads")
     plt.grid()
@@ -77,7 +76,7 @@ def random_9_base_coverage(df:pd.DataFrame)->None:
         plt.plot(np.arange(0, len(df['cov_bases'].iloc[random_selection[i]])), len(df['cov_bases'].iloc[random_selection[i]])*[int(df.min_bases_cov.unique())])
         plt.xlabel("Bases")
         plt.ylabel("Coverage")
-        plt.title(f"Construct {df['construct'].iloc[random_selection[i]]}, sample {df['sample'].iloc[random_selection[i]]} ")
+        plt.title(f"Construct {df['construct'].iloc[random_selection[i]]}, sample {df['samp'].iloc[random_selection[i]]} ")
         plt.grid()
         plt.legend(["Base coverage (all)", 'Base coverage (ROI)', 'min_bases_cov'])
         axes2 = axes1.twinx()   
@@ -86,24 +85,24 @@ def random_9_base_coverage(df:pd.DataFrame)->None:
     fig.tight_layout()
 
 
-def base_coverage(df:pd.DataFrame, sample:str, construct:int)->None:
+def base_coverage(df:pd.DataFrame, samp:str, construct:int)->None:
     """Plot the base coverage of a specific (sample, construct).
     
     Args:
         df: dataframe of interest.
-        sample: sample of interest.
+        samp: sample of interest.
         construct: construct of interest.   
     """
 
     ax1 = plt.subplot()
-    serie = df.set_index(['sample','construct']).loc[sample, construct]
+    serie = df.set_index(['samp','construct']).loc[samp, construct]
     plt.plot(np.array(serie['cov_bases']))
     start, end = serie['roi_start_index'], serie['roi_end_index']
     plt.plot(np.arange(start, end, 1), np.array(serie['cov_bases'])[start:end])
     plt.plot(np.arange(0, len(serie['cov_bases'])), len(serie['cov_bases'])*[int(df.min_bases_cov.unique())])
     plt.xlabel("Bases")
     plt.ylabel("Coverage")
-    plt.title(f"Construct {construct}, sample {sample} ")
+    plt.title(f"Construct {construct}, sample {samp} ")
     plt.grid()
     plt.legend(["Base coverage (all)", 'Base coverage (ROI)', 'min_bases_cov'])
     ax2 = ax1.twinx()   
@@ -120,12 +119,12 @@ def heatmap(df:pd.DataFrame, column:str)->None:
         column: a specific column of your dataframe.    
     """
 
-    base_cov_plot = df.pivot("sample","construct", column).astype(float)
+    base_cov_plot = df.pivot("samp","construct", column).astype(float)
     f, ax = plt.subplots()
     sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
 
-def mutation_rate(plot_type:str, df:pd.DataFrame, sample:str, construct:int)->None:
+def mutation_rate(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None:
     """Plot the mutation rate of a specific (sample, construct).
 
     Args:
@@ -133,19 +132,19 @@ def mutation_rate(plot_type:str, df:pd.DataFrame, sample:str, construct:int)->No
             - 'sequence' uses bases numbers as index and the original construct bases as colors.
             - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
         df: dataframe of interest.
-        sample: sample of interest.
+        samp]: sample of interest.
         construct: construct of interest.
     """
 
-    df_use = df.set_index(['sample','construct'])
+    df_use = df.set_index(['samp','construct'])
     
     if not plot_type in ['sequence','partition']:
         raise f"{plot_type} must be 'sequence' or 'partition', please check this argument"
 
     if plot_type == 'sequence':  # Plot the mutation rate for each base along the sequence
 
-        mut_per_base = pd.DataFrame({'mut_rate': pd.Series(np.array(df_use[f"mut_bases"].loc[sample, construct][1:])/np.array(df_use[f"info_bases"].loc[sample, construct][1:]), dtype=object)
-                                    ,'base':list(df_use['full_sequence'].loc[sample, construct])})\
+        mut_per_base = pd.DataFrame({'mut_rate': pd.Series(np.array(df_use[f"mut_bases"].loc[samp, construct][1:])/np.array(df_use[f"info_bases"].loc[samp, construct][1:]), dtype=object)
+                                    ,'base':list(df_use['full_sequence'].loc[samp, construct])})\
                                     .reset_index()\
                                     .set_index(['base', 'index'])
 
@@ -159,19 +158,19 @@ def mutation_rate(plot_type:str, df:pd.DataFrame, sample:str, construct:int)->No
         df_hist.index = mut_per_base.reset_index()['base']
 
         ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
-        plt.title(f"sample {sample}, construct {construct}")
+        plt.title(f"sample {samp}, construct {construct}")
 
     if plot_type == 'partition': # Plot the partition of mutations for each base along the sequence
         df_hist = pd.DataFrame()
         for base in ['A','C','G','T']:
-            df_hist[f"mod_bases_{base}"]  = np.array(df_use[f"mod_bases_{base}"].loc[sample, construct][1:])/df_use['info_bases'].loc[sample, construct][1:]
+            df_hist[f"mod_bases_{base}"]  = np.array(df_use[f"mod_bases_{base}"].loc[samp, construct][1:])/df_use['info_bases'].loc[samp, construct][1:]
 
-        df_hist.index = list(df_use['full_sequence'].loc[sample,construct])
+        df_hist.index = list(df_use['full_sequence'].loc[samp,construct])
 
         ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
 
 
-def deltaG(df:pd.DataFrame, sample:str)->None:
+def deltaG(df:pd.DataFrame, samp:str)->None:
     """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
     
     Args:
@@ -179,7 +178,7 @@ def deltaG(df:pd.DataFrame, sample:str)->None:
         sample: sample of interest.
     """
 
-    fig = utils.define_figure(title=sample,
+    fig = utils.define_figure(title=samp,
                             xlabel='deltaG [kcal]',
                             ylabel='Mutation ratio',
                             figsize=(20,5))
@@ -187,7 +186,7 @@ def deltaG(df:pd.DataFrame, sample:str)->None:
     stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
 
     for construct in df.construct.unique():
-        roi_part = utils.get_roi_info(df=df, sample=sample, construct=construct)
+        roi_part = utils.get_roi_info(df=df, samp=samp, construct=construct)
         for base in ['A','C']:
             for roi_struct_comp in ['0','1']:
                 try:    
@@ -288,9 +287,9 @@ def mut_rate_along_study(df:pd.DataFrame, study:Study):
     """
     samples = study.samples
     paired, unpaired = np.zeros(len(samples)), np.zeros(len(samples))
-    for count, sample in enumerate(samples):
+    for count, samp in enumerate(samples):
         for construct in df.construct.unique():
-            df_roi = utils.get_roi_info(df, sample, construct)
+            df_roi = utils.get_roi_info(df, samp, construct)
             paired[count] += df_roi.xs(True, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
             unpaired[count] += df_roi.xs(False, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
     plt.plot(study.conditions, paired, 'r.-')

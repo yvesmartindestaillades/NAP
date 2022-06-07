@@ -1,4 +1,3 @@
-from random import sample
 import pandas as pd
 import numpy as np
 import datetime
@@ -45,12 +44,12 @@ def get_construct_attribute(df:pd.DataFrame, attribute:str):   #TODO I don't kno
     return df.set_index('construct').sort_values(attribute)[attribute].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
 
-def get_roi_info(df:pd.DataFrame, sample:str, construct:int)->pd.DataFrame:
-    """Returns a dataframe of the ROI of a specific (sample, construct).
+def get_roi_info(df:pd.DataFrame, samp:str, construct:int)->pd.DataFrame:
+    """Returns a dataframe of the ROI of a specific (samp, construct).
 
     Args:
         df: a Pandas dataframe.
-        sample: a specific sample.
+        samp: a specific sample.
         construct: a specific construct.
     
     Returns:
@@ -65,13 +64,13 @@ def get_roi_info(df:pd.DataFrame, sample:str, construct:int)->pd.DataFrame:
     """
 
     np.seterr(invalid='ignore')
-    df_use = df.set_index(['sample','construct'])
-    start, end = df_use['roi_start_index'].loc[(sample,construct)] , df_use['roi_end_index'].loc[(sample,construct)]     
-    mut_per_base = pd.DataFrame({'mut_rate':pd.Series(np.array(df_use[f"mut_bases"].loc[sample, construct][1:])/np.array(df_use[f"info_bases"].loc[sample, construct][1:]), dtype=object),
-                            'base':list(df_use['full_sequence'].loc[sample, construct]),
-                            'paired': np.array([bool(x != '.') for x in list(df_use['full_structure'].loc[sample,construct])]),\
-                            'roi_structure_comparison': pd.Series(list(df_use['roi_structure_comparison'].loc[sample,construct]), index=list(range(start, end)))\
-                            ,'roi_deltaG':df_use['roi_deltaG'].loc[sample, construct]})\
+    df_use = df.set_index(['samp','construct'])
+    start, end = df_use['roi_start_index'].loc[(samp,construct)] , df_use['roi_end_index'].loc[(samp,construct)]     
+    mut_per_base = pd.DataFrame({'mut_rate':pd.Series(np.array(df_use[f"mut_bases"].loc[samp, construct][1:])/np.array(df_use[f"info_bases"].loc[samp, construct][1:]), dtype=object),
+                            'base':list(df_use['full_sequence'].loc[samp, construct]),
+                            'paired': np.array([bool(x != '.') for x in list(df_use['full_structure'].loc[samp,construct])]),\
+                            'roi_structure_comparison': pd.Series(list(df_use['roi_structure_comparison'].loc[samp,construct]), index=list(range(start, end)))\
+                            ,'roi_deltaG':df_use['roi_deltaG'].loc[samp, construct]})\
                             .dropna()\
                             .reset_index()\
                             .set_index(['base', 'paired', 'roi_structure_comparison','index'])
@@ -93,7 +92,7 @@ def columns_to_csv(df:pd.DataFrame, study:Study, columns:List[str], title:str, p
     samples = study.samples
     np.seterr(invalid='ignore')
     full_path = make_path(path)
-    df_print = df[df.sample.isin(samples)]
+    df_print = df[df.samp.isin(samples)]
     df_print = df_print[columns] 
     np.set_printoptions(suppress=True)
     if 'mut_rate' in columns:
@@ -113,7 +112,7 @@ def rand_sample_construct(df:pd.DataFrame, n_samples:int=1, n_constructs:int=1)-
     Returns:
         Two lists containing the randomly picked elements (resp., samples and constructs).
     """
-    all_samples, constructs = list(df.sample.unique()), list(df.construct.unique())
+    all_samples, constructs = list(df.samp.unique()), list(df.construct.unique())
     these_samples, these_constructs = np.array(all_samples)[np.random.randint(0, len(all_samples),n_samples)] , np.array(constructs)[np.random.randint(0, len(constructs), n_constructs)]
     if n_samples == 1:
         these_samples = these_samples[0]

@@ -69,19 +69,19 @@ def load(folder:str, study:Study, verbose:bool = True)->pd.DataFrame:
     connect()
     df = {}
     missed_samples = []
-    for sample in samples:
+    for samp in samples:
         try:
-            ref = db.reference(f"{folder}/{sample}")
-            df[sample] = pd.DataFrame.from_dict(ref.get('/')[0], orient='index')
-            if verbose: print(sample, end=' ')
+            ref = db.reference(f"{folder}/{samp}")
+            df[samp] = pd.DataFrame.from_dict(ref.get('/')[0], orient='index')
+            if verbose: print(samp, end=' ')
         except:
-            if verbose: print(f"\nsample {sample} not found on database")
-            missed_samples.append(sample)
+            if verbose: print(f"\nsample {samp} not found on database")
+            missed_samples.append(samp)
 
     if missed_samples != []:
         if verbose: print(f"samples {missed_samples} couldn't be loaded from database")
 
     df = pd.concat(df)
-    df = df.reset_index().rename(columns={'level_0':'sample', 'level_1':'construct'})
+    df = df.reset_index().rename(columns={'level_0':'samp', 'level_1':'construct'})
     if verbose: print('Done!')
     return df
