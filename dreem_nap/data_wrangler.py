@@ -120,7 +120,7 @@ def mhs2dict(mhs:_MutationHistogram, drop_attribute:List[str])->dict:
     return sample_dict
 
 
-def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:int, folder:str, verbose:bool=True, print_end:str=' ')->None:
+def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:int, firebase_credentials:dict, folder:str, verbose:bool=True, print_end:str=' ')->None:
     """Pushes new samples to Firebase.
 
     DREEM module outputs MutationHistogram objects, compressed under the pickle format. 
@@ -128,11 +128,12 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
     The construct high-pass filter filters out a construct if which at least one base in its Region of Interest (ROI) doesn't reach `min_bases_cov` of base coverage.
     
     Args:
-        pickles: a dictionary with names of the samples and location of their pickle file: {'name of the sample': 'path to the file'}
-        RNAstructureFile: string containing the name of a csv file with additional content. Its columns are: ['construct','roi_sequence','full_sequence','roi_start_index','roi_end_index','roi_deltaG','full_deltaG','roi_structure_comparison','full_structure','flank','sub-library']
-        min_bases_cov: int type. Mutation rates of bases below this threshold will be considered irrelevant.
-        firebase_folder: where to push the data in the firebase.
-        verbose: print relevant information
+        pickles (dict): a dictionary with names of the samples and location of their pickle file: {'name of the sample': 'path to the file'}
+        RNAstructureFile (str): string containing the name of a csv file with additional content. Its columns are: ['construct','roi_sequence','full_sequence','roi_start_index','roi_end_index','roi_deltaG','full_deltaG','roi_structure_comparison','full_structure','flank','sub-library']
+        firebase_credentials (dict): Firebase credentials to access the database.
+        min_bases_cov (int): int type. Mutation rates of bases below this threshold will be considered irrelevant.
+        folder (str): where to push the data in the firebase.
+        verbose (bool): print relevant information
 
     Returns:
         None
@@ -175,6 +176,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
         df_temp = df_temp.set_index('construct')
 
         # Push this sample to firebase
+        database.connect(firebase_credentials=firebase_credentials, verbose=False)
         database.push(df_temp.to_dict(orient='index'), ref=samp, folder=folder, verbose= not bool(count))
 
         # Give yourself hope to wait by showing the progress

@@ -50,6 +50,7 @@ Just a few fonctions to navigate through your dataframes with ease, and to save 
    :undoc-members:
    :show-inheritance:
 
+.. _data_wrangler:
 
 Data wrangler
 -------------
