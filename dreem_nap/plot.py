@@ -10,7 +10,7 @@ from matplotlib.offsetbox import AnchoredText
 
 from dreem_nap.study import Study
 sys.path.append(os.path.abspath(""))
-from dreem_nap import utils
+from dreem_nap import data_manip, data_wrangler, utils
 from typing import Tuple, List
 
 
@@ -186,7 +186,7 @@ def deltaG(df:pd.DataFrame, samp:str)->None:
     stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
 
     for construct in df.construct.unique():
-        roi_part = utils.get_roi_info(df=df, samp=samp, construct=construct)
+        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct)
         for base in ['A','C']:
             for roi_struct_comp in ['0','1']:
                 try:    
@@ -224,11 +224,11 @@ def _correlation_2_samples(df:pd.DataFrame, samples:Tuple[str,str], constructs:L
     x_all, y_all = [], []
     for construct in constructs:
         for is_paired in paired: 
-            utils.get_roi_info(df, samples[1], construct)
+            data_manip.get_roi_info(df, samples[1], construct)
             for roi in roi_structure_comparison_color:
                 try:
-                    x, y = np.array(utils.get_roi_info(df, samples[1], construct)['mut_rate'].xs((is_paired,roi), level=('paired','roi_structure_comparison')), dtype=float),\
-                            np.array(utils.get_roi_info(df, samples[0], construct)['mut_rate'].xs((is_paired,roi),level=('paired','roi_structure_comparison')), dtype=float)
+                    x, y = np.array(data_manip.get_roi_info(df, samples[1], construct)['mut_rate'].xs((is_paired,roi), level=('paired','roi_structure_comparison')), dtype=float),\
+                            np.array(data_manip.get_roi_info(df, samples[0], construct)['mut_rate'].xs((is_paired,roi),level=('paired','roi_structure_comparison')), dtype=float)
                     axs.plot(x,y,f"{roi_structure_comparison_color[roi]}{paired[is_paired]}")
                     axs.tick_params(axis='x', labelrotation = 45)
                     x_all.extend(x), y_all.extend(y)
@@ -277,7 +277,7 @@ def correlation_n_samples(df:pd.DataFrame, study:Study, constructs:List[int])->p
                 'Fit'])
     return df_global_corr
 
-def mut_rate_along_study(df:pd.DataFrame, study:Study):
+def mut_rate_along_study(df:pd.DataFrame, study:Study, figsize=None):
     """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
     Args:
@@ -289,11 +289,15 @@ def mut_rate_along_study(df:pd.DataFrame, study:Study):
     paired, unpaired = np.zeros(len(samples)), np.zeros(len(samples))
     for count, samp in enumerate(samples):
         for construct in df.construct.unique():
-            df_roi = utils.get_roi_info(df, samp, construct)
+            df_roi = data_wrangler.get_roi_info(df, samp, construct)
             paired[count] += df_roi.xs(True, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
             unpaired[count] += df_roi.xs(False, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
+    if figsize != None:
+        plt.figure(figsize=figsize)
+    else:
+        plt.figure()
     plt.plot(study.conditions, paired, 'r.-')
     plt.plot(study.conditions, unpaired, 'b.-')
-    plt.xlabel(f"{study.name} for each sample [{study.condition_unit}]")
+    plt.xlabel(f"{study.name} for each sample [{study.conditions_unit}]")
     plt.ylabel('Mean mutation rate for the ROI')
     plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])

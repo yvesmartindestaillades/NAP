@@ -14,13 +14,12 @@ file from a RNA structure prediction as a dataset. The data is stored online usi
 NAP provides plots and data selection functions to analyse this dataset. 
 
 .. toctree::
+   introduction
+   release_notes
    installation
-   getting_started
-   plot
-   study
-   data_wrangler
-   database
-   utils
+   gallery
+   tutorial
+   api
 
 
 .. note::

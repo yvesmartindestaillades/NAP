@@ -6,10 +6,8 @@ from os.path import dirname
 import sys, os
 from typing import Tuple, List
 
-from dreem_nap import database, utils
+from dreem_nap import database, data_manip
 from dreem_nap.study import Study
-
-
 
 
 class _MutationHistogram(object):
@@ -209,7 +207,7 @@ def clean_dataset(df_database:pd.DataFrame, study:Study, verbose:bool = True)-> 
     # Only keep constructs that reach 1000 reads in every sample    
     df = df_full[df_full['samples_covered'] == len(samples)].reset_index().drop(columns='index')
 
-    number_of_void_dropped = (utils.get_construct_attribute(df, 'roi_deltaG' )=='void').apply(int).sum()
+    number_of_void_dropped = (data_manip.get_construct_attribute(df, 'roi_deltaG' )=='void').apply(int).sum()
     if verbose: print(f"{number_of_void_dropped} constructs were dropped because deltaG was 'void'")
     df = df[df['roi_deltaG'] != 'void']
 
@@ -234,5 +232,4 @@ def load_studies(studies_file_path:str):
     studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
 
   return pd.DataFrame.from_dict(studies_dict, orient='index')
-
 

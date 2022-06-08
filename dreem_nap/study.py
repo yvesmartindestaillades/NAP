@@ -7,29 +7,21 @@ class Study:
 
     Attributes:
         name (str, optional): Short description (<~20 char) of your study. Defaults to None.
-        samples (List[str], optional): names of your study's samples. Defaults to None.
-        conditions (List[float], optional): values of the experimental condition that changes between the samples. Defaults to None.
-        conditions_unit (str, optional): unit of the condition that changes between the samples. Defaults to None.
+        samples (List[str], optional): Names of your study's samples. Defaults to None.
+        conditions (List[float], optional): Values of the experimental condition that changes between the samples. Defaults to None.
+        conditions_unit (str, optional): Unit of the condition that changes between the samples. Defaults to None.
         description (str, optional): More information about your study. Defaults to None.
-
-    Methods:
-        __init__(self, name:str=None, samples:List[str]=None, conditions:List[float]=None, conditions_unit:str= None, description:str = None) -> None:
-            Creates a Study object.
-        to_dict(self)->dict: 
-            Casts the Study object into a dictionary.
-        from_dict(self, di:dict[str:str]):
-            Set attributes of this Study object from a dictionary.
         
-    Examples:
-    >>> study = Study('example',['A1', 'B2', 'B3'], [10, 20, 30], 'arbitrary unit', 'Just an example study')
-    >>> study.description
-    'Just an example study'
-    >>> study.to_dict()
-    {'name': 'example', 'description': 'Just an example study', 'samples': ['A1', 'B2', 'B3'], 'conditions_unit': 'arbitrary unit', 'conditions': [10, 20, 30]}
-    >>> di = {'name':'temperature','samples':['A1','B1','C3']}
-    >>> study = Study().from_dict(di)
-    >>> print(study.name, study.samples, study.description)
-    temperature ['A1', 'B1', 'C3'] None
+    Example:
+        >>> study = Study('example',['A1', 'B2', 'B3'], [10, 20, 30], 'arbitrary unit', 'Just an example study')
+        >>> study.description
+        'Just an example study'
+        >>> study.to_dict()
+        {'name': 'example', 'description': 'Just an example study', 'samples': ['A1', 'B2', 'B3'], 'conditions_unit': 'arbitrary unit', 'conditions': [10, 20, 30]}
+        >>> di = {'name':'temperature','samples':['A1','B1','C3']}
+        >>> study = Study().from_dict(di)
+        >>> print(study.name, study.samples, study.description)
+        temperature ['A1', 'B1', 'C3'] None
     """
 
     def __init__(self, name:str=None, samples:List[str]=None, conditions:List[float]=None, conditions_unit:str= None, description:str = None) -> None:
@@ -82,7 +74,7 @@ class Study:
                 out_dict[attr] = getattr(self, attr)
         return out_dict
 
-    def from_dict(self, di:dict[str:str]):
+    def from_dict(self, di:dict):
         """Set attributes of this Study object from a dictionary.
 
         Args:
