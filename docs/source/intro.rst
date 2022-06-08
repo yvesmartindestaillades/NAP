@@ -98,7 +98,7 @@ Data wrangler
 -------------
 
 Turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid constructs, and pushes the sample to the database.
-Every function of NAP's module data wrangler is described on page :ref:`data_wrangler <data wrangler>`.
+Every function of NAP's module data wrangler is described on page :ref:`data wrangler module <api/data_wrangler_module>`.
 
 A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
 

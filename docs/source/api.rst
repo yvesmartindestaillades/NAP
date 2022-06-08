@@ -9,8 +9,8 @@ API reference
 Here will be described the functions of NAP, grouped by modules. 
 
 
-Study class
------------
+Study class module
+------------------
 
 The Study class contains information about a series of samples that are relevant to be studied together (replicates, change of only one experimental condition, etc).
 This class is meant to be instanciated into objects.
@@ -25,8 +25,8 @@ This class is meant to be instanciated into objects.
    :show-inheritance:
 
 
-Plots
------
+Plots module
+------------
 
 Description of the functions shown in the :doc: gallery.
 
@@ -40,8 +40,8 @@ Description of the functions shown in the :doc: gallery.
    :show-inheritance:
 
 
-Data manipulation
------------------
+Data manipulation module
+------------------------
 
 Just a few fonctions to navigate through your dataframes with ease, and to save data to csv files. 
 
@@ -50,10 +50,10 @@ Just a few fonctions to navigate through your dataframes with ease, and to save 
    :undoc-members:
    :show-inheritance:
 
-.. _data_wrangler:
+.. _data_wrangler_module:
 
-Data wrangler
--------------
+Data wrangler module
+--------------------
 
 Process DREEM's MutationHistogram pickle files, interface with the database and with local file, and get your dataframe clean.
 
@@ -63,8 +63,8 @@ Process DREEM's MutationHistogram pickle files, interface with the database and 
    :show-inheritance:
 
 
-Database
---------
+Database module
+---------------
 
 Connect, push and pull to the database. 
 
@@ -74,8 +74,8 @@ Connect, push and pull to the database.
    :show-inheritance:
 
 
-Utils
------
+Utils module
+------------
 
 A few low-level functions for the other modules.
 
