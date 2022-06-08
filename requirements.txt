@@ -7,4 +7,4 @@ python-string-utils
 datetime 
 seaborn
 mock
-sphinxcontrib
+sphinxcontrib-blockdiag
