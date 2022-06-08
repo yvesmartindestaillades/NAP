@@ -49,8 +49,19 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinxcontrib.blockdiag',
+    'sphinx.ext.autosectionlabel',
 ]
+
+
+# Fontpath for blockdiag (truetype font)
+blockdiag_fontpath = '/usr/share/fonts/truetype/ipafont/ipagp.ttf'
+
+# Provide a GitHub API token:
+# Pass the SPHINX_GITHUB_CHANGELOG_TOKEN environment variable to your build
+# OR
+sphinx_github_changelog_token = "..."
 
 # Napoleon settings
 napoleon_google_docstring = True

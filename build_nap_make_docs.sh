@@ -1,3 +1,8 @@
+
+echo ''
+echo '         PIP INSTALL MODULE         '
+echo '------------------------------------'
+pip install .
 cd docs
 echo ''
 echo '            MAKE  CLEAN              '

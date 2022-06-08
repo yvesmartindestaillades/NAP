@@ -14,7 +14,7 @@ file from a RNA structure prediction as a dataset. The data is stored online usi
 NAP provides plots and data selection functions to analyse this dataset. 
 
 .. toctree::
-   introduction
+   intro
    release_notes
    installation
    gallery

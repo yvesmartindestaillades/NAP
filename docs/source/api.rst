@@ -28,7 +28,7 @@ This class is meant to be instanciated into objects.
 Plots
 -----
 
-Description of the functions shown in the :doc:gallery.
+Description of the functions shown in the :doc: gallery.
 
 .. note:: 
 
