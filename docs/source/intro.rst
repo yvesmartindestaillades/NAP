@@ -13,6 +13,53 @@ NAP works through two steps:
 Both steps will be described here.
 
 
+Terminology
+===========
+
+Let's define a few terms for a good understanding of this page.
+
+:Sample:
+
+    A **sample** corresponds to the content of an experimental tube, read by a sequencer and processed by DREEM.
+    This tube contained the RNA sequences defined in a  **sub-library**, and was placed in certain **experimental conditions**.  
+
+
+:Sub-library:
+
+    A **sub-library** corresponds to a set of RNA sequences, each of them named with a **construct**.
+
+
+:Construct:
+
+    A **construct** is the name of a sequence in a **sub-library**, and corresponds by extension to a set of **attributes** defined in the sub-library.
+    For example, the **ROI** of the sequence or the RNAstructure-predicted deltaG.
+
+    Several samples can have the same sub-library - and therefore the same constructs. 
+
+
+:Sample-construct:
+
+    A **sample-construct** corresponds to a specific construct in a specific sample.
+    Each sample-construct has a set of **attributes**.
+    
+    A sample-construct can be nicknamed a construct if the corresponding sample is mentioned beforehand.
+
+
+:Attributes:
+
+    **Attributes** are a set of experimental results and properties related to a **sample-construct**.
+    DREEM, RNAstructure and NAP provide attributes.
+    
+    Examples: ``ROI_sequence``, ``mut_bases``, ``cov_bases``. 
+
+
+:ROI:
+
+    **ROI** is the acronym for Region of Interest.
+    It corresponds to a sub-sequence in the RNA sequence that we want to study.
+
+
+
 Data processing
 ===============
 
@@ -44,7 +91,7 @@ NAP's module ``data_wrangler`` merges the sources, filters out the unvalid data,
 DREEM
 *****
 
-Output of `Prof. Yesselman's DREEM <https://github.com/jyesselm/dreem>`_, under the  `pickle format <https://docs.python.org/3/library/pickle.html>`_.
+Output of `Yesselman and Rouskin's DREEM <https://github.com/jyesselm/dreem>`_, under the  `pickle format <https://docs.python.org/3/library/pickle.html>`_.
 One DREEM pickle file corresponds to one sample.
 
 DREEM files must be stored using the following tree structure. 
@@ -66,14 +113,6 @@ Data wrangler will use ``path_to_dreem`` to read the files.
             |-- mutation_histos.p
         |-- ...
 
-.. note::
-
-    A **sample** corresponds to the content of a physical tube, read by a sequencer and processed by DREEM.
-    
-.. note::
-    
-    A **sample** comes with specific experimental conditions and a sub-library of RNA constructs.  
-
 
 .. _intro_RNAstructure:
 
@@ -85,7 +124,7 @@ The csv file has specific column names.
 Each row corresponds to a construct.
 
 **Columns names**
-    * ``construct``: (str) name of the constructs of the sample's sub-library.
+    * ``construct``: (str) name of this construct.
     * ``full_sequence``: (str) sequence of the entire RNA molecule.
     * ``roi_sequence``: (str) sequence of the ROI only.
     * ``full_deltaG``: (float) predicted deltaG for the entire RNA molecule.
@@ -94,18 +133,15 @@ Each row corresponds to a construct.
     * ``roi_structure_comparison``: (str) comparison between the pairing-prediction of the entire RNA molecule and the pairing-prediction of the ROI only, for the ROI bases. String of '0' and '1', of same length as ROI sequence. '0' means that both predicted structures have the same pairing state for the corresponding base. '1' means that the predicted structures have diverging pairing states for this base.
     * ``roi_start_index``: (int) index of the first base of the ROI. Index starts with a 0.
     * ``roi_end_index``: (int) index of the last base of the ROI. Index starts with a 0.
-    * ``flank``: (str) flank. #TODO
+    * ``flank``: (str) flank.
     * ``sub-library``: (str) name of the sub-library.
 
-.. note::
-    
-    ROI corresponds to Region of Interest.
 
 
 Data wrangler
 *************
 
-NAP's module data wrangler turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid constructs, and pushes the sample to the database.
+NAP's module data wrangler turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid sample-constructs, and pushes the sample to the database.
 
 Every function of data wrangler is described on page :ref:`data wrangler module <data_wrangler_module>`.
 
@@ -113,61 +149,63 @@ Merging DREEM and RNAstructure file
 ...................................
 
 For each sample, the merge between DREEM and RNAstructure file is done w.r.t their respective ``construct`` column.
-The fit is inner-typed, which means that each construct must be in both files. 
+The fit is inner-typed, which means that each construct must be on both files. 
 
-Attribute:
-    Content of a column for a specific sample and a specific construct.
 
-The data structure of  is the following:
+The data structure of a sample is the following:
 
 ::
 
-    |-- a_sample_1 
+    |-- a_sample
         |-- a_construct
-            |-- full_sequence: "ACCGACTACTATC"  # Column from RNAstructure and corresponding attribute.
+            |-- full_sequence: "ACCGACTACTATC"  # Attribute from RNAstructure.
             |-- roi_sequence: "ACTACT"
             |-- ...
-            |-- cov_bases: [0, 1769, 1795, ... ,1814, 1815, 1821] # Column from DREEM and corresponding attribute.
+            |-- cov_bases: [0, 1769, 1795, ... ,1814, 1815, 1821] # Attribute from DREEM.
+            |--
+            |-- min_bases_cov: 1000 # Attribute from NAP
             |--
 
-A more complete visualisation of the data structure can be found on :ref:`database section <intro_database_structure>`
 
-.. note::
+A more complete visualisation of the data structure can be found on :ref:`database section <intro_database_structure>`.
 
-    If every sample has the same constructs, RNAstructure information will be redundant between the samples.
-
-The columns of the merged dataset are the following:
+The columns of the merged dataset corresponds to the sample-constructs attributes are the following:
 
 **Columns of the dataset**
     * Every column of :ref:`RNA structure file <intro_RNAstructure>`.
     * ``num_reads``: number of reads for this construct.
-    * ``num_aligned``: (int) #TODO
-    * ``start`` : (int) beginning of the index for all list[int] type attributes. Generally 1, in which case you should start reading list[int]-typed attributes such as ``info_bases`` starting from the 2nd element.
+    * ``num_aligned``: (int) number of reads correctly aligned, that we will use for the analysis.
+    * ``start`` : (int) beginning of the index for all list[int] type attributes. Default is 1, in which case you should start reading list[int]-typed attributes such as ``info_bases`` starting from the 2nd element.
     * ``end`` : (int) beginning of the index for all list[int] type attributes. 
     * ``num_of_mutations``: (list[int]) count of how many bases mutated n times. [4, 5, 1, 0] means that 4 bases didn't mutate, 5 bases mutated once, 1 base mutated twice, and no base mutated 3 times.
     * ``mut_bases`` : (list[int]) for each base, count of mutations.
     * ``info_bases`` : (list[int]) for each base, number of valid reads. 
-    * ``del_bases`` : (list[int]) #TODO
-    * ``ins_bases`` :(list[int]) #TODO
+    * ``del_bases`` : (list[int]) for each base, count of deletions.
+    * ``ins_bases`` :(list[int])  for each base, count of inserts. 
     * ``cov_bases`` : (list[int]) for each base, the base-coverage.
     * ``mod_bases_A`` : (list[int]) for each base, the number of times that it mutated to a A base.
     * ``mod_bases_C`` : (list[int]) for each base, the number of times that it mutated to a C base.
     * ``mod_bases_G`` : (list[int]) for each base, the number of times that it mutated to a G base.
     * ``mod_bases_T`` : (list[int]) for each base, the number of times that it mutated to a T base.
-    * ``skips_low_mapq`` : (int) #TODO
-    * ``skips_short_read`` : (int) #TODO
-    * ``skips_too_many_muts`` : (int) #TODO
+    * ``skips_low_mapq`` : (int) Number of reads that that we don't use because the map score is too low (default is below 15)
+    * ``skips_short_read`` : (int) Number of reads that we don't use because they are too short.
+    * ``skips_too_many_muts`` : (int) Number of reads that that we don't use because they have so many mutations, and therefore we have low confidence.
     * ``cov_bases_roi`` : (int) worst base coverage among the bases of the ROI.
     * ``cov_bases_sec_half`` : (int) worst base coverage among the bases of the second half of the sequence.
+
+.. note::
+
+    If every sample has the same constructs, RNAstructure information will be redundant between the sample-constructs.
 
 
 Filtering out invalid constructs
 ................................
 
 Valid construct:
-    A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
+    A sample-construct is considered valid only if every base of its ROI has a base coverage above ``min_bases_cov``.
 
-Therefore, each sample loaded to the database contain every construct that passed the filter.
+Unvalid sample-constructs are filtered out, such that each sample loaded into the database contain only constructs that passed the filter.
+
 
 Database
 ********

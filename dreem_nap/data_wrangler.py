@@ -91,8 +91,8 @@ def mhs2dict(mhs:_MutationHistogram, drop_attribute:List[str])->dict:
     """Turns the output of Prof. Joe Yesselman's DREEM into a construct-wise index dictionary.
 
     Args:
-        mhs: one sample's content under DREEM's MutationHistogram class format. 
-        drop_attribute: a list of attributes from MutationHistogram class that you don't want into your dictionary
+        mhs (_MutationHistogram): one sample's content under DREEM's MutationHistogram class format. 
+        drop_attribute (List[str]): a list of attributes from MutationHistogram class that you don't want into your dictionary
     
     Returns:
         A dictionary form of the MutationHistogram class.
@@ -193,8 +193,8 @@ def clean_dataset(df_database:pd.DataFrame, study:Study, verbose:bool = True)-> 
         verbose: print relevant information
 
     Returns:
-        A subset of df_database, in which every construct had a good-enough reading quality for each sample.
-        The same content as df_database, with an additional 'samples_covered' column, corresponding to the amount of samples for containing this construct.
+        pd.DataFrame: A subset of df_database, in which every construct had a good-enough reading quality for each sample.
+        pd.DataFrame: The same content as df_database, with an additional 'samples_covered' column, corresponding to the amount of samples for containing this construct.
     """
     samples = study.samples
 
@@ -226,12 +226,43 @@ def clean_dataset(df_database:pd.DataFrame, study:Study, verbose:bool = True)-> 
     return df, df_full
 
 
-def load_studies(studies_file_path:str):
-  studies_dict, studies_data = {}, pd.read_csv(studies_file_path)
+def load_studies(studies_file_path:str)->pd.DataFrame:
+    """Read formatted file with samples, and turn it into a dataframe containing studies.
 
-  for col in studies_data.groupby('name')[Study().attr_list]:
-    solo_item = lambda x: x[0] if len(set(x)) == 1 else x  
-    studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
+    Args:
+        studies_file_path (str): path+title of the csv file containing the samples.
 
-  return pd.DataFrame.from_dict(studies_dict, orient='index')
+    Returns:
+        pd.DataFrame: studies of the csv file, indexed by study.
+
+    Example:
+        echo '"name","description","samples","conditions","conditions_unit"
+               ,,,,
+               "salt","Change the Na concentration","A6",0.15,"M"
+               "salt","Change the Na concentration","B6",0.3,"M"
+               "salt","Change the Na concentration","C6",0.6,"M"
+               "salt","Change the Na concentration","D6",1,"M"
+               "salt","Change the Na concentration","E6",1.2,"M"
+               ,,,,
+               "spermidine","Change the Spermidine concentration","B3",0.01,"mM"
+               "spermidine","Change the Spermidine concentration","D3",1,"mM"
+               "spermidine","Change the Spermidine concentration","E3",10,"mM"
+               "spermidine","Change the Spermidine concentration","F3",100,"mM"'
+                > samples.csv
+        python3
+        >>> from dreem_nap import data_wrangler     
+        >>> study_file = 'samples.csv'
+        >>> data_wrangler.load_studies(study_file)
+                                name                           description                     samples       conditions_unit                       conditions
+        salt                    salt           Change the Na concentration        [A6, B6, C6, D6, E6]                     M       [0.15, 0.3, 0.6, 1.0, 1.2]
+        spermidine        spermidine   Change the Spermidine concentration            [B3, D3, E3, F3]                    mM         [0.01, 1.0, 10.0, 100.0]
+ """
+
+    studies_dict, studies_data = {}, pd.read_csv(studies_file_path)
+
+    for col in studies_data.groupby('name')[Study().attr_list]:
+        solo_item = lambda x: x[0] if len(set(x)) == 1 else x  
+        studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
+
+    return pd.DataFrame.from_dict(studies_dict, orient='index')
 
