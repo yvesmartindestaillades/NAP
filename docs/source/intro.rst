@@ -162,7 +162,7 @@ The columns of the merged dataset are the following:
 
 
 Filtering out invalid constructs
---------------------------------
+................................
 
 Valid construct:
     A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
@@ -181,7 +181,7 @@ Database
 .. _intro_database_structure:
 
 Structure
----------
+.........
 
 The database is hosted on Google Firebase. It uses the .json format.
 
@@ -224,7 +224,7 @@ It is possible to create different folders and subfolders using ``/``, such as: 
 
 
 Credentials
------------
+...........
 
 The :ref:`database.connect() <database_module>` function uses credentials to access the database, under the form of a dictionary.
 Please email `yves@martin.yt <mailto:yves@martin.yt>`_ to get this your credentials.
