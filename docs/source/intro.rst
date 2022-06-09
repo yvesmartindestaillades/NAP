@@ -75,6 +75,8 @@ Data wrangler will use ``path_to_dreem`` to read the files.
     A **sample** comes with specific experimental conditions and a sub-library of RNA constructs.  
 
 
+.. _intro_RNAstructure:
+
 RNAstructure 
 ------------
 
@@ -83,17 +85,17 @@ The csv file has specific column names.
 Each row corresponds to a construct.
 
 **Columns names**
-    * ``construct``: name of the constructs of the sample's sub-library.
-    * ``full_sequence``: sequence of the entire RNA molecule.
-    * ``roi_sequence``: sequence of the ROI only.
-    * ``full_deltaG``: predicted deltaG for the entire RNA molecule.
-    * ``roi_deltaG``: predicted deltaG for the ROI only.
-    * ``full_structure``: predicted structure for the entire RNA molecule.
-    * ``roi_structure_comparison``: Comparison between the pairing-prediction of the entire RNA molecule and the pairing-prediction of the ROI only, for the ROI bases. String of '0' and '1', of same length as ROI sequence. '0' means that both predicted structures have the same pairing state for the corresponding base. '1' means that the predicted structures have diverging pairing states for this base.
-    * ``roi_start_index``: index of the first base of the ROI. Index starts with a 0.
-    * ``roi_end_index``: index of the last base of the ROI. Index starts with a 0.
-    * ``flank``: flank.
-    * ``sub-library``: name of the sub-library.
+    * ``construct``: (str) name of the constructs of the sample's sub-library.
+    * ``full_sequence``: (str) sequence of the entire RNA molecule.
+    * ``roi_sequence``: (str) sequence of the ROI only.
+    * ``full_deltaG``: (float) predicted deltaG for the entire RNA molecule.
+    * ``roi_deltaG``: (float) predicted deltaG for the ROI only.
+    * ``full_structure``: (str) predicted structure for the entire RNA molecule.
+    * ``roi_structure_comparison``: (str) comparison between the pairing-prediction of the entire RNA molecule and the pairing-prediction of the ROI only, for the ROI bases. String of '0' and '1', of same length as ROI sequence. '0' means that both predicted structures have the same pairing state for the corresponding base. '1' means that the predicted structures have diverging pairing states for this base.
+    * ``roi_start_index``: (int) index of the first base of the ROI. Index starts with a 0.
+    * ``roi_end_index``: (int) index of the last base of the ROI. Index starts with a 0.
+    * ``flank``: (str) flank. #TODO
+    * ``sub-library``: (str) name of the sub-library.
 
 .. note::
     
@@ -108,6 +110,8 @@ Database
     NAP's database is a module used by NAP's data_wrangler, but rarely used by the user itself.
     You only need to know how the credentials works and how the database is structured.   
 
+
+.. _intro_database_structure:
 
 Structure
 .........
@@ -155,8 +159,9 @@ It is possible to create different folders and subfolders using ``/``, such as: 
 Credentials
 ...........
 
-The :ref:`database.connect() <database_module>` function takes credentials to access the database, under the form of a dictionary.
-Please email `yves@martin.yt <mailto:yves@martin.yt>`_ to get this your credentials, or create your own database on `Google Firebase <https://firebase.google.com/>`_.
+The :ref:`database.connect() <database_module>` function uses credentials to access the database, under the form of a dictionary.
+Please email `yves@martin.yt <mailto:yves@martin.yt>`_ to get this your credentials.
+You can also create your own database for free on `Google Firebase <https://firebase.google.com/>`_.
 
 
 Example:
@@ -179,8 +184,50 @@ Example:
 Data wrangler
 -------------
 
-Turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid constructs, and pushes the sample to the database.
-Every function of NAP's module data wrangler is described on page :ref:`data wrangler module <data_wrangler_module>`.
+NAP's module data wrangler turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid constructs, and pushes the sample to the database.
+
+Every function of data wrangler is described on page :ref:`data wrangler module <data_wrangler_module>`.
+
+Merging DREEM and RNAstructure file
+...................................
+
+For each sample, the merge between DREEM and RNAstructure file is done w.r.t their respective ``construct`` column.
+The fit is inner-typed, which means that each construct must be in both files. 
+
+Attribute:
+    Content of a column for a specific sample and a specific construct.
+
+The 
+
+A good visualisation of the data structure can be found on :ref:`database section <intro_database_structure>`
+
+.. note::
+
+    If every sample has the same constructs, RNAstructure information will be redundant between the samples.
+
+The columns of the merged dataset are the following:
+
+**Columns of the dataset**
+    * Every column of :ref:`RNA structure file <intro_RNAstructure>`.
+    * ``num_reads``: number of reads for this construct.
+    * ``num_aligned``: (int) #TODO
+    * ``start`` : (int) beginning of the index for all list[int] type attributes. Generally 1, in which case you should start reading list[int]-typed attributes such as ``info_bases`` starting from the 2nd element.
+    * ``end`` : (int) beginning of the index for all list[int] type attributes. 
+    * ``num_of_mutations``: (list[int]) count of how many bases mutated n times. [4, 5, 1, 0] means that 4 bases didn't mutate, 5 bases mutated once, 1 base mutated twice, and no base mutated 3 times.
+    * ``mut_bases`` : (list[int]) for each base, count of mutations.
+    * ``info_bases`` : (list[int]) for each base, number of valid reads. 
+    * ``del_bases`` : (list[int]) #TODO
+    * ``ins_bases`` :(list[int]) #TODO
+    * ``cov_bases`` : (list[int]) for each base, the base-coverage.
+    * ``mod_bases_A`` : (list[int]) for each base, the number of times that it mutated to a A base.
+    * ``mod_bases_C`` : (list[int]) for each base, the number of times that it mutated to a C base.
+    * ``mod_bases_G`` : (list[int]) for each base, the number of times that it mutated to a G base.
+    * ``mod_bases_T`` : (list[int]) for each base, the number of times that it mutated to a T base.
+    * ``skips_low_mapq`` : (int) #TODO
+    * ``skips_short_read`` : (int) #TODO
+    * ``skips_too_many_muts`` : (int) #TODO
+    * ``cov_bases_roi`` : (int) worst base coverage among the bases of the ROI.
+    * ``cov_bases_sec_half`` : (int) worst base coverage among the bases of the second half of the sequence.
 
 A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
 
