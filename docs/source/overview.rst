@@ -1,9 +1,9 @@
-============
-Introduction
-============
-
+========
 Overview
 ========
+
+Introduction
+============
 
 NAP works through two steps:
 

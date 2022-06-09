@@ -13,7 +13,7 @@ The data is stored online using Google Firebase.
 NAP provides plots and data selection functions to analyse this dataset. 
 
 .. toctree::
-   intro
+   overview
    release_notes
    installation
    gallery
