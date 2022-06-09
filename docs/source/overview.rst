@@ -89,17 +89,19 @@ NAP's module ``data_wrangler`` merges the sources, filters out the unvalid data,
     }
 
 
-
-
-
 DREEM
 *****
 
 Output of `Yesselman and Rouskin's DREEM <https://github.com/jyesselm/dreem>`_, under the  `pickle format <https://docs.python.org/3/library/pickle.html>`_.
-One DREEM pickle file corresponds to one sample.
+One DREEM pickle file contains the data of one sample.
 
-DREEM files must be stored using the following tree structure. 
-Data wrangler will use ``path_to_dreem`` to read the files.
+This data needs to be read by ``data_wrangler``.
+
+.. note::
+
+    All you need to know is how to give ``data_wrangler`` a dictionary ``pickles`` structured such that `pickles[sample] = [path_to_the_corresponding_pickle_file]`
+
+To make DREEM's files easy, we suggest the following tree structure: 
 
 ::
 
@@ -118,18 +120,41 @@ Data wrangler will use ``path_to_dreem`` to read the files.
         |-- ...
 
 
-.. _intro_RNAstructure:
-
-Example code:
+And to generate the dictionary, use the following code:
 ::
-    import pandas, pickle, 
-    pickles = {pickle: f"../data/DREEM/{pickle}/mutation_histos.p" for pickle in pickles_list}
-    for pick in pickles:
-        mhs = pickle.load(open(pickles[pick], "rb"))
-        df_sample = pd.DataFrame.from_dict(mhs2dict(mhs, drop_attribute = ['structure','_MutationHistogram__bases','sequence']),
-                orient='index').rename(columns={'name':'construct'})
-        print(df_sample.head())
 
+    >>> path_to_dreem = 'data/DREEM'
+    >>> samples_list = ['A1','A2','B3']
+    >>> pickles = {sample: f"{path_to_dreem}/{sample}/mutation_histos.p" for sample in samples_list}
+    >>> print(pickles)
+    {'A1': 'data/DREEM/A1/mutation_histos.p', 'A2': 'data/DREEM/A2/mutation_histos.p', 'B3': 'data/DREEM/B3/mutation_histos.p'}
+
+
+Just a bit of code to illustrate how ``data_wrangler`` will use the ``pickles`` dictionary.
+::
+    
+    >>> import pandas as pd
+    >>> import pickle
+    >>> from dreem_nap.data_wrangler import mhs2dict
+    >>> 
+    >>> samples_list = ['A1']
+    >>> pickles = {sample: f"data/DREEM/{sample}/mutation_histos.p" for sample in samples_list}
+    >>> for pick in pickles:
+    ...     mhs = pickle.load(open(pickles[pick], "rb"))
+    ...     df_sample = pd.DataFrame.from_dict(mhs2dict(mhs, drop_attribute = ['structure','_MutationHistogram__bases','sequence']),
+    ...             orient='index').rename(columns={'name':'construct'})
+    ...     print(df_sample.head())
+    
+    [5 rows x 19 columns]
+      construct data_type  num_reads  num_aligned  ...                                        mod_bases_T skips_low_mapq skips_short_read skips_too_many_muts
+    1         1       DMS          7            0  ...  (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, ...              7                0                   0
+    2         2       DMS         89            6  ...  (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, ...             83                0                   0
+    3         3       DMS         11            0  ...  (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, ...             11                0                   0
+    4         4       DMS        138            1  ...  (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, ...            137                0                   0
+    5         5       DMS          5            1  ...  (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, ...              4                0                   0
+
+
+.. _intro_RNAstructure:
 
 RNAstructure 
 ************
@@ -160,6 +185,7 @@ Data wrangler
 NAP's module data wrangler turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid sample-constructs, and pushes the sample to the database.
 
 Every function of data wrangler is described on page :ref:`data wrangler module <data_wrangler_module>`.
+
 
 Merging DREEM and RNAstructure file
 ...................................
@@ -238,11 +264,7 @@ Most of the information is on the :ref:`section database <intro_database>`.
 Sample code
 ...........
 
-    *"Un bon croquis vaut mieux qu'un long discours."* (*A good sketch is worth more than a long speech.*) - Napoléon Bonaparte
-
-Let's show a code example.
-
-
+Check out :ref:`data processing sample code <data_processing_sample_code>`.
 
 
 
@@ -329,7 +351,52 @@ Example:
 
 
 
+Sample code
+***********
 
+    *"Un bon croquis vaut mieux qu'un long discours."* (*A good sketch is worth more than a long speech.*) - Napoléon Bonaparte
+
+For this example, we will use the framework of this branch of NAP's repo. #TODO.
+
+Let's show a code example.
+
+::
+
+    >>> import pandas as pd
+    >>> from dreem_nap import data_wrangler
+    >>> import json
+    >>> 
+    >>> ## DREEM
+    >>> # List the files that you want to process and create your pickles dict
+    >>> samples_list = ['A1', 'A2','B3']
+    >>> pickles = {sample: f"data/DREEM/{sample}/mutation_histos.p" for sample in samples_list}
+    >>> 
+    >>> ## RNA-STRUCTURE
+    >>> # Indicate where is your RNAstructure file
+    >>> RNAstructureFile = 'data/RNAstructureFile.csv'
+    >>> 
+    >>> ## DATA-WRANGLER
+    >>> # Define what is the min base coverage values that you tolerate
+    >>> min_bases_cov = 1000
+    >>> 
+    >>> ## DATABASE
+    >>> # Select your root folder for the database 
+    >>> folder = 'my_project_1/tutorial'
+    >>> 
+    >>> # Load Firebase credentials file 
+    >>> firebase_credentials_file = 'data/credentials_firebase.json'
+    >>> with open(firebase_credentials_file) as file:
+    ...     firebase_credentials = json.load(file)
+    ... 
+    >>> ## PROCESS DATA
+    >>> # Process your pickles files and push them to Firebase!
+    >>> data_wrangler.push_samples_to_firebase(pickles = pickles,
+    ...                     RNAstructureFile = RNAstructureFile,
+    ...                     firebase_credentials = firebase_credentials,
+    ...                     min_bases_cov = min_bases_cov, 
+    ...                     folder=folder)
+    Push pickles to firebase!
+    A1 A2 B3
 
 
 
