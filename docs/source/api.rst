@@ -62,6 +62,7 @@ Process DREEM's MutationHistogram pickle files, interface with the database and 
    :undoc-members:
    :show-inheritance:
 
+.. _database_module:
 
 Database module
 ---------------

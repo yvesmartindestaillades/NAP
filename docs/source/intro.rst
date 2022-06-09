@@ -52,14 +52,20 @@ Data wrangler will use ``path_to_dreem`` to read the files.
 
 ::
 
-    model: path_to_dreem                   ex:  data/DREEM
-           |-- sample_name                     |-- A1
-               |-- mutation_histos.p               |-- mutation_histos.p
-                                               |-- A2
-                                                   |-- mutation_histos.p
-                                               |-- ...
+    model:
+    path_to_dreem                   
+        |-- sample_name                     
+            |-- mutation_histos.p              
+                                               
+    ex: 
 
-        
+    data/DREEM
+        |-- A1
+            |-- mutation_histos.p
+        |-- A2
+            |-- mutation_histos.p
+        |-- ...
+
 .. note::
 
     A **sample** corresponds to the content of a physical tube, read by a sequencer and processed by DREEM.
@@ -94,6 +100,82 @@ Each row corresponds to a construct.
     ROI corresponds to Region of Interest.
 
 
+Database
+--------
+
+.. note::
+
+    NAP's database is a module used by NAP's data_wrangler, but rarely used by the user itself.
+    You only need to know how the credentials works and how the database is structured.   
+
+
+Structure
+.........
+
+The database is hosted on Google Firebase. It uses the .json format.
+
+A database root folder is called a `folder`, and corresponds to a project, a user, a version, etc.
+In a folder is stored the data of a project, using the following structure:
+
+::
+
+    my_project_1
+    |-- sample_1
+        |-- construct 1
+            |-- full_sequence
+            |-- roi_sequence
+            |-- ...
+        |-- ...
+        |-- construct N
+            |-- ...     
+    |-- sample_2
+        |-- ...
+    |-- ...
+
+It is possible to create different folders and subfolders using ``/``, such as: ``my_project_2/user_1/version v2.0``:
+
+::
+
+    my_project_1
+    |-- version_v1.0
+        |-- ...    
+    |-- version_v2.0    
+        |-- ...    
+    my_project_2
+    |-- user_1
+        |-- version_v1.0
+            |-- ...    
+        |-- version_v2.0    
+            |-- ...    
+    |-- user_2    
+        |-- ...      
+    ...
+
+
+Credentials
+...........
+
+The :ref:`database.connect() <database_module>` function takes credentials to access the database, under the form of a dictionary.
+Please email `yves@martin.yt <mailto:yves@martin.yt>`_ to get this your credentials, or create your own database on `Google Firebase <https://firebase.google.com/>`_.
+
+
+Example:
+::
+
+    >>> from dreem_nap import database
+    >>> import json
+    >>> # Firebase credentials file
+    >>> firebase_credentials_file = 'data/credentials_firebase.json'
+    >>> with open(firebase_credentials_file) as file:
+    >>>     firebase_credentials = json.load(file)
+    >>> # Give credentials to connect to firebase
+    >>> database.connect(firebase_credentials)
+    Initiated connection to Firebase!
+    >>> database.connect(firebase_credentials)
+    Re-used the previous Firebase connection
+
+
+
 Data wrangler
 -------------
 
@@ -103,22 +185,7 @@ Every function of NAP's module data wrangler is described on page :ref:`data wra
 A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
 
 The sample's json format structure is the following:
-::
 
-    sample
-    |-- construct 1
-        |-- full_sequence
-        |-- roi_sequence
-        |-- ...
-    |-- ...
-    |-- construct N
-        |-- ...     
-
-
-Database
---------
-
-The database is hosted on Google Firebase.
 
 
 Sample code

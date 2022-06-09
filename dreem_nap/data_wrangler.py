@@ -177,7 +177,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
 
         # Push this sample to firebase
         database.connect(firebase_credentials=firebase_credentials, verbose=False)
-        database.push(df_temp.to_dict(orient='index'), ref=samp, folder=folder, verbose= not bool(count))
+        database.push(df_temp.to_dict(orient='index'), ref=samp, folder=folder)
 
         # Give yourself hope to wait by showing the progress
         print(samp, end=print_end)

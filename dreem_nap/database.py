@@ -23,10 +23,11 @@ def connect(firebase_credentials:dict, verbose:bool = True)->None:
 
     try:
         default_app = firebase_admin.initialize_app(cred, {
-            'databaseURL':'https://dreem-542b7-default-rtdb.firebaseio.com/'
-            })
+            'databaseURL': f"https://{firebase_credentials['project_id']}-default-rtdb.firebaseio.com/"
+            }) 
+        if verbose: print('Initiated connection to Firebase!')
     except:
-        if verbose: print('Re-used the previous Firebase connection')
+        if verbose: print("Couldn't initiate connection to Firebase. Connection might be already initiated.")
 
 def push(dict_df:pd.DataFrame, folder:str, ref:str)->None:
     """Push a dictionary to the database, in a given folder, for a given reference.
@@ -55,7 +56,6 @@ def load(folder:str, study:Study, verbose:bool = True)->pd.DataFrame:
     samples = study.samples
     
     if verbose: print('Load data from database')
-    connect()
     df = {}
     missed_samples = []
     for samp in samples:
