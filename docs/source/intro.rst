@@ -3,7 +3,7 @@ Introduction
 ============
 
 Overview
-********
+========
 
 NAP works through two steps:
 
@@ -14,7 +14,7 @@ Both steps will be described here.
 
 
 Data processing
-***************
+===============
 
 This section explains how NAP builds .json dataframes from sources such as DREEM and a RNA structure prediction software.
 NAP's module ``data_wrangler`` merges the sources, filters out the unvalid data, and pushes the data to database using NAP's module ``database``.
@@ -42,7 +42,7 @@ NAP's module ``data_wrangler`` merges the sources, filters out the unvalid data,
 
 
 DREEM
------
+*****
 
 Output of `Prof. Yesselman's DREEM <https://github.com/jyesselm/dreem>`_, under the  `pickle format <https://docs.python.org/3/library/pickle.html>`_.
 One DREEM pickle file corresponds to one sample.
@@ -78,7 +78,7 @@ Data wrangler will use ``path_to_dreem`` to read the files.
 .. _intro_RNAstructure:
 
 RNAstructure 
-------------
+************
 
 Output of RNAstructure, or any RNA structure prediction software, under a csv format. 
 The csv file has specific column names. 
@@ -103,7 +103,7 @@ Each row corresponds to a construct.
 
 
 Data wrangler
--------------
+*************
 
 NAP's module data wrangler turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid constructs, and pushes the sample to the database.
 
@@ -118,15 +118,17 @@ The fit is inner-typed, which means that each construct must be in both files.
 Attribute:
     Content of a column for a specific sample and a specific construct.
 
-The data structure is the following:
+The data structure of  is the following:
 
 ::
 
     |-- a_sample_1 
         |-- a_construct
-            |-- full_sequence: "ACCGACTACTATC"  # Column and corresponding attribute
+            |-- full_sequence: "ACCGACTACTATC"  # Column from RNAstructure and corresponding attribute.
             |-- roi_sequence: "ACTACT"
             |-- ...
+            |-- cov_bases: [0, 1769, 1795, ... ,1814, 1815, 1821] # Column from DREEM and corresponding attribute.
+            |--
 
 A more complete visualisation of the data structure can be found on :ref:`database section <intro_database_structure>`
 
@@ -158,15 +160,17 @@ The columns of the merged dataset are the following:
     * ``cov_bases_roi`` : (int) worst base coverage among the bases of the ROI.
     * ``cov_bases_sec_half`` : (int) worst base coverage among the bases of the second half of the sequence.
 
-A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
 
-The sample's json format structure is the following:
+Filtering out invalid constructs
+--------------------------------
 
+Valid construct:
+    A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
 
-
+Therefore, each sample loaded to the database contain every construct that passed the filter.
 
 Database
---------
+********
 
 .. note::
 
@@ -177,7 +181,7 @@ Database
 .. _intro_database_structure:
 
 Structure
-.........
+---------
 
 The database is hosted on Google Firebase. It uses the .json format.
 
@@ -220,7 +224,7 @@ It is possible to create different folders and subfolders using ``/``, such as: 
 
 
 Credentials
-...........
+-----------
 
 The :ref:`database.connect() <database_module>` function uses credentials to access the database, under the form of a dictionary.
 Please email `yves@martin.yt <mailto:yves@martin.yt>`_ to get this your credentials.
@@ -247,7 +251,7 @@ Example:
 
 
 Sample code
------------
+***********
 
     *"Un bon croquis vaut mieux qu'un long discours."* (*A good sketch is worth more than a long speech.*) - Napoléon Bonaparte
 
@@ -260,7 +264,7 @@ Let's show a code example.
 .. _diag2:
 
 Data analysis
-*************
+=============
 
 
 
