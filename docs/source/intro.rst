@@ -102,6 +102,69 @@ Each row corresponds to a construct.
     ROI corresponds to Region of Interest.
 
 
+Data wrangler
+-------------
+
+NAP's module data wrangler turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid constructs, and pushes the sample to the database.
+
+Every function of data wrangler is described on page :ref:`data wrangler module <data_wrangler_module>`.
+
+Merging DREEM and RNAstructure file
+...................................
+
+For each sample, the merge between DREEM and RNAstructure file is done w.r.t their respective ``construct`` column.
+The fit is inner-typed, which means that each construct must be in both files. 
+
+Attribute:
+    Content of a column for a specific sample and a specific construct.
+
+The data structure is the following:
+
+::
+
+    |-- a_sample_1 
+        |-- a_construct
+            |-- full_sequence: "ACCGACTACTATC"  # Column and corresponding attribute
+            |-- roi_sequence: "ACTACT"
+            |-- ...
+
+A more complete visualisation of the data structure can be found on :ref:`database section <intro_database_structure>`
+
+.. note::
+
+    If every sample has the same constructs, RNAstructure information will be redundant between the samples.
+
+The columns of the merged dataset are the following:
+
+**Columns of the dataset**
+    * Every column of :ref:`RNA structure file <intro_RNAstructure>`.
+    * ``num_reads``: number of reads for this construct.
+    * ``num_aligned``: (int) #TODO
+    * ``start`` : (int) beginning of the index for all list[int] type attributes. Generally 1, in which case you should start reading list[int]-typed attributes such as ``info_bases`` starting from the 2nd element.
+    * ``end`` : (int) beginning of the index for all list[int] type attributes. 
+    * ``num_of_mutations``: (list[int]) count of how many bases mutated n times. [4, 5, 1, 0] means that 4 bases didn't mutate, 5 bases mutated once, 1 base mutated twice, and no base mutated 3 times.
+    * ``mut_bases`` : (list[int]) for each base, count of mutations.
+    * ``info_bases`` : (list[int]) for each base, number of valid reads. 
+    * ``del_bases`` : (list[int]) #TODO
+    * ``ins_bases`` :(list[int]) #TODO
+    * ``cov_bases`` : (list[int]) for each base, the base-coverage.
+    * ``mod_bases_A`` : (list[int]) for each base, the number of times that it mutated to a A base.
+    * ``mod_bases_C`` : (list[int]) for each base, the number of times that it mutated to a C base.
+    * ``mod_bases_G`` : (list[int]) for each base, the number of times that it mutated to a G base.
+    * ``mod_bases_T`` : (list[int]) for each base, the number of times that it mutated to a T base.
+    * ``skips_low_mapq`` : (int) #TODO
+    * ``skips_short_read`` : (int) #TODO
+    * ``skips_too_many_muts`` : (int) #TODO
+    * ``cov_bases_roi`` : (int) worst base coverage among the bases of the ROI.
+    * ``cov_bases_sec_half`` : (int) worst base coverage among the bases of the second half of the sequence.
+
+A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
+
+The sample's json format structure is the following:
+
+
+
+
 Database
 --------
 
@@ -180,58 +243,6 @@ Example:
     Re-used the previous Firebase connection
 
 
-
-Data wrangler
--------------
-
-NAP's module data wrangler turns DREEM and RNAstructure into a .json format sample by sample, filters out invalid constructs, and pushes the sample to the database.
-
-Every function of data wrangler is described on page :ref:`data wrangler module <data_wrangler_module>`.
-
-Merging DREEM and RNAstructure file
-...................................
-
-For each sample, the merge between DREEM and RNAstructure file is done w.r.t their respective ``construct`` column.
-The fit is inner-typed, which means that each construct must be in both files. 
-
-Attribute:
-    Content of a column for a specific sample and a specific construct.
-
-The 
-
-A good visualisation of the data structure can be found on :ref:`database section <intro_database_structure>`
-
-.. note::
-
-    If every sample has the same constructs, RNAstructure information will be redundant between the samples.
-
-The columns of the merged dataset are the following:
-
-**Columns of the dataset**
-    * Every column of :ref:`RNA structure file <intro_RNAstructure>`.
-    * ``num_reads``: number of reads for this construct.
-    * ``num_aligned``: (int) #TODO
-    * ``start`` : (int) beginning of the index for all list[int] type attributes. Generally 1, in which case you should start reading list[int]-typed attributes such as ``info_bases`` starting from the 2nd element.
-    * ``end`` : (int) beginning of the index for all list[int] type attributes. 
-    * ``num_of_mutations``: (list[int]) count of how many bases mutated n times. [4, 5, 1, 0] means that 4 bases didn't mutate, 5 bases mutated once, 1 base mutated twice, and no base mutated 3 times.
-    * ``mut_bases`` : (list[int]) for each base, count of mutations.
-    * ``info_bases`` : (list[int]) for each base, number of valid reads. 
-    * ``del_bases`` : (list[int]) #TODO
-    * ``ins_bases`` :(list[int]) #TODO
-    * ``cov_bases`` : (list[int]) for each base, the base-coverage.
-    * ``mod_bases_A`` : (list[int]) for each base, the number of times that it mutated to a A base.
-    * ``mod_bases_C`` : (list[int]) for each base, the number of times that it mutated to a C base.
-    * ``mod_bases_G`` : (list[int]) for each base, the number of times that it mutated to a G base.
-    * ``mod_bases_T`` : (list[int]) for each base, the number of times that it mutated to a T base.
-    * ``skips_low_mapq`` : (int) #TODO
-    * ``skips_short_read`` : (int) #TODO
-    * ``skips_too_many_muts`` : (int) #TODO
-    * ``cov_bases_roi`` : (int) worst base coverage among the bases of the ROI.
-    * ``cov_bases_sec_half`` : (int) worst base coverage among the bases of the second half of the sequence.
-
-A construct in a sample is considered valid only if every base of the ROI has a base coverage above ``min_bases_cov``.
-
-The sample's json format structure is the following:
 
 
 
