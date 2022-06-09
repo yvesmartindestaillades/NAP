@@ -52,6 +52,10 @@ Let's define a few terms for a good understanding of this page.
     
     Examples: ``ROI_sequence``, ``mut_bases``, ``cov_bases``. 
 
+:Study:
+
+    A **study** is a set of **samples** that are relevant to be studied together, typically because of their experimental conditions.
+    For example, a study can be a set of replicates, or the same library with temperature variating, etc.
 
 :ROI:
 
@@ -116,12 +120,24 @@ Data wrangler will use ``path_to_dreem`` to read the files.
 
 .. _intro_RNAstructure:
 
+Example code:
+::
+    import pandas, pickle, 
+    pickles = {pickle: f"../data/DREEM/{pickle}/mutation_histos.p" for pickle in pickles_list}
+    for pick in pickles:
+        mhs = pickle.load(open(pickles[pick], "rb"))
+        df_sample = pd.DataFrame.from_dict(mhs2dict(mhs, drop_attribute = ['structure','_MutationHistogram__bases','sequence']),
+                orient='index').rename(columns={'name':'construct'})
+        print(df_sample.head())
+
+
 RNAstructure 
 ************
 
 Output of RNAstructure, or any RNA structure prediction software, under a csv format. 
-The csv file has specific column names. 
-Each row corresponds to a construct.
+Your csv file must respect the names detailled below.
+Each row corresponds to a sample-construct.
+Each column corresponds to an attribute. 
 
 **Columns names**
     * ``construct``: (str) name of this construct.
@@ -169,7 +185,7 @@ The data structure of a sample is the following:
 
 A more complete visualisation of the data structure can be found on :ref:`database section <intro_database_structure>`.
 
-The columns of the merged dataset corresponds to the sample-constructs attributes are the following:
+The columns of the merged dataset corresponds to the sample-constructs attributes. They are the following:
 
 **Columns of the dataset**
     * Every column of :ref:`RNA structure file <intro_RNAstructure>`.
@@ -187,11 +203,12 @@ The columns of the merged dataset corresponds to the sample-constructs attribute
     * ``mod_bases_C`` : (list[int]) for each base, the number of times that it mutated to a C base.
     * ``mod_bases_G`` : (list[int]) for each base, the number of times that it mutated to a G base.
     * ``mod_bases_T`` : (list[int]) for each base, the number of times that it mutated to a T base.
-    * ``skips_low_mapq`` : (int) Number of reads that that we don't use because the map score is too low (default is below 15)
-    * ``skips_short_read`` : (int) Number of reads that we don't use because they are too short.
-    * ``skips_too_many_muts`` : (int) Number of reads that that we don't use because they have so many mutations, and therefore we have low confidence.
+    * ``skips_low_mapq`` : (int) number of reads that that we don't use because the map score is too low (default is below 15)
+    * ``skips_short_read`` : (int) number of reads that we don't use because they are too short.
+    * ``skips_too_many_muts`` : (int) number of reads that that we don't use because they have so many mutations, and therefore we have low confidence.
     * ``cov_bases_roi`` : (int) worst base coverage among the bases of the ROI.
     * ``cov_bases_sec_half`` : (int) worst base coverage among the bases of the second half of the sequence.
+
 
 .. note::
 
@@ -206,6 +223,30 @@ Valid construct:
 
 Unvalid sample-constructs are filtered out, such that each sample loaded into the database contain only constructs that passed the filter.
 
+
+Pushing samples to the database
+...............................
+
+Data wrangler connects to the database, and pushes the data sample by sample onto the database. 
+Data is organised by folders and subfolders.
+
+If when pushing a sample, a file of the same name exists in the same folder, it will be overwritten.
+
+Most of the information is on the :ref:`section database <intro_database>`.
+
+
+Sample code
+...........
+
+    *"Un bon croquis vaut mieux qu'un long discours."* (*A good sketch is worth more than a long speech.*) - Napoléon Bonaparte
+
+Let's show a code example.
+
+
+
+
+
+.. _intro_database:
 
 Database
 ********
@@ -288,12 +329,6 @@ Example:
 
 
 
-Sample code
-***********
-
-    *"Un bon croquis vaut mieux qu'un long discours."* (*A good sketch is worth more than a long speech.*) - Napoléon Bonaparte
-
-Let's show a code example.
 
 
 
