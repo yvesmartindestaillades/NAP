@@ -130,5 +130,11 @@ dmypy.json
 
 
 # IGNORE 
-data
+data/DREEM
+data/figs
+data/output
+data/test_output
+data/sequence_data.xlsx
+data/db.json
+
 push_to_pypi.sh
