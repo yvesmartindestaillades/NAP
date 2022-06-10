@@ -16,30 +16,35 @@ Both steps will be described here.
 Terminology
 ===========
 
+    *Semantically speaking, what I love is agreeing on semantics, not debating them* - Matthew Allan
+
 Let's define a few terms for a good understanding of this page.
+
+:DREEM:
+    **DREEM** is an experimental method used to identify unpaired bases of RNA strands.
+
 
 :Sample:
 
-    A **sample** corresponds to the content of an experimental tube, read by a sequencer and processed by DREEM.
-    This tube contained the RNA sequences defined in a  **sub-library**, and was placed in certain **experimental conditions**.  
+    A **sample**  is a specific set of experimental procedures applied to a **library**.
+    
 
+:Library:
 
-:Sub-library:
+    A **library** corresponds to a set of **constructs**.
 
-    A **sub-library** corresponds to a set of RNA sequences, each of them named with a **construct**.
-
+    A **sub-library** is a subset of a library.
+    
 
 :Construct:
 
-    A **construct** is the name of a sequence in a **sub-library**, and corresponds by extension to a set of **attributes** defined in the sub-library.
-    For example, the **ROI** of the sequence or the RNAstructure-predicted deltaG.
-
+    A **construct** is a DNA/RNA/protein molecule with a specific (usually artificial) sequence, which can have attributes like a name, structures, functions, etc.    
     Several samples can have the same sub-library - and therefore the same constructs. 
 
 
 :Sample-construct:
 
-    A **sample-construct** corresponds to a specific construct in a specific sample.
+    A **sample-construct** corresponds to one construct of a sample.
     Each sample-construct has a set of **attributes**.
     
     A sample-construct can be nicknamed a construct if the corresponding sample is mentioned beforehand.
@@ -61,6 +66,15 @@ Let's define a few terms for a good understanding of this page.
 
     **ROI** is the acronym for Region of Interest.
     It corresponds to a sub-sequence in the RNA sequence that we want to study.
+
+:DREEM pickle file:
+
+    **DREEM pickle file** is the output of DREEM pipeline.
+    It consists in a class call ``MutationHistogram`` that contains one **sample**.
+    
+    ``MutationHistogram`` is compressed using the Python module ``pickle``.
+
+
 
 
 
@@ -349,14 +363,14 @@ Example:
 
 
 
-
+.. _data_processing_sample_code:
 
 Sample code
 ***********
 
     *"Un bon croquis vaut mieux qu'un long discours."* (*A good sketch is worth more than a long speech.*) - Napoléon Bonaparte
 
-For this example, we will use the framework of this branch of NAP's repo. #TODO.
+For this example, we will use the example shown in `the getting started branch <https://github.com/yvesmartindestaillades/dreem_nap/tree/getting_started>`_ 
 
 Let's show a code example.
 
