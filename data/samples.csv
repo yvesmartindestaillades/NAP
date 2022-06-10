@@ -1,0 +1,168 @@
+"name","description","samples","conditions","conditions_unit"
+"PEG8K","Change the PEG8K concentration","A1",2.5,"%"
+"PEG8K","Change the PEG8K concentration","B1",5,"%"
+"PEG8K","Change the PEG8K concentration","C1",10,"%"
+"PEG8K","Change the PEG8K concentration","D1",20,"%"
+,,,,
+"PEG3350","Change the PEG3350 concentration","E1",2.5,"%"
+"PEG3350","Change the PEG3350 concentration","F1",5,"%"
+"PEG3350","Change the PEG3350 concentration","G1",10,"%"
+"PEG3350","Change the PEG3350 concentration","H1",20,"%"
+,,,,
+"PEG1K","Change the PEG1K concentration","A2",2.5,"%"
+"PEG1K","Change the PEG1K concentration","B2",5,"%"
+"PEG1K","Change the PEG1K concentration","C2",10,"%"
+"PEG1K","Change the PEG1K concentration","D2",20,"%"
+,,,,
+"spermine","Change the Spermine concentration","E2",0.01,"mM"
+"spermine","Change the Spermine concentration","F2",0.1,"mM"
+"spermine","Change the Spermine concentration","G2",1,"mM"
+"spermine","Change the Spermine concentration","H2",10,"mM"
+"spermine","Change the Spermine concentration","A3",100,"mM"
+,,,,
+"spermidine","Change the Spermidine concentration","B3",0.01,"mM"
+"spermidine","Change the Spermidine concentration","D3",1,"mM"
+"spermidine","Change the Spermidine concentration","E3",10,"mM"
+"spermidine","Change the Spermidine concentration","F3",100,"mM"
+,,,,
+"RNA titration","No info about this study! Check unit","G3",50,"mg/L"
+"RNA titration","No info about this study! Check unit","H3",100,"mg/L"
+"RNA titration","No info about this study! Check unit","A4",200,"mg/L"
+"RNA titration","No info about this study! Check unit","B4",400,"mg/L"
+"RNA titration","No info about this study! Check unit","C4",800,"mg/L"
+,,,,
+"3.1 DMS","Change the DMS concentration","D4",7,"mM"
+,,,,
+"3.1 DMS","Change the DMS concentration","F4",60,"mM"
+"3.1 DMS","Change the DMS concentration","G4",180,"mM"
+"3.1 DMS","Change the DMS concentration","H4",540,"mM"
+,,,,
+"3.2 DMS","Change the DMS concentration","A5",7,"mM"
+"3.2 DMS","Change the DMS concentration","B5",20,"mM"
+"3.2 DMS","Change the DMS concentration","C5",60,"mM"
+"3.2 DMS","Change the DMS concentration","D5",180,"mM"
+"3.2 DMS","Change the DMS concentration","E5",540,"mM"
+,,,,
+"salt","Change the Na concentration","A6",0.15,"M"
+"salt","Change the Na concentration","B6",0.3,"M"
+"salt","Change the Na concentration","C6",0.6,"M"
+"salt","Change the Na concentration","D6",1,"M"
+"salt","Change the Na concentration","E6",1.2,"M"
+,,,,
+"magnesium","Change the Mg concentration","F6",0,"mM"
+"magnesium","Change the Mg concentration","G6",0.01,"mM"
+"magnesium","Change the Mg concentration","H6",0.1,"mM"
+"magnesium","Change the Mg concentration","A7",1,"mM"
+"magnesium","Change the Mg concentration","B7",10,"mM"
+"magnesium","Change the Mg concentration","C7",100,"mM"
+,,,,
+"temperature","Try different temperatures","D7",5,"°C"
+"temperature","Try different temperatures","E7",10,"°C"
+"temperature","Try different temperatures","F7",25,"°C"
+"temperature","Try different temperatures","G7",45,"°C"
+"temperature","Try different temperatures","H7",55,"°C"
+"temperature","Try different temperatures","A8",65,"°C"
+"temperature","Try different temperatures","B8",75,"°C"
+"temperature","Try different temperatures","C8",90,"°C"
+,,,,
+"60 mM DMS","Change DMS reaction time","D8",1,"min"
+"60 mM DMS","Change DMS reaction time","E8",3,"min"
+"60 mM DMS","Change DMS reaction time","F8",9,"min"
+"60 mM DMS","Change DMS reaction time","G8",27,"min"
+"60 mM DMS","Change DMS reaction time","H8",81,"min"
+"60 mM DMS","Change DMS reaction time","A9",720,"min"
+,,,,
+"180 mM DMS","Change DMS reaction time","B9",1,"min"
+"180 mM DMS","Change DMS reaction time","C9",3,"min"
+"180 mM DMS","Change DMS reaction time","D9",9,"min"
+"180 mM DMS","Change DMS reaction time","E9",27,"min"
+"180 mM DMS","Change DMS reaction time","F9",81,"min"
+"180 mM DMS","Change DMS reaction time","G9",720,"min"
+,,,,
+"TO_DO_2","Phys PEG","H9",0,"bool"
+"TO_DO_2","Phys PEG","A10",1,"bool"
+,,,,
+,,,,
+,,,,
+"replicates 1","Compare replicates, series 1","A4",1,"no unit"
+"replicates 1","Compare replicates, series 1","F4",2,"no unit"
+"replicates 1","Compare replicates, series 1","C5",3,"no unit"
+"replicates 1","Compare replicates, series 1","A6",4,"no unit"
+"replicates 1","Compare replicates, series 1","A7",5,"no unit"
+,,,,
+"replicates 2","Compare replicates, series 2","F5",1,"no unit"
+"replicates 2","Compare replicates, series 2","G5",2,"no unit"
+"replicates 2","Compare replicates, series 2","H5",3,"no unit"
+,,,,
+"all samples","Simply all of the valid samples","A1",1,
+"all samples","Simply all of the valid samples","A2",2,
+"all samples","Simply all of the valid samples","A3",3,
+"all samples","Simply all of the valid samples","A4",4,
+"all samples","Simply all of the valid samples","A5",5,
+"all samples","Simply all of the valid samples","A6",6,
+"all samples","Simply all of the valid samples","A7",7,
+"all samples","Simply all of the valid samples","A8",8,
+"all samples","Simply all of the valid samples","A9",9,
+"all samples","Simply all of the valid samples","A10",10,
+"all samples","Simply all of the valid samples","B1",11,
+"all samples","Simply all of the valid samples","B2",12,
+"all samples","Simply all of the valid samples","B3",13,
+"all samples","Simply all of the valid samples","B4",14,
+"all samples","Simply all of the valid samples","B5",15,
+"all samples","Simply all of the valid samples","B6",16,
+"all samples","Simply all of the valid samples","B7",17,
+"all samples","Simply all of the valid samples","B8",18,
+"all samples","Simply all of the valid samples","B9",19,
+"all samples","Simply all of the valid samples","B10",20,
+"all samples","Simply all of the valid samples","C1",21,
+"all samples","Simply all of the valid samples","C2",22,
+"all samples","Simply all of the valid samples","C4",23,
+"all samples","Simply all of the valid samples","C5",24,
+"all samples","Simply all of the valid samples","C6",25,
+"all samples","Simply all of the valid samples","C7",26,
+"all samples","Simply all of the valid samples","C8",27,
+"all samples","Simply all of the valid samples","C9",28,
+"all samples","Simply all of the valid samples","D1",29,
+"all samples","Simply all of the valid samples","D2",30,
+"all samples","Simply all of the valid samples","D3",31,
+"all samples","Simply all of the valid samples","D4",32,
+"all samples","Simply all of the valid samples","D5",33,
+"all samples","Simply all of the valid samples","D6",34,
+"all samples","Simply all of the valid samples","D7",35,
+"all samples","Simply all of the valid samples","D8",36,
+"all samples","Simply all of the valid samples","D9",37,
+"all samples","Simply all of the valid samples","E1",38,
+"all samples","Simply all of the valid samples","E2",39,
+"all samples","Simply all of the valid samples","E3",40,
+"all samples","Simply all of the valid samples","E5",41,
+"all samples","Simply all of the valid samples","E6",42,
+"all samples","Simply all of the valid samples","E7",43,
+"all samples","Simply all of the valid samples","E8",44,
+"all samples","Simply all of the valid samples","E9",45,
+"all samples","Simply all of the valid samples","F1",46,
+"all samples","Simply all of the valid samples","F2",47,
+"all samples","Simply all of the valid samples","F3",48,
+"all samples","Simply all of the valid samples","F4",49,
+"all samples","Simply all of the valid samples","F5",50,
+"all samples","Simply all of the valid samples","F6",51,
+"all samples","Simply all of the valid samples","F7",52,
+"all samples","Simply all of the valid samples","F8",53,
+"all samples","Simply all of the valid samples","F9",54,
+"all samples","Simply all of the valid samples","G1",55,
+"all samples","Simply all of the valid samples","G2",56,
+"all samples","Simply all of the valid samples","G3",57,
+"all samples","Simply all of the valid samples","G4",58,
+"all samples","Simply all of the valid samples","G5",59,
+"all samples","Simply all of the valid samples","G6",60,
+"all samples","Simply all of the valid samples","G7",61,
+"all samples","Simply all of the valid samples","G8",62,
+"all samples","Simply all of the valid samples","G9",63,
+"all samples","Simply all of the valid samples","H1",64,
+"all samples","Simply all of the valid samples","H2",65,
+"all samples","Simply all of the valid samples","H3",66,
+"all samples","Simply all of the valid samples","H4",67,
+"all samples","Simply all of the valid samples","H5",68,
+"all samples","Simply all of the valid samples","H6",69,
+"all samples","Simply all of the valid samples","H7",70,
+"all samples","Simply all of the valid samples","H8",71,
+"all samples","Simply all of the valid samples","H9",72,
