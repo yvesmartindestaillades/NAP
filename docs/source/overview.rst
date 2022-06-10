@@ -372,8 +372,6 @@ Sample code
 
 For this example, we will use the example shown in `the getting started branch <https://github.com/yvesmartindestaillades/dreem_nap/tree/getting_started>`_ 
 
-Let's show a code example.
-
 ::
 
     >>> import pandas as pd

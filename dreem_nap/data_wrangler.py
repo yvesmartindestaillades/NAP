@@ -236,26 +236,26 @@ def load_studies(studies_file_path:str)->pd.DataFrame:
         pd.DataFrame: studies of the csv file, indexed by study.
 
     Example:
-        echo '"name","description","samples","conditions","conditions_unit"
+        echo '"name","description","samples","conditions","title"
                ,,,,
-               "salt","Change the Na concentration","A6",0.15,"M"
-               "salt","Change the Na concentration","B6",0.3,"M"
-               "salt","Change the Na concentration","C6",0.6,"M"
-               "salt","Change the Na concentration","D6",1,"M"
-               "salt","Change the Na concentration","E6",1.2,"M"
+               "salt","Change the Na concentration","A6",0.15,"Na quantity [M]"
+               "salt","Change the Na concentration","B6",0.3,"Na quantity [M]"
+               "salt","Change the Na concentration","C6",0.6,"Na quantity [M]"
+               "salt","Change the Na concentration","D6",1,"Na quantity [M]"
+               "salt","Change the Na concentration","E6",1.2,"Na quantity [M]"
                ,,,,
-               "spermidine","Change the Spermidine concentration","B3",0.01,"mM"
-               "spermidine","Change the Spermidine concentration","D3",1,"mM"
-               "spermidine","Change the Spermidine concentration","E3",10,"mM"
-               "spermidine","Change the Spermidine concentration","F3",100,"mM"'
+               "spermidine","Change the Spermidine concentration","B3",0.01,"Spermidine quantity [mM]"
+               "spermidine","Change the Spermidine concentration","D3",1,"Spermidine quantity [mM]"
+               "spermidine","Change the Spermidine concentration","E3",10,"Spermidine quantity [mM]"
+               "spermidine","Change the Spermidine concentration","F3",100,"Spermidine quantity [mM]"
                 > samples.csv
         python3
         >>> from dreem_nap import data_wrangler     
         >>> study_file = 'samples.csv'
         >>> data_wrangler.load_studies(study_file)
-                                name                           description                     samples       conditions_unit                       conditions
-        salt                    salt           Change the Na concentration        [A6, B6, C6, D6, E6]                     M       [0.15, 0.3, 0.6, 1.0, 1.2]
-        spermidine        spermidine   Change the Spermidine concentration            [B3, D3, E3, F3]                    mM         [0.01, 1.0, 10.0, 100.0]
+                                name                           description                     samples                          title                        conditions
+        salt                    salt           Change the Na concentration        [A6, B6, C6, D6, E6]                Na quantity [M]        [0.15, 0.3, 0.6, 1.0, 1.2]
+        spermidine        spermidine   Change the Spermidine concentration            [B3, D3, E3, F3]       Spermidine quantity [mM]          [0.01, 1.0, 10.0, 100.0]
  """
 
     studies_dict, studies_data = {}, pd.read_csv(studies_file_path)

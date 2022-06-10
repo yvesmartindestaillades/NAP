@@ -35,16 +35,17 @@ def make_path(path:str)->str:
 
 
 
-def save_fig(path:str,title:str)->None:
+def save_fig(path:str,title:str, facecolor='white')->None:
     """Save a matplotlib figure and create the directory if it doesn't exists.
 
     Args:
         path: where to store your figure.
-        title: your figure name.    
+        title: your figure name.   
+        facecolor: color of the background 
     """
 
     full_path = make_path(path)
-    plt.savefig(f"{full_path}/{title}")
+    plt.savefig(f"{full_path}/{title}", facecolor=facecolor )
 
 
 def define_figure(title:str, xlabel:str, ylabel:str, figsize:Tuple[float, float])->plt.figure:
