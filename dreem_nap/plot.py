@@ -302,8 +302,7 @@ def mut_rate_along_study(df:pd.DataFrame, study:Study, figsize=None):
     plt.ylabel('Mean mutation rate for the ROI')
     plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])
 
-
-def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], scale_x = 'lin', base_index='roi', figsize=(24,10))->None:
+def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], structure = 'roi', scale_x = 'lin', base_index='roi', overlay=0, figsize=(24,10))->None:
     """Generate line-plots of each base's mutation rate w.r.t a study's conditions, for a specific construct.
 
     Args:
@@ -311,14 +310,24 @@ def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases 
         study (Study): class containing relevant information about the series of sample that you want to use.
         construct (int): construct of interest.
         bases (list[str]): bases to display, sublist of ['A','C','G','T']
+        structure: what sequence the structure prediction is based on. Can be 'full' or 'roi'.
         scale_x (str): linear 'lin' or log 'log'
         base_index: default is 'roi'. Can also be an array of base indexes (list[int]). ex: [80, 83, 91]. Can also be a single value (int), ex: 84  
+        overlay (str or int or tuple[int]): extend/shrink roi
+            'all': the roi is all bases
+            int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
+            tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
         figsize (Tuple(int,int)): size of the plotted figure.
+    
+    Raise:
+        "overlay and base_index are non-compatible arguments."
     """
+
+    assert not (overlay != 0 and base_index != 'roi'), "overlay and base_index are non-compatible arguments."
 
     df_paired, df_not_paired = pd.DataFrame(), pd.DataFrame()
     for samp in study.samples:
-        df_roi = data_manip.get_roi_info(df, samp, construct, bases)
+        df_roi = data_manip.get_roi_info(df=df, samp=samp, construct=construct, bases=bases, structure=structure, roi_index=base_index, overlay=overlay)
         df_paired = pd.concat((df_paired, 
                               df_roi['mut_rate'].xs(True, level='paired').reset_index().set_index('index')
                               .drop(columns=['base','roi_structure_comparison']).transpose()))
@@ -329,24 +338,34 @@ def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases 
     df_paired, df_not_paired = df_paired.set_index(pd.Series(study.conditions)), df_not_paired.set_index(pd.Series(study.conditions))
 
     # Select base indexes
+    if type(base_index) == int or type(base_index) == float:
+        base_index = [int(base_index)]
+    if base_index == 'all':
+        base_index = list(set(df_paired.columns) | set(df_not_paired.columns))
+    if not base_index in ['roi','ROI']:
+        intersection = lambda lst1, lst2: list(set(lst1) & set(lst2))
+        paired_idx, not_paired_idx = intersection(df_paired.columns, base_index) , intersection(df_not_paired.columns, base_index)                 
+        df_paired, df_not_paired = df_paired[paired_idx].sort_index(axis=1), df_not_paired[not_paired_idx].sort_index(axis=1)
 
     # Plot it
     fig = plt.figure()
     fig.suptitle(f"Construct {construct}, {study.name}", fontsize=16)
     ax1, ax2 = plt.subplot(121), plt.subplot(122)
 
-    df_paired.plot(figsize=figsize,
-                    logx={'lin':False, 'log':True}[scale_x],
-                    ax=ax1, 
-                    sharey=True, 
-                    title='Paired bases',  
-                    xlabel=f"{study.title}",
-                    ylabel="Mutation rate")
-
-    df_not_paired.plot(figsize=figsize,
-                    logx={'lin':False, 'log':True}[scale_x],
-                    ax=ax2, 
-                    sharey=True, 
-                    title='Unpaired bases', 
-                    xlabel=f"{study.title}",
-                    ylabel="Mutation rate")
+    if not df_paired.empty:
+        df_paired.plot(figsize=figsize,
+                        logx={'lin':False, 'log':True}[scale_x],
+                        ax=ax1, 
+                        sharey=True, 
+                        title='Paired bases',  
+                        xlabel=f"{study.title}",
+                        ylabel="Mutation rate")
+    
+    if not df_not_paired.empty:
+        df_not_paired.plot(figsize=figsize,
+                        logx={'lin':False, 'log':True}[scale_x],
+                        ax=ax2, 
+                        sharey=True, 
+                        title='Unpaired bases', 
+                        xlabel=f"{study.title}",
+                        ylabel="Mutation rate")

@@ -27,8 +27,7 @@ def get_construct_attribute(df:pd.DataFrame, column:str)->pd.DataFrame:
 
     return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
-
-def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A','C'], structure = 'full', bases_overlay = 0)->pd.DataFrame:
+def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A','C'], structure = 'full', overlay = 0, roi_index='roi')->pd.DataFrame:
     """Returns a dataframe of the ROI of a specific (samp, construct).
 
     Args:
@@ -37,12 +36,13 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A',
         construct: a specific construct.
         bases: list of the bases to filter-in
         structure: 'full', 'roi', or 'both'. If 'full' or 'roi', the index 'paired' of the output will be corresponding to the structure prediction of the full RNA or only the ROI, respectively. If 'both', the output will be indexed w.r.t 'paired_full' and 'paired_roi'.  
-        bases_overlay (str or int or tuple[int]): extend/shrink roi
+        overlay (str or int or tuple[int]): extend/shrink roi
             'all': the roi is all bases
-            int-type argument: the roi is the subsequence [start_roi_index-bases_overlay, end_roi_index+bases_overlay] 
-            tuple[int]-type argument: the roi is the subsequence [start_roi_index-bases_overlay[0], end_roi_index+bases_overlay[1]] 
+            int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
+            tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
+        roi_index (tuple(int)): define roi's borders. roi_index[0] is the start (included), roi_index[1] is the end (excluded). Overlay must be 0. Default is 'roi'
 
-    Returns:
+    Return:
         Indexes:
             base: A, C, G, T.
             paired: pairing prediction of an RNA structure prediction software.
@@ -51,34 +51,44 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A',
         Columns:
             mut_rate: mutation rate of this base.
             roi_deltaG: the deltaG of the ROI sequence predicted b a RNA structure prediction software. 
+
+    Raise:
+        structure is 'roi' or 'full' and overlay is expanding the roi.
     """ 
 
     np.seterr(invalid='ignore')
-    df_use = df.set_index(['samp','construct'])
+    df_SC = df.set_index(['samp','construct']).loc[(samp,construct)]
 
-    def define_roi(df , bases_overlay):
-        if bases_overlay == 'all':
+    def define_roi(df , overlay):
+        if overlay == 'all':
             start, end = 1, len(df['base'])
-        if type(bases_overlay) == int:
-            bases_overlay = (bases_overlay, bases_overlay)
-        if type(bases_overlay) == tuple or type(bases_overlay) == list:
-            start, end = max(1, df['roi_start_index'] - bases_overlay[0]), min(len(df['base']), df['roi_end_index']+ bases_overlay[1])
+        if type(overlay) == int:
+            overlay = (overlay, overlay)
+        if type(overlay) == tuple or type(overlay) == list:
+            start, end = max(1, df['roi_start_index'] - overlay[0]), min(len(df['full_sequence']), df['roi_end_index']+ overlay[1])
         return start, end
 
+    if roi_index == 'roi':
+        start, end = define_roi(df_SC, overlay)
+    else:
+        start, end = roi_index[0], roi_index[-1]
+        
+    assert not (structure != 'full' and (start < int(df_SC['roi_start_index']) or end > int(df_SC['roi_end_index']))), "Impossible to expand the roi when using roi-based structure prediction"
+    assert not (overlay != 0 and roi_index != 'roi'), "overlay and roi_index are non-compatible arguments."
 
-    start, end = define_roi(df.loc[(samp,construct)], bases_overlay)
-
-    df_roi = pd.DataFrame({'mut_rate':pd.Series(np.array(df_use[f"mut_bases"].loc[samp, construct][1:])/np.array(df_use[f"info_bases"].loc[samp, construct][1:]), dtype=object),
-                            'base':list(df_use['full_sequence'].loc[samp, construct]),
-                            'paired': np.array([bool(x != '.') for x in list(df_use['full_structure'].loc[samp,construct])]),\
-                            'roi_structure_comparison': pd.Series(list(df_use['roi_structure_comparison'].loc[samp,construct]),index=list(range(start, end)))\
-                            ,'roi_deltaG':df_use['roi_deltaG'].loc[samp, construct]})\
-                            .dropna()\
+    df_roi = pd.DataFrame({'mut_rate':pd.Series(np.array(df_SC[f"mut_bases"][1:])/np.array(df_SC[f"info_bases"][1:]), dtype=object),
+                            'base':list(df_SC['full_sequence']),
+                            'paired': np.array([bool(x != '.') for x in list(df_SC['full_structure'])]),\
+                            'roi_structure_comparison': pd.Series(list(df_SC['roi_structure_comparison']),index=list(range(df_SC['roi_start_index'], df_SC['roi_end_index'])))\
+                            ,'roi_deltaG':df_SC['roi_deltaG']})\
                             .reset_index()
                             
-    df_roi = df_roi.where(df_roi['base'].isin(bases)).dropna()
+    df_roi = df_roi.where(df_roi['base'].isin(bases))#.dropna()
     
+    df_roi = df_roi[df_roi['index'].notnull()]
     df_roi['index'] =  df_roi['index'].astype(int)
+
+    df_roi = df_roi.set_index('index').loc[start:end].reset_index()
 
     if structure in ['roi','ROI','both']:
         df_roi['paired_roi'] = df_roi.apply(lambda row:  bool((int(row['paired'])+int(row['roi_structure_comparison']))%2)  , axis=1 )
