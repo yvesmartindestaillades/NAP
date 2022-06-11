@@ -28,14 +28,15 @@ def get_construct_attribute(df:pd.DataFrame, column:str)->pd.DataFrame:
     return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
 
-def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A','C'])->pd.DataFrame:
+def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A','C'], structure = 'full')->pd.DataFrame:
     """Returns a dataframe of the ROI of a specific (samp, construct).
 
     Args:
         df: a Pandas dataframe.
         samp: a specific sample.
         construct: a specific construct.
-        bases: list of the bases to filter in
+        bases: list of the bases to filter-in
+        structure: 'full', 'roi', or 'both'. If 'full' or 'roi', the index 'paired' of the output will be corresponding to the structure prediction of the full RNA or only the ROI, respectively. If 'both', the output will be indexed w.r.t 'paired_full' and 'paired_roi'.  
     
     Returns:
         Indexes:
@@ -62,8 +63,23 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A',
     df_roi = df_roi.where(df_roi['base'].isin(bases)).dropna()
     
     df_roi['index'] =  df_roi['index'].astype(int)
-    df_roi = df_roi.set_index(['base', 'paired', 'roi_structure_comparison','index'])
-                                    
+
+    if structure in ['roi','ROI','both']:
+        df_roi['paired_roi'] = df_roi.apply(lambda row:  bool((int(row['paired'])+int(row['roi_structure_comparison']))%2)  , axis=1 )
+
+    if structure == 'both':
+        df_roi = df_roi.rename(columns={'paired':'paired_full'})
+
+    if structure == 'roi':
+        df_roi = df_roi.drop(columns=['paired'])
+        df_roi = df_roi.rename(columns={'paired_roi':'paired'})
+
+    if structure in ['roi','ROI','full']:
+        df_roi = df_roi.set_index(['base', 'paired', 'roi_structure_comparison','index'])
+
+    if structure == 'both':
+        df_roi = df_roi.set_index(['base', 'paired_full', 'paired_roi', 'roi_structure_comparison','index'])
+
     return df_roi
 
 
