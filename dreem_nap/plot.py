@@ -303,7 +303,7 @@ def mut_rate_along_study(df:pd.DataFrame, study:Study, figsize=None):
     plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])
 
 
-def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], scale_x = 'lin', figsize=(24,10))->None:
+def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], scale_x = 'lin', base_index='roi', figsize=(24,10))->None:
     """Generate line-plots of each base's mutation rate w.r.t a study's conditions, for a specific construct.
 
     Args:
@@ -312,6 +312,7 @@ def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases 
         construct (int): construct of interest.
         bases (list[str]): bases to display, sublist of ['A','C','G','T']
         scale_x (str): linear 'lin' or log 'log'
+        base_index: default is 'roi'. Can also be an array of base indexes (list[int]). ex: [80, 83, 91]. Can also be a single value (int), ex: 84  
         figsize (Tuple(int,int)): size of the plotted figure.
     """
 
@@ -326,6 +327,8 @@ def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases 
                                    .drop(columns=['base','roi_structure_comparison']).transpose()))
 
     df_paired, df_not_paired = df_paired.set_index(pd.Series(study.conditions)), df_not_paired.set_index(pd.Series(study.conditions))
+
+    # Select base indexes
 
     # Plot it
     fig = plt.figure()
