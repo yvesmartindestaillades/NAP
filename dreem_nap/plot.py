@@ -303,19 +303,21 @@ def mut_rate_along_study(df:pd.DataFrame, study:Study, figsize=None):
     plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])
 
 
-def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, figsize=(24,10))->None:
+def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], scale_x = 'lin', figsize=(24,10))->None:
     """Generate line-plots of each base's mutation rate w.r.t a study's conditions, for a specific construct.
 
     Args:
         df (pd.DataFrame): dataframe of interest.
         study (Study): class containing relevant information about the series of sample that you want to use.
         construct (int): construct of interest.
+        bases (list[str]): bases to display, sublist of ['A','C','G','T']
+        scale_x (str): linear 'lin' or log 'log'
         figsize (Tuple(int,int)): size of the plotted figure.
     """
 
     df_paired, df_not_paired = pd.DataFrame(), pd.DataFrame()
     for samp in study.samples:
-        df_roi = data_manip.get_roi_info(df, samp, construct)
+        df_roi = data_manip.get_roi_info(df, samp, construct, bases)
         df_paired = pd.concat((df_paired, 
                               df_roi['mut_rate'].xs(True, level='paired').reset_index().set_index('index')
                               .drop(columns=['base','roi_structure_comparison']).transpose()))
@@ -331,7 +333,7 @@ def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, figsiz
     ax1, ax2 = plt.subplot(121), plt.subplot(122)
 
     df_paired.plot(figsize=figsize,
-                    logx=True,
+                    logx={'lin':False, 'log':True}[scale_x],
                     ax=ax1, 
                     sharey=True, 
                     title='Paired bases',  
@@ -339,7 +341,7 @@ def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, figsiz
                     ylabel="Mutation rate")
 
     df_not_paired.plot(figsize=figsize,
-                    logx=True,
+                    logx={'lin':False, 'log':True}[scale_x],
                     ax=ax2, 
                     sharey=True, 
                     title='Unpaired bases', 

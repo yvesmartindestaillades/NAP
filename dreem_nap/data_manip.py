@@ -28,13 +28,14 @@ def get_construct_attribute(df:pd.DataFrame, column:str)->pd.DataFrame:
     return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
 
-def get_roi_info(df:pd.DataFrame, samp:str, construct:int)->pd.DataFrame:
+def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A','C'])->pd.DataFrame:
     """Returns a dataframe of the ROI of a specific (samp, construct).
 
     Args:
         df: a Pandas dataframe.
         samp: a specific sample.
         construct: a specific construct.
+        bases: list of the bases to filter in
     
     Returns:
         Indexes:
@@ -45,21 +46,25 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int)->pd.DataFrame:
         Columns:
             mut_rate: mutation rate of this base.
             roi_deltaG: the deltaG of the ROI sequence predicted b a RNA structure prediction software. 
-    """
+    """ 
 
     np.seterr(invalid='ignore')
     df_use = df.set_index(['samp','construct'])
     start, end = df_use['roi_start_index'].loc[(samp,construct)] , df_use['roi_end_index'].loc[(samp,construct)]     
-    mut_per_base = pd.DataFrame({'mut_rate':pd.Series(np.array(df_use[f"mut_bases"].loc[samp, construct][1:])/np.array(df_use[f"info_bases"].loc[samp, construct][1:]), dtype=object),
+    df_roi = pd.DataFrame({'mut_rate':pd.Series(np.array(df_use[f"mut_bases"].loc[samp, construct][1:])/np.array(df_use[f"info_bases"].loc[samp, construct][1:]), dtype=object),
                             'base':list(df_use['full_sequence'].loc[samp, construct]),
                             'paired': np.array([bool(x != '.') for x in list(df_use['full_structure'].loc[samp,construct])]),\
-                            'roi_structure_comparison': pd.Series(list(df_use['roi_structure_comparison'].loc[samp,construct]), index=list(range(start, end)))\
+                            'roi_structure_comparison': pd.Series(list(df_use['roi_structure_comparison'].loc[samp,construct]),index=list(range(start, end)))\
                             ,'roi_deltaG':df_use['roi_deltaG'].loc[samp, construct]})\
                             .dropna()\
-                            .reset_index()\
-                            .set_index(['base', 'paired', 'roi_structure_comparison','index'])
-    return mut_per_base
-
+                            .reset_index()
+                            
+    df_roi = df_roi.where(df_roi['base'].isin(bases)).dropna()
+    
+    df_roi['index'] =  df_roi['index'].astype(int)
+    df_roi = df_roi.set_index(['base', 'paired', 'roi_structure_comparison','index'])
+                                    
+    return df_roi
 
 
 def columns_to_csv(df:pd.DataFrame, study:Study, columns:List[str], title:str, path:str)->None:
