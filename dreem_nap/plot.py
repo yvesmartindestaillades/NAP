@@ -124,7 +124,7 @@ def heatmap(df:pd.DataFrame, column:str)->None:
     sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
 
-def mutation_rate(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None:
+def mut_histogram(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None:
     """Plot the mutation rate of a specific (sample, construct).
 
     Args:
@@ -277,7 +277,7 @@ def correlation_n_samples(df:pd.DataFrame, study:Study, constructs:List[int])->p
                 'Fit'])
     return df_global_corr
 
-def mut_rate_along_study(df:pd.DataFrame, study:Study, figsize=None):
+def study_sample(df:pd.DataFrame, study:Study, figsize=None):
     """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
     Args:
@@ -302,7 +302,7 @@ def mut_rate_along_study(df:pd.DataFrame, study:Study, figsize=None):
     plt.ylabel('Mean mutation rate for the ROI')
     plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])
 
-def study_base_wise_mut_rate(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], structure = 'roi', scale_x = 'lin', base_index='roi', overlay=0, figsize=(24,10))->None:
+def study_base(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], structure = 'roi', scale_x = 'lin', base_index='roi', overlay=0, figsize=(24,10))->None:
     """Generate line-plots of each base's mutation rate w.r.t a study's conditions, for a specific construct.
 
     Args:

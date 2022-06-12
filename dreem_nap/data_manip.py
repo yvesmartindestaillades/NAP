@@ -88,7 +88,7 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A',
     df_roi = df_roi[df_roi['index'].notnull()]
     df_roi['index'] =  df_roi['index'].astype(int)
 
-    df_roi = df_roi.set_index('index').loc[start:end].reset_index()
+    df_roi = df_roi.set_index('index').loc[start:end-1].reset_index()
 
     if structure in ['roi','ROI','both']:
         df_roi['paired_roi'] = df_roi.apply(lambda row:  bool((int(row['paired'])+int(row['roi_structure_comparison']))%2)  , axis=1 )
