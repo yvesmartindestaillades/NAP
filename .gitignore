@@ -136,5 +136,4 @@ data/output
 data/test_output
 data/sequence_data.xlsx
 data/db.json
-
-push_to_pypi.sh
+scripts
