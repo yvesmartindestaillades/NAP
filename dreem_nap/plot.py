@@ -129,7 +129,7 @@ def mut_histogram(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None
 
     Args:
         plot_type: 'sequence' or 'partition'. 
-            - 'sequence' uses bases numbers as index and the original construct bases as colors.
+            - 'index' uses bases numbers as index and the original construct bases as colors.
             - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
         df: dataframe of interest.
         samp]: sample of interest.
@@ -138,10 +138,10 @@ def mut_histogram(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None
 
     df_use = df.set_index(['samp','construct'])
     
-    if not plot_type in ['sequence','partition']:
-        raise f"{plot_type} must be 'sequence' or 'partition', please check this argument"
+    if not plot_type in ['index','partition']:
+        raise f"{plot_type} must be 'index' or 'partition', please check this argument"
 
-    if plot_type == 'sequence':  # Plot the mutation rate for each base along the sequence
+    if plot_type == 'index':  # Plot the mutation rate for each base along the sequence
 
         mut_per_base = pd.DataFrame({'mut_rate': pd.Series(np.array(df_use[f"mut_bases"].loc[samp, construct][1:])/np.array(df_use[f"info_bases"].loc[samp, construct][1:]), dtype=object)
                                     ,'base':list(df_use['full_sequence'].loc[samp, construct])})\
@@ -277,27 +277,40 @@ def correlation_n_samples(df:pd.DataFrame, study:Study, constructs:List[int])->p
                 'Fit'])
     return df_global_corr
 
-def study_sample(df:pd.DataFrame, study:Study, figsize=None):
+def study_sample(df:pd.DataFrame, study:Study, bases:list[str]=['A','C'], structure='full', scale_x = 'lin', overlay=0, figsize=None):
     """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
     Args:
         df (pd.DataFrame): dataframe of interest.
         samples (list[str]): samples of interest.
         study: class containing relevant information about the series of sample that you want to use.
+        bases: list of the bases to filter-in
+        structure: what sequence the structure prediction is based on. Can be 'full' or 'roi'.
+        scale_x (str): linear 'lin' or log 'log'
+        overlay (str or int or tuple[int]): extend/shrink roi
+            'all': the roi is all bases
+            int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
+            tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
+        figsize (Tuple(int,int)): size of the plotted figure.
+
     """
     samples = study.samples
     paired, unpaired = np.zeros(len(samples)), np.zeros(len(samples))
     for count, samp in enumerate(samples):
         for construct in df.construct.unique():
-            df_roi = data_manip.get_roi_info(df, samp, construct)
-            paired[count] += df_roi.xs(True, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
-            unpaired[count] += df_roi.xs(False, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
+            df_roi = data_manip.get_roi_info(df, samp, construct, bases=bases,overlay=overlay, structure=structure)
+            if True in df_roi.reset_index()['paired'].unique():
+                paired[count] += df_roi.xs(True, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
+            if False in df_roi.reset_index()['paired'].unique():
+                unpaired[count] += df_roi.xs(False, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
     if figsize != None:
         plt.figure(figsize=figsize)
     else:
         plt.figure()
-    plt.plot(study.conditions, paired, 'r.-')
-    plt.plot(study.conditions, unpaired, 'b.-')
+    
+    scaled_plot = {'lin':plt.plot, 'log':plt.semilogx}[scale_x]
+    scaled_plot(study.conditions, paired, 'r.-')
+    scaled_plot(study.conditions, unpaired, 'b.-')
     plt.xlabel(f"{study.title}")
     plt.ylabel('Mean mutation rate for the ROI')
     plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])
