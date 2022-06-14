@@ -10,7 +10,23 @@ NAP works through two steps:
 #. :ref:`Data processing`. Merge the output of DREEM with the output of RNAstructure (or any other RNA structure prediction tool), process it and push it to the database.
 #. :ref:`Data analysis`. Define a study, pull the corresponding data from the database, and generate plots and csv files.
 
+
+.. blockdiag::
+    :align: center    
+    :width: 400
+
+    blockdiag {
+        group {
+            orientation = landscape;
+            color = lightgray;
+            'NAP data wrangler' -> database -> 'NAP plot';
+            }
+    }
+
+
 Both steps will be described here.
+
+
 
 
 Terminology

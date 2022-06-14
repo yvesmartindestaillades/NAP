@@ -44,12 +44,12 @@ release = '01.07.22'
 # ones.
 
 extensions = [
+    'sphinx.ext.napoleon',
     'sphinx.ext.duration',
     'sphinx.ext.doctest',
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon',
     'sphinxcontrib.blockdiag',
     'sphinx.ext.autosectionlabel',
 ]
