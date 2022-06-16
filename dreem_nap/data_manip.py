@@ -27,7 +27,7 @@ def get_construct_attribute(df:pd.DataFrame, column:str)->pd.DataFrame:
 
     return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
-def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A','C'], structure = 'full', overlay = 0, roi_index='roi')->pd.DataFrame:
+def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A','C'], structure = 'full', overlay = 0, roi_range='roi')->pd.DataFrame:
     """Returns a dataframe of the ROI of a specific (samp, construct).
 
     Args:
@@ -40,7 +40,7 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A',
             'all': the roi is all bases
             int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
             tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
-        roi_index (tuple(int)): define roi's borders. roi_index[0] is the start (included), roi_index[1] is the end (excluded). Overlay must be 0. Default is 'roi'
+        roi_range (tuple(int)): define roi's borders. roi_range[0] is the start (included), roi_range[1] is the end (excluded). Overlay must be 0. Default is 'roi'
 
     Return:
         Indexes:
@@ -68,13 +68,13 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases:list[str]=['A',
             start, end = max(1, df['roi_start_index'] - overlay[0]), min(len(df['full_sequence']), df['roi_end_index']+ overlay[1])
         return start, end
 
-    if roi_index == 'roi':
+    if roi_range == 'roi':
         start, end = define_roi(df_SC, overlay)
     else:
-        start, end = roi_index[0], roi_index[-1]
+        start, end = roi_range[0], roi_range[-1]
         
     assert not (structure != 'full' and (start < int(df_SC['roi_start_index']) or end > int(df_SC['roi_end_index']))), "Impossible to expand the roi when using roi-based structure prediction"
-    assert not (overlay != 0 and roi_index != 'roi'), "overlay and roi_index are non-compatible arguments."
+    assert not (overlay != 0 and roi_range != 'roi'), "overlay and roi_index are non-compatible arguments."
 
     df_roi = pd.DataFrame({'mut_rate':pd.Series(np.array(df_SC[f"mut_bases"][1:])/np.array(df_SC[f"info_bases"][1:]), dtype=object),
                             'base':list(df_SC['full_sequence']),
@@ -153,3 +153,5 @@ def rand_sample_construct(df:pd.DataFrame, n_samples:int=1, n_constructs:int=1)-
         these_constructs = these_constructs[0]
 
     return these_samples, these_constructs
+
+
