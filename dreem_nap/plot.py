@@ -277,14 +277,14 @@ def correlation_n_samples(df:pd.DataFrame, study:Study, constructs:List[int])->p
                 'Fit'])
     return df_global_corr
 
-def study_sample(df:pd.DataFrame, study:Study, bases:list[str]=['A','C'], structure='full', scale_x = 'lin', overlay=0, figsize=None):
     """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
     Args:
-        df (pd.DataFrame): dataframe of interest.
+        df (pd.DataFrame): 
         samples (list[str]): samples of interest.
         study: class containing relevant information about the series of sample that you want to use.
         bases: list of the bases to filter-in
+        sub_lib: select a specific set of constructs by grouping by the 'sub_library' column of the df
         structure: what sequence the structure prediction is based on. Can be 'full' or 'roi'.
         scale_x (str): linear 'lin' or log 'log'
         overlay (str or int or tuple[int]): extend/shrink roi
@@ -292,12 +292,42 @@ def study_sample(df:pd.DataFrame, study:Study, bases:list[str]=['A','C'], struct
             int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
             tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
         figsize (Tuple(int,int)): size of the plotted figure.
-
     """
+
+
+def study_sample(df:pd.DataFrame, study:Study, bases:list[str]=['A','C'], sub_lib:str=None, structure:str='full', scale_x:str = 'lin', overlay=0, figsize:Tuple[float,float]=None):
+    """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
+
+    Args:
+        df (pd.DataFrame): dataframe of interest.
+        study (Study): class containing relevant information about the series of sample that you want to use.
+        bases (list[str], optional): list of the bases to filter-in. Defaults to ['A','C'].
+        sub_lib (str, optional): select a specific set of constructs by grouping by the 'sub_library' column of the df. Defaults to None.
+        structure (str, optional): what sequence the structure prediction is based on. Can be 'full' or 'roi'. Defaults to 'full'.
+        scale_x (str, optional):  linear 'lin' or log 'log' for the x scale of plots. Defaults to 'lin'.
+        overlay (int, optional): extend/shrink roi. Defaults to 0.
+            'all': the roi is all bases
+            int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
+            tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
+        figsize (Tuple, optional): size of the plotted figure. Defaults to None.
+
+    Raises:
+        f: if sub-library isn't a valid element of the 'sub-library' column of the dataframe.
+    """
+
+    if sub_lib == None:
+        constructs = df.construct.unique()
+    else:
+        if not sub_lib in df['sub-library'].unique():
+            raise f"arg {sub_lib} is not a sub-library of the df"
+
+        constructs = df[df['sub-library'] ==sub_lib].construct.unique()
+
+
     samples = study.samples
     paired, unpaired = np.zeros(len(samples)), np.zeros(len(samples))
     for count, samp in enumerate(samples):
-        for construct in df.construct.unique():
+        for construct in constructs:
             df_roi = data_manip.get_roi_info(df, samp, construct, bases=bases,overlay=overlay, structure=structure)
             if True in df_roi.reset_index()['paired'].unique():
                 paired[count] += df_roi.xs(True, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
@@ -341,14 +371,19 @@ def study_base(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], s
     df_paired, df_not_paired = pd.DataFrame(), pd.DataFrame()
     for samp in study.samples:
         df_roi = data_manip.get_roi_info(df=df, samp=samp, construct=construct, bases=bases, structure=structure, roi_index=base_index, overlay=overlay)
-        df_paired = pd.concat((df_paired, 
+        if True in df_roi.reset_index()['paired'].unique():
+            df_paired = pd.concat((df_paired, 
                               df_roi['mut_rate'].xs(True, level='paired').reset_index().set_index('index')
                               .drop(columns=['base','roi_structure_comparison']).transpose()))
-        df_not_paired = pd.concat((df_not_paired, 
+        if False in df_roi.reset_index()['paired'].unique():
+            df_not_paired = pd.concat((df_not_paired, 
                                    df_roi['mut_rate'].xs(False, level='paired').reset_index().set_index('index')
                                    .drop(columns=['base','roi_structure_comparison']).transpose()))
+    if not df_paired.empty:
+        df_paired = df_paired.set_index(pd.Series(study.conditions))
 
-    df_paired, df_not_paired = df_paired.set_index(pd.Series(study.conditions)), df_not_paired.set_index(pd.Series(study.conditions))
+    if not df_not_paired.empty:
+        df_not_paired = df_not_paired.set_index(pd.Series(study.conditions))
 
     # Select base indexes
     if type(base_index) == int or type(base_index) == float:
@@ -357,8 +392,14 @@ def study_base(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], s
         base_index = list(set(df_paired.columns) | set(df_not_paired.columns))
     if not base_index in ['roi','ROI']:
         intersection = lambda lst1, lst2: list(set(lst1) & set(lst2))
-        paired_idx, not_paired_idx = intersection(df_paired.columns, base_index) , intersection(df_not_paired.columns, base_index)                 
-        df_paired, df_not_paired = df_paired[paired_idx].sort_index(axis=1), df_not_paired[not_paired_idx].sort_index(axis=1)
+
+        if not df_paired.empty:
+            paired_idx = intersection(df_paired.columns, base_index)
+            df_paired = df_paired[paired_idx].sort_index(axis=1)
+
+        if not df_not_paired.empty:
+            not_paired_idx = intersection(df_not_paired.columns, base_index)    
+            df_not_paired = df_not_paired[not_paired_idx].sort_index(axis=1)
 
     # Plot it
     fig = plt.figure()

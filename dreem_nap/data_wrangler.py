@@ -186,7 +186,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
     print('Done!')
 
 
-def clean_dataset(df_database:pd.DataFrame, studies:dict[Study], verbose:bool = True):
+def clean_dataset(df_database:pd.DataFrame, study:Study, verbose:bool = True):
     """Process the content of the Firebase into Pandas dataframes.
 
     Args:
@@ -199,11 +199,62 @@ def clean_dataset(df_database:pd.DataFrame, studies:dict[Study], verbose:bool = 
         pd.DataFrame: The same content as df_database, with an additional 'samples_covered' column, corresponding to the amount of samples for containing this construct.
     """
 
-    # Only keep desired pickle files
-    samples = []
-    for s in pd.DataFrame.from_dict({study: studies[study].to_dict()  for study in studies}, orient='index')['samples']:
-        samples += s
-    df_full = df_database[df_database['samp'].isin(samples)]
+
+    """
+        def clean_dataset(df_database:pd.DataFrame, studies:dict[Study], verbose:bool = True):
+
+        # Only keep desired pickle files
+        samples = []
+        for s in pd.DataFrame.from_dict({study: studies[study].to_dict()  for study in studies}, orient='index')['samples']:
+            samples += s
+        df_full = df_database[df_database['samp'].isin(samples)]
+
+        # Only keep desired pickle files
+        df_full = df_database[df_database['samp'].isin(samples)]
+
+        # Check how many samples reach 1000 reads on each base for a given construct
+        df_full['samples_covered'] = pd.Series(dtype=int)
+        for construct in df_full.groupby('construct'):
+            df_full['samples_covered'].loc[construct[1].index] = construct[1]['full_sequence'].count()
+
+        # Only keep constructs that reach 1000 reads in every sample    
+        # Check how many samples reach 1000 reads on each base for a given construct
+        
+        df = pd.DataFrame()
+
+        for study in studies:
+            cont = 0
+            for doubles in ['replicate','all samples', 'TO DO']:
+                if studies[study].name in doubles:
+                    cont = 1
+            if cont:
+                continue
+            df_loc = df_full[df_full['samp'].isin(studies[study].samples)].set_index('construct')
+            # print(df_loc.groupby('construct').count()['samp'])
+            df_loc = df_loc[df_loc.groupby('construct').count()['samp'] == len(studies[study].samples)]
+            df = pd.concat((df, df_loc))
+        df = df.reset_index() 
+        df = df.loc[df.astype(str).drop_duplicates().index]
+
+
+        number_of_void_dropped = (data_manip.get_construct_attribute(df, 'roi_deltaG' )=='void').apply(int).sum()
+        if verbose: print(f"{number_of_void_dropped} constructs were dropped because deltaG was 'void'")
+        df = df[df['roi_deltaG'] != 'void']
+
+        df = df.astype(dtype={'samp': str, 'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
+        'roi_end_index':int, 'roi_deltaG':float, 'full_deltaG':float,
+        'roi_structure_comparison':str, 'full_structure':str, 'data_type':str,
+        'num_reads':int, 'num_aligned':int, 'num_of_mutations':object, 'mut_bases':object,
+        'info_bases':object, 'del_bases':object, 'ins_bases':object, 'cov_bases':object, 'start':int, 'end':int,
+        'mod_bases_A':object, 'mod_bases_C':object, 'mod_bases_G':object, 'mod_bases_T':object,
+        'skips_low_mapq':int, 'skips_short_read':int, 'skips_too_many_muts':int,
+        'cov_bases_roi':int, 'cov_bases_sec_half':int, 'samples_covered':int,
+        'sub-library':str, 'flank':str})
+
+        return df, df_full
+    """
+
+    samples = study.samples
 
     # Only keep desired pickle files
     df_full = df_database[df_database['samp'].isin(samples)]
@@ -214,18 +265,7 @@ def clean_dataset(df_database:pd.DataFrame, studies:dict[Study], verbose:bool = 
         df_full['samples_covered'].loc[construct[1].index] = construct[1]['full_sequence'].count()
 
     # Only keep constructs that reach 1000 reads in every sample    
-     # Check how many samples reach 1000 reads on each base for a given construct
-     
-    df = pd.DataFrame()
-
-    for study in studies:
-      df_loc = df_full[df_full['samp'].isin(studies[study].samples)].set_index('construct')
-    # print(df_loc.groupby('construct').count()['samp'])
-      df_loc = df_loc[df_loc.groupby('construct').count()['samp'] == len(studies[study].samples)]
-      df = pd.concat((df, df_loc))
-    df = df.reset_index() 
-    df = df.loc[df.astype(str).drop_duplicates().index]
-
+    df = df_full[df_full['samples_covered'] == len(samples)].reset_index().drop(columns='index')
 
     number_of_void_dropped = (data_manip.get_construct_attribute(df, 'roi_deltaG' )=='void').apply(int).sum()
     if verbose: print(f"{number_of_void_dropped} constructs were dropped because deltaG was 'void'")
@@ -242,6 +282,7 @@ def clean_dataset(df_database:pd.DataFrame, studies:dict[Study], verbose:bool = 
     'sub-library':str, 'flank':str})
 
     return df, df_full
+
 
 
 def load_studies(studies_file_path:str)->pd.DataFrame:
