@@ -7,6 +7,7 @@ from os.path import exists, dirname
 import os, sys
 from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
+from sqlalchemy import over
 
 from dreem_nap.study import Study
 sys.path.append(os.path.abspath(""))
@@ -170,7 +171,7 @@ def mut_histogram(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None
         ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
 
 
-def deltaG(df:pd.DataFrame, samp:str)->None:
+def deltaG(df:pd.DataFrame, samp:str, bases_type=['A','C'])->None:
     """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
     
     Args:
@@ -187,7 +188,7 @@ def deltaG(df:pd.DataFrame, samp:str)->None:
 
     for construct in df.construct.unique():
         roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct)
-        for base in ['A','C']:
+        for base in bases_type:
             for roi_struct_comp in ['0','1']:
                 try:    
                     this_base_mut =  roi_part.xs((base,True,roi_struct_comp), level=('base','paired','roi_structure_comparison'))
@@ -195,6 +196,39 @@ def deltaG(df:pd.DataFrame, samp:str)->None:
                     stack_for_plot[roi_struct_comp]['y'].extend(this_base_mut['mut_rate'].to_list())
                 except:
                     continue
+    plt.plot(stack_for_plot['0']['x'],stack_for_plot['0']['y'],'b.')
+    plt.plot(stack_for_plot['1']['x'],stack_for_plot['1']['y'],'r.')
+    plt.legend(['A and C bases of the ROI, predicted paired by RNAstructure for both the ROI sequence and the full sequence',\
+                'A and C bases of the ROI part, predicted paired by RNAstructure for the full sequence but not for the ROI sequence'])
+    plt.ylim([0,0.15])
+    fig.tight_layout()
+
+
+def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range:List[int], style='.')->None:
+    """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
+    
+    Args:
+        df: dataframe of interest.
+        sample: sample of interest.
+    """
+
+    fig = utils.define_figure(title=samp,
+                            xlabel='deltaG [kcal]',
+                            ylabel='Mutation ratio',
+                            figsize=(20,5))
+
+    stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
+
+    for construct in df.construct.unique():
+        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct)
+        for roi_struct_comp in ['0','1']:
+            try:    
+                this_base_mut = roi_part.xs((True,roi_struct_comp), level=('paired','roi_structure_comparison')).reset_index()
+                this_base_mut = this_base_mut[this_base_mut['index'].isin(roi_range)]
+                stack_for_plot[roi_struct_comp]['x'].extend(this_base_mut['roi_deltaG'].to_list())
+                stack_for_plot[roi_struct_comp]['y'].extend(this_base_mut['mut_rate'].to_list())
+            except:
+                continue
     plt.plot(stack_for_plot['0']['x'],stack_for_plot['0']['y'],'b.')
     plt.plot(stack_for_plot['1']['x'],stack_for_plot['1']['y'],'r.')
     plt.legend(['A and C bases of the ROI, predicted paired by RNAstructure for both the ROI sequence and the full sequence',\
@@ -277,38 +311,22 @@ def correlation_n_samples(df:pd.DataFrame, study:Study, constructs:List[int])->p
                 'Fit'])
     return df_global_corr
 
-    """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
-    Args:
-        df (pd.DataFrame): 
-        samples (list[str]): samples of interest.
-        study: class containing relevant information about the series of sample that you want to use.
-        bases: list of the bases to filter-in
-        sub_lib: select a specific set of constructs by grouping by the 'sub_library' column of the df
-        structure: what sequence the structure prediction is based on. Can be 'full' or 'roi'.
-        scale_x (str): linear 'lin' or log 'log'
-        overlay (str or int or tuple[int]): extend/shrink roi
-            'all': the roi is all bases
-            int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
-            tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
-        figsize (Tuple(int,int)): size of the plotted figure.
-    """
-
-
-def study_sample(df:pd.DataFrame, study:Study, bases:list[str]=['A','C'], sub_lib:str=None, structure:str='full', scale_x:str = 'lin', overlay=0, figsize:Tuple[float,float]=None):
+def study_sample(df:pd.DataFrame, study:Study, bases_type:list[str]=['A','C'], sub_lib:str=None, structure:str='full', scale_x:str = 'lin', roi_range=None, overlay=0, figsize:Tuple[float,float]=None):
     """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
     Args:
         df (pd.DataFrame): dataframe of interest.
         study (Study): class containing relevant information about the series of sample that you want to use.
-        bases (list[str], optional): list of the bases to filter-in. Defaults to ['A','C'].
+        bases_type (list[str], optional): list of the bases to filter-in. Defaults to ['A','C'].
         sub_lib (str, optional): select a specific set of constructs by grouping by the 'sub_library' column of the df. Defaults to None.
         structure (str, optional): what sequence the structure prediction is based on. Can be 'full' or 'roi'. Defaults to 'full'.
+        roi_range: default is None. Array of base indexes (list[int]). ex: [80, 83, 91].
         scale_x (str, optional):  linear 'lin' or log 'log' for the x scale of plots. Defaults to 'lin'.
         overlay (int, optional): extend/shrink roi. Defaults to 0.
             'all': the roi is all bases
             int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
-            tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
+            tuple[int]-type argument: the roi is the subsequence [start_roi_index+overlay[0], end_roi_index+overlay[1]].
         figsize (Tuple, optional): size of the plotted figure. Defaults to None.
 
     Raises:
@@ -323,20 +341,23 @@ def study_sample(df:pd.DataFrame, study:Study, bases:list[str]=['A','C'], sub_li
 
         constructs = df[df['sub-library'] ==sub_lib].construct.unique()
 
+    roi_range, roi_range_name = utils.roi_range_calc(overlay, roi_range, 
+                                                roi_bounds=[df[df.construct==construct]['roi_start_index'].iloc[0], df[df.construct==construct]['roi_end_index'].iloc[0]],
+                                                full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])
 
     samples = study.samples
     paired, unpaired = np.zeros(len(samples)), np.zeros(len(samples))
     for count, samp in enumerate(samples):
         for construct in constructs:
-            df_roi = data_manip.get_roi_info(df, samp, construct, bases=bases,overlay=overlay, structure=structure)
+            df_roi = data_manip.get_roi_info(df, samp, construct, bases_type=bases_type,structure=structure, roi_range=roi_range)
             if True in df_roi.reset_index()['paired'].unique():
                 paired[count] += df_roi.xs(True, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
             if False in df_roi.reset_index()['paired'].unique():
                 unpaired[count] += df_roi.xs(False, level= 'paired')['mut_rate'].mean()/len( df.construct.unique())
     if figsize != None:
-        plt.figure(figsize=figsize)
+        fig = plt.figure(figsize=figsize)
     else:
-        plt.figure()
+        fig = plt.figure()
     
     scaled_plot = {'lin':plt.plot, 'log':plt.semilogx}[scale_x]
     scaled_plot(study.conditions, paired, 'r.-')
@@ -345,32 +366,45 @@ def study_sample(df:pd.DataFrame, study:Study, bases:list[str]=['A','C'], sub_li
     plt.ylabel('Mean mutation rate for the ROI')
     plt.legend(['Paired-predicted bases','Unpaired-predicted bases'])
 
-def study_base(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], structure = 'roi', scale_x = 'lin', base_index='roi', overlay=0, figsize=(24,10))->None:
+        
+    fig.suptitle(f"Study: {study.name}, sub-library: {sub_lib}, bases types: {bases_type}, structure prediction: {structure}, roi_range: {roi_range_name}", fontsize=16)
+
+
+
+
+
+
+def study_base(df:pd.DataFrame, study:Study, construct:int, bases_type = ['A','C'], structure = 'roi', scale_x = 'lin', roi_range:List[int]=None, overlay=0, figsize=(24,10))->None:
     """Generate line-plots of each base's mutation rate w.r.t a study's conditions, for a specific construct.
 
     Args:
         df (pd.DataFrame): dataframe of interest.
         study (Study): class containing relevant information about the series of sample that you want to use.
         construct (int): construct of interest.
-        bases (list[str]): bases to display, sublist of ['A','C','G','T']
+        bases_type (list[str]): bases to display, sublist of ['A','C','G','T']
         structure: what sequence the structure prediction is based on. Can be 'full' or 'roi'.
         scale_x (str): linear 'lin' or log 'log'
-        base_index: default is 'roi'. Can also be an array of base indexes (list[int]). ex: [80, 83, 91]. Can also be a single value (int), ex: 84  
+        roi_range: default is None. Array of base indexes (list[int]). ex: [80, 83, 91].
         overlay (str or int or tuple[int]): extend/shrink roi
             'all': the roi is all bases
             int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
-            tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
+            tuple[int]-type argument: the roi is the subsequence [start_roi_index+overlay[0], end_roi_index+overlay[1]].
         figsize (Tuple(int,int)): size of the plotted figure.
     
     Raise:
-        "overlay and base_index are non-compatible arguments."
+        "overlay and roi_range are non-compatible arguments."
     """
 
-    assert not (overlay != 0 and base_index != 'roi'), "overlay and base_index are non-compatible arguments."
+    assert not (overlay != 0 and roi_range != None), "overlay and roi_range are non-compatible arguments."
 
     df_paired, df_not_paired = pd.DataFrame(), pd.DataFrame()
+
+    roi_range, roi_range_name = utils.roi_range_calc(overlay, roi_range, 
+                                                roi_bounds=[df[df.construct==construct]['roi_start_index'].iloc[0], df[df.construct==construct]['roi_end_index'].iloc[0]],
+                                                full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])
+
     for samp in study.samples:
-        df_roi = data_manip.get_roi_info(df=df, samp=samp, construct=construct, bases=bases, structure=structure, roi_index=base_index, overlay=overlay)
+        df_roi = data_manip.get_roi_info(df=df, samp=samp, construct=construct, bases_type=bases_type, structure=structure, roi_range=roi_range)
         if True in df_roi.reset_index()['paired'].unique():
             df_paired = pd.concat((df_paired, 
                               df_roi['mut_rate'].xs(True, level='paired').reset_index().set_index('index')
@@ -379,47 +413,40 @@ def study_base(df:pd.DataFrame, study:Study, construct:int, bases = ['A','C'], s
             df_not_paired = pd.concat((df_not_paired, 
                                    df_roi['mut_rate'].xs(False, level='paired').reset_index().set_index('index')
                                    .drop(columns=['base','roi_structure_comparison']).transpose()))
+
+
+    intersection = lambda lst1, lst2: list(set(lst1) & set(lst2))
+
     if not df_paired.empty:
         df_paired = df_paired.set_index(pd.Series(study.conditions))
+        paired_idx = intersection(df_paired.columns, roi_range)
+        df_paired = df_paired[paired_idx].sort_index(axis=1)
 
     if not df_not_paired.empty:
         df_not_paired = df_not_paired.set_index(pd.Series(study.conditions))
-
-    # Select base indexes
-    if type(base_index) == int or type(base_index) == float:
-        base_index = [int(base_index)]
-    if base_index == 'all':
-        base_index = list(set(df_paired.columns) | set(df_not_paired.columns))
-    if not base_index in ['roi','ROI']:
-        intersection = lambda lst1, lst2: list(set(lst1) & set(lst2))
-
-        if not df_paired.empty:
-            paired_idx = intersection(df_paired.columns, base_index)
-            df_paired = df_paired[paired_idx].sort_index(axis=1)
-
-        if not df_not_paired.empty:
-            not_paired_idx = intersection(df_not_paired.columns, base_index)    
-            df_not_paired = df_not_paired[not_paired_idx].sort_index(axis=1)
+        not_paired_idx = intersection(df_not_paired.columns, roi_range)    
+        df_not_paired = df_not_paired[not_paired_idx].sort_index(axis=1)
 
     # Plot it
     fig = plt.figure()
-    fig.suptitle(f"Construct {construct}, {study.name}", fontsize=16)
+    fig.suptitle(f"Construct: {construct}, study: {study.name}, bases types: {bases_type}, structure prediction: {structure}, roi_range: {roi_range_name}", fontsize=16)
     ax1, ax2 = plt.subplot(121), plt.subplot(122)
 
     if not df_paired.empty:
         df_paired.plot(figsize=figsize,
                         logx={'lin':False, 'log':True}[scale_x],
                         ax=ax1, 
-                        sharey=True, 
                         title='Paired bases',  
                         xlabel=f"{study.title}",
-                        ylabel="Mutation rate")
+                        ylabel="Mutation rate", 
+                        style='.-')
     
     if not df_not_paired.empty:
         df_not_paired.plot(figsize=figsize,
                         logx={'lin':False, 'log':True}[scale_x],
                         ax=ax2, 
-                        sharey=True, 
                         title='Unpaired bases', 
                         xlabel=f"{study.title}",
-                        ylabel="Mutation rate")
+                        ylabel="Mutation rate",
+                        style='.-')
+    
