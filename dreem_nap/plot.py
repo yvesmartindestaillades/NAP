@@ -7,7 +7,6 @@ from os.path import exists, dirname
 import os, sys
 from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
-from sqlalchemy import over
 
 from dreem_nap.study import Study
 sys.path.append(os.path.abspath(""))
