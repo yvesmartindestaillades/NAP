@@ -137,3 +137,4 @@ data/test_output
 data/sequence_data.xlsx
 data/db.json
 scripts
+venv-nap
