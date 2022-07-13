@@ -138,3 +138,6 @@ data/sequence_data.xlsx
 data/db.json
 scripts
 venv-nap
+data/MULTIPLEXED
+data/DEMULTIPLEXED
+data/saved_db
