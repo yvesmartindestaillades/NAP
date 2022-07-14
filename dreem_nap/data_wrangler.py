@@ -135,6 +135,8 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
         df_temp = df_temp[df_temp['cov_bases_roi'] >= min_bases_cov]
         df_temp['min_bases_cov'] = min_bases_cov
 
+        df_temp['base_pairing_prob'] = df_temp['base_pairing_prob'].apply(lambda constr: [float(p) for p in constr.split(" ")])
+
         df_temp = df_temp.astype(dtype={'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
         'roi_end_index':int, 'roi_structure_comparison':str, 'full_structure':str, 'data_type':str,
         'num_reads':int, 'num_aligned':int, 'num_of_mutations':object, 'mut_bases':object,
@@ -210,6 +212,8 @@ def filter_constructs_study_wise(df_database:pd.DataFrame, studies, verbose:bool
     
     df = df[df['roi_deltaG'] != 'void']
     df_void = df[df['roi_deltaG'] == 'void'].copy()
+
+
 
     df = df.astype(dtype={'samp': str, 'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
     'roi_end_index':int, 'roi_deltaG':float, 'full_deltaG':float,
