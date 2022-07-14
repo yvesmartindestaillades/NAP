@@ -185,7 +185,7 @@ def deltaG(df:pd.DataFrame, samp:str, bases_type=['A','C'])->None:
 
     stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
 
-    for construct in df.construct.unique():
+    for construct in df[df.samp==samp].construct.unique():
         roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct)
         for base in bases_type:
             for roi_struct_comp in ['0','1']:
@@ -203,37 +203,63 @@ def deltaG(df:pd.DataFrame, samp:str, bases_type=['A','C'])->None:
     fig.tight_layout()
 
 
-def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range:List[int], style='.')->None:
+def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range, sublib = None, full_seq_pairing=None, style='.', figsize=(20,5))->None:
     """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
     
     Args:
         df: dataframe of interest.
         sample: sample of interest.
+        roi_range: 0-index index of the bases to plots
+        sublib: a str contained in your sub-library(ies) of interest.
+        full_seq_pairing: pairing state of plotted bases, w.r.t the full-seq prediction. default is None. None: both paired and unpaired bases. 'paired': only paired bases. 'unpaired': only unpaired bases.
     """
 
+    # Define utils
+    PAIRED, UNPAIRED = '1','0' 
+    to_str = {PAIRED: 'paired', UNPAIRED:'unpaired'}  
+    to_macro = {v: k for k, v in to_str.items()} 
+
+    # filter by sub-library
+    if sublib != None:
+        df = df.loc[df['sub-library'].apply(lambda x: sublib in x)]
+
+    # Select which pairing
+    sequence_pairings = [PAIRED, UNPAIRED]
+    if full_seq_pairing != None:
+        sequence_pairings = [to_macro[full_seq_pairing]]                   
+
+    # Utils for plotting
+    legend = []
     fig = utils.define_figure(title=samp,
                             xlabel='deltaG [kcal]',
                             ylabel='Mutation ratio',
-                            figsize=(20,5))
+                            figsize=figsize)
 
-    stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
+    stack_for_plot = {PAIRED: {PAIRED:{'x':[],'y':[]},UNPAIRED:{'x':[],'y':[]}}, 
+                      UNPAIRED: {PAIRED:{'x':[],'y':[]},UNPAIRED:{'x':[],'y':[]}}}
 
-    for construct in df.construct.unique():
-        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct)
-        for roi_struct_comp in ['0','1']:
-            try:    
-                this_base_mut = roi_part.xs((True,roi_struct_comp), level=('paired','roi_structure_comparison')).reset_index()
-                this_base_mut = this_base_mut[this_base_mut['index'].isin(roi_range)]
-                stack_for_plot[roi_struct_comp]['x'].extend(this_base_mut['roi_deltaG'].to_list())
-                stack_for_plot[roi_struct_comp]['y'].extend(this_base_mut['mut_rate'].to_list())
-            except:
-                continue
-    plt.plot(stack_for_plot['0']['x'],stack_for_plot['0']['y'],'b.')
-    plt.plot(stack_for_plot['1']['x'],stack_for_plot['1']['y'],'r.')
-    plt.legend(['A and C bases of the ROI, predicted paired by RNAstructure for both the ROI sequence and the full sequence',\
-                'A and C bases of the ROI part, predicted paired by RNAstructure for the full sequence but not for the ROI sequence'])
+    # For each construct of this sample get your data
+    for construct in df[df.samp == samp].construct.unique():
+        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct, roi_range=roi_range)
+        for sequence_pairing in sequence_pairings:  # Sequence-wise prediction
+            for roi_struct_comp in [UNPAIRED, PAIRED]: # ROI-wise prediction
+                try:    
+                    this_base_mut = roi_part.xs((int(sequence_pairing),roi_struct_comp), level=('paired','roi_structure_comparison')).reset_index()
+                    this_base_mut = this_base_mut[this_base_mut['index'].isin(roi_range)]
+                    stack_for_plot[sequence_pairing][roi_struct_comp]['x'].extend(this_base_mut['roi_deltaG'].to_list())
+                    stack_for_plot[sequence_pairing][roi_struct_comp]['y'].extend(this_base_mut['mut_rate'].to_list())
+                except:
+                    continue
+
+    # Plot the data
+    for sequence_pairing in sequence_pairings:  # Sequence-wise prediction
+        for roi_struct_comp in [UNPAIRED, PAIRED]: # ROI-wise prediction
+            plt.plot(stack_for_plot[sequence_pairing][roi_struct_comp]['x'],stack_for_plot[sequence_pairing][roi_struct_comp]['y'], style)
+            legend.insert(-1, f"A and C selected bases, sequence-wise pairing prediction: {to_str[sequence_pairing]}, ROI-wise pairing prediction: sequence-wise pairing prediction: {to_str[roi_struct_comp]}")
+    plt.legend(legend)
     plt.ylim([0,0.15])
     fig.tight_layout()
+
 
 
 def _correlation_2_samples(df:pd.DataFrame, samples:Tuple[str,str], constructs:List[int], axs:plt.axes=None)->pd.DataFrame:
