@@ -136,13 +136,16 @@ def rand_sample_construct(df:pd.DataFrame, n_samples:int=1, n_constructs:int=1)-
     Returns:
         Two lists containing the randomly picked elements (resp., samples and constructs).
     """
-    all_samples, constructs = list(df.samp.unique()), list(df.construct.unique())
-    these_samples, these_constructs = np.array(all_samples)[np.random.randint(0, len(all_samples),n_samples)] , np.array(constructs)[np.random.randint(0, len(constructs), n_constructs)]
+    all_samples = list(df.samp.unique())
+    these_samples = np.array(all_samples)[np.random.randint(0, len(all_samples),n_samples)] 
+    these_constructs = []
+    for samp in these_samples:
+        constructs = df[df.samp==samp].construct.unique()
+        these_constructs.append(constructs[np.random.randint(0, len(constructs))])
     if n_samples == 1:
         these_samples = these_samples[0]
     if n_constructs == 1:
         these_constructs = these_constructs[0]
 
-    return these_samples, these_constructs
-
+    return these_samples, these_constructs    
 

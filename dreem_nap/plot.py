@@ -186,7 +186,7 @@ def deltaG(df:pd.DataFrame, samp:str, bases_type=['A','C'])->None:
     stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
 
     for construct in df[df.samp==samp].construct.unique():
-        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct)
+        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct, bases_type=bases_type)
         for base in bases_type:
             for roi_struct_comp in ['0','1']:
                 try:    
@@ -202,8 +202,8 @@ def deltaG(df:pd.DataFrame, samp:str, bases_type=['A','C'])->None:
     plt.ylim([0,0.15])
     fig.tight_layout()
 
-
-def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range, sublib = None, full_seq_pairing=None, style='.', figsize=(20,5))->None:
+    
+def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range, sublib = None, full_seq_pairing=None, bases_type = ['A','C'], style='.', figsize=(20,5))->None:
     """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
     
     Args:
@@ -218,6 +218,7 @@ def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range, sublib = None, full_se
     PAIRED, UNPAIRED = '1','0' 
     to_str = {PAIRED: 'paired', UNPAIRED:'unpaired'}  
     to_macro = {v: k for k, v in to_str.items()} 
+    xor = lambda a,b: bool(((not a) and b) or ((not b) and a))
 
     # filter by sub-library
     if sublib != None:
@@ -240,25 +241,28 @@ def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range, sublib = None, full_se
 
     # For each construct of this sample get your data
     for construct in df[df.samp == samp].construct.unique():
-        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct, roi_range=roi_range)
+        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct, roi_range=roi_range, bases_type=bases_type)
         for sequence_pairing in sequence_pairings:  # Sequence-wise prediction
-            for roi_struct_comp in [UNPAIRED, PAIRED]: # ROI-wise prediction
+            for roi_struct_comp in [UNPAIRED, PAIRED]: 
+                roi_pairing = str(int( xor(bool(int(roi_struct_comp)), bool(int(sequence_pairing))))) # ROI-wise prediction
                 try:    
                     this_base_mut = roi_part.xs((int(sequence_pairing),roi_struct_comp), level=('paired','roi_structure_comparison')).reset_index()
                     this_base_mut = this_base_mut[this_base_mut['index'].isin(roi_range)]
-                    stack_for_plot[sequence_pairing][roi_struct_comp]['x'].extend(this_base_mut['roi_deltaG'].to_list())
-                    stack_for_plot[sequence_pairing][roi_struct_comp]['y'].extend(this_base_mut['mut_rate'].to_list())
+                    stack_for_plot[sequence_pairing][roi_pairing]['x'].extend(this_base_mut['roi_deltaG'].to_list())
+                    stack_for_plot[sequence_pairing][roi_pairing]['y'].extend(this_base_mut['mut_rate'].to_list())
                 except:
                     continue
 
     # Plot the data
     for sequence_pairing in sequence_pairings:  # Sequence-wise prediction
-        for roi_struct_comp in [UNPAIRED, PAIRED]: # ROI-wise prediction
-            plt.plot(stack_for_plot[sequence_pairing][roi_struct_comp]['x'],stack_for_plot[sequence_pairing][roi_struct_comp]['y'], style)
-            legend.insert(-1, f"A and C selected bases, sequence-wise pairing prediction: {to_str[sequence_pairing]}, ROI-wise pairing prediction: sequence-wise pairing prediction: {to_str[roi_struct_comp]}")
+        for roi_struct_comp in [UNPAIRED, PAIRED]: 
+            roi_pairing = str(int( xor(bool(int(roi_struct_comp)), bool(int(sequence_pairing))))) # ROI-wise prediction
+            plt.plot(stack_for_plot[sequence_pairing][roi_pairing]['x'],stack_for_plot[sequence_pairing][roi_pairing]['y'], style)
+            legend += [f"A and C selected bases, sequence-wise pairing prediction: {to_str[sequence_pairing]}, ROI-wise pairing prediction: sequence-wise pairing prediction: {to_str[roi_pairing]}"]
     plt.legend(legend)
     plt.ylim([0,0.15])
     fig.tight_layout()
+
 
 
 
