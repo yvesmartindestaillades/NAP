@@ -124,8 +124,7 @@ def heatmap(df:pd.DataFrame, column:str)->None:
     sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
 
-
-def mut_rate_vs_base_pairing_prob(df:pd.DataFrame, samp:str, construct:int):
+def mut_rate_vs_base_non_pairing_prob(df:pd.DataFrame, samp:str, construct:int, plot_type=['mut','prob','corr'], bases_type=['A','C','G','T'], roi_range = list(range(0,170))):
     """Plot a mutation rate histogram, a base non-pairing probability histogram, and a scatter plot fitting the mutation rate vs the base non-pairing. 
        The base non-pairing values are 1 - base-pairing values.
 
@@ -133,7 +132,15 @@ def mut_rate_vs_base_pairing_prob(df:pd.DataFrame, samp:str, construct:int):
         df (pd.DataFrame): your dataset
         samp (str): your sample of interest
         construct (int): your construct of interest.
+        plot_type (list[str]): which plots that you want. Default is ['mut','prob','corr'] (all plots). \
+        'mut' is for the mutation histogram. 'prob' is for the non-pairing probability histogram. 'corr' is for the scatter plot correlating \
+        the mutation rate and the non-pairing probability. 'merge' gives all plots together.
+        bases_type (list[str]): which bases that you want to take into account. Default is ['A','C','G','T']
+        roi_range (list[int]): 0-index of the bases that you want to take into account. Default is [0, 1, ..., 168, 169].
     """
+
+    COLOR_PER_BASE = {'A':'r','C':'b','G':'y','T':'g'}
+
     def split_bases(df, column):
         """Split a sample-construct dataframe into 4 columns, one per base. The columns contain the value of the column 'column' entered as an input.
         """
@@ -142,17 +149,17 @@ def mut_rate_vs_base_pairing_prob(df:pd.DataFrame, samp:str, construct:int):
         df_hist = pd.DataFrame()
         df_hist.index = df.reset_index()['index']
 
-        for base in ['A','C','G','T']:
+        for base in bases_type:
             df_hist[base] = pd.Series(dtype=float)
             df_hist[base] = df.loc[base]
 
         return df_hist
 
-    def plot_histogram(df, title):
+    def plot_histogram(df, title, ax = None):
         """Plot histogram using a base-wise splitted sample-construct dataframe.
         """
 
-        ax = df.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'], rot=90)
+        df.plot.bar(stacked=True, figsize=(35,7), color= [COLOR_PER_BASE[base] for base in bases_type], rot=90, ax=ax)
         plt.title(f"{title}, sample {samp}, construct {construct}")
     
     def plot_scatter(df):
@@ -163,9 +170,8 @@ def mut_rate_vs_base_pairing_prob(df:pd.DataFrame, samp:str, construct:int):
 
         x, y = df['base non-pairing probability'], df['mut_rate']
         x, y = np.array(x).reshape(-1,1), np.array(y).reshape(-1,1)
-        fig = plt.figure(figsize=(5,5))
 
-        for base, color in zip(['A','C','G','T'], ['r','b','y','g']):
+        for base, color in zip(bases_type, [COLOR_PER_BASE[base] for base in bases_type]):
             px, py = split_bases(df, 'base non-pairing probability'), split_bases(df, 'mut_rate')
             plt.plot(px[base], py[base],color+'.')
         plt.legend(['A','C','G','T'])
@@ -174,23 +180,31 @@ def mut_rate_vs_base_pairing_prob(df:pd.DataFrame, samp:str, construct:int):
 
         model = LinearRegression().fit(x,y)
         plt.plot(model.predict(np.array([0,1]).reshape(-1,1)))
-        plt.title(f"Base non-pairing prob vs mut rate \n R2= {round(model.score(x, y),3)}, sample {samp}, construct {construct}")    
+        plt.title(f"Base non-pairing prob vs mut rate \n \
+    sample {samp}, construct {construct} \n " + \
+    'R2= {:.5}, y = {:.5} x + {:.5}'.format(model.score(x, y), float(model.coef_[0]),model.intercept_[0])) 
 
 
     # Data wrangling
-    sc = df.set_index(['samp','construct']).loc[samp, construct]
-
-    df_sc = data_manip.get_roi_info(df, samp, construct, bases_type=['A','C','G','T'], roi_range=list(range(0,171)))\
+    df_sc = data_manip.get_roi_info(df, samp, construct, bases_type=bases_type, roi_range=roi_range)\
                                     .reset_index()\
                                     .drop(columns=['paired','roi_structure_comparison','roi_deltaG'])\
                                     .set_index(['base','index'])
     df_sc['base non-pairing probability'] = 1 - df_sc['base_pairing_prob']
 
     # Plots
-    plot_histogram(split_bases(df_sc, 'base non-pairing probability'), 'Base non-pairing probability')
-    plot_histogram(split_bases(df_sc, 'mut_rate'), 'Mutation rate')
-    plot_scatter(df_sc)
-
+    if 'prob' in plot_type:
+        plot_histogram(split_bases(df_sc, 'base non-pairing probability'), 'Base non-pairing probability')
+    if 'mut' in plot_type:
+        plot_histogram(split_bases(df_sc, 'mut_rate'), 'Mutation rate')
+    if 'corr' in plot_type:
+        plot_scatter(df_sc)
+    
+    if 'merge' in plot_type:
+        plt.figure(figsize=(20,10))
+        plot_histogram(split_bases(df_sc, 'base non-pairing probability'), 'Base non-pairing probability', plt.subplot(2,1,1))
+        plot_histogram(split_bases(df_sc, 'mut_rate'), 'Mutation rate', plt.subplot(2,1,2))
+        plt.tight_layout()
 
 
 def mut_histogram(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None:
