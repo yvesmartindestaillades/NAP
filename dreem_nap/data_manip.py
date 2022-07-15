@@ -71,6 +71,7 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases_type:list[str]=
     df_roi = pd.DataFrame({'mut_rate':pd.Series(np.array(df_SC[f"mut_bases"][1:])/np.array(df_SC[f"info_bases"][1:]), dtype=object),
                             'base':list(df_SC['full_sequence']),
                             'paired': np.array([bool(x != '.') for x in list(df_SC['full_structure'])]),\
+                            'base_pairing_prob': df_SC[f"base_pairing_prob"][1:],\
                             'roi_structure_comparison': pd.Series(list(df_SC['roi_structure_comparison']),index=list(range(df_SC['roi_start_index'], df_SC['roi_end_index'])))\
                             ,'roi_deltaG':df_SC['roi_deltaG']})\
                             .reset_index()

@@ -135,7 +135,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
         df_temp = df_temp[df_temp['cov_bases_roi'] >= min_bases_cov]
         df_temp['min_bases_cov'] = min_bases_cov
 
-        df_temp['base_pairing_prob'] = df_temp['base_pairing_prob'].apply(lambda constr: [float(p) for p in constr.split(" ")].insert(0,0))
+        df_temp['base_pairing_prob'] = df_temp['base_pairing_prob'].apply(lambda constr: [0.0]+ [float(p) for p in constr.split(" ")])
 
         df_temp = df_temp.astype(dtype={'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
         'roi_end_index':int, 'roi_structure_comparison':str, 'full_structure':str, 'data_type':str,
@@ -143,7 +143,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
         'info_bases':object, 'del_bases':object, 'ins_bases':object, 'cov_bases':object, 'start':int, 'end':int,
         'mod_bases_A':object, 'mod_bases_C':object, 'mod_bases_G':object, 'mod_bases_T':object,
         'skips_low_mapq':int, 'skips_short_read':int, 'skips_too_many_muts':int,
-        'cov_bases_roi':int, 'cov_bases_sec_half':int, 'sub-library':str, 'flank':str, 'min_bases_cov':int})
+        'cov_bases_roi':int, 'cov_bases_sec_half':int, 'sub-library':str, 'flank':str, 'min_bases_cov':int, 'base_pairing_prob':object})
 
         df_temp = df_temp.set_index('construct')
 
