@@ -162,6 +162,88 @@ def mut_rate_vs_base_non_pairing_prob(df:pd.DataFrame, samp:str, construct:int, 
         df.plot.bar(stacked=True, figsize=(35,7), color= [COLOR_PER_BASE[base] for base in bases_type], rot=90, ax=ax)
         plt.title(f"{title}, sample {samp}, construct {construct}")
     
+
+def base_wise_mut_vs_prob(df:pd.DataFrame, study:Study, bases:list[int], samp:str=None, figsize:tuple=(7,4), ylim:tuple=None):
+    """Plot the mutation rate vs 1 - the probability of base-pairing for a set of bases across all constructs in a sample.
+
+    Args:
+        df (pd.DataFrame): A standard dataframe for NAP.
+        study (Study): the study of the sample(s).
+        bases (list[int]): the indexes of the bases that you want to plot.
+        samp (str, optional): Your sample of interest. If none, all samples of the study will be plotted on the same plot. Defaults to None.
+        figsize (tuple, optional): Size of a plot. When multiple plots are stacked, this size extends linearly. Defaults to (7,4).
+        ylim (tuple, optional): ylim of the plots. Defaults to None.
+    """
+    COLORS = ['r','b','g','y']  
+    re_shape = lambda x: np.array(x).reshape(-1,1)
+
+    def make_stack(df, samp, bases):
+        stack = { 'pred':{base:[] for base in bases}, 'mut':{base:[] for base in bases}}
+        for construct in df[df.samp==samp].construct.unique():
+            df_loc = data_manip.get_roi_info(df, samp, construct, bases_type=['A','C','G','T'], roi_range=bases)\
+                                .reset_index()\
+                                .set_index('index')
+            for base in bases:
+                stack['pred'][base].append(1-df_loc['base_pairing_prob'].loc[base])
+                stack['mut'][base].append(df_loc['mut_rate'].loc[base])
+        return stack
+
+    def make_figure(ylim):
+        plt.figure(figsize=figsize)
+        if ylim is not None:
+            plt.ylim(ylim)
+        plt.title(f"Study: {study.title}, Value: {study.conditions[study.samples.index(samp)]},  Sample: {samp}")
+        plt.tight_layout()
+
+    def make_subfigure(study, samp, ylim, ind):        
+        plt.title(f"Study: {study.title}, Value: {study.conditions[study.samples.index(samp)]},  Sample: {samp}")
+        plt.subplot(len(study.samples),1,ind)
+        plt.tight_layout()
+        if ylim is not None:
+            plt.ylim(ylim)
+    
+    def make_models(stack, bases):
+        model, score, coef, intercept = {}, {}, {}, {}
+        for base in bases:
+            x, y = re_shape(stack['pred'][base]), re_shape(stack['mut'][base])
+            try:
+                model[base] = LinearRegression().fit(x,y)
+            except:
+                return False
+                
+            score[base], coef[base], intercept[base] = model[base].score(x, y), float(model[base].coef_[0]),model[base].intercept_[0]
+        return model, score, coef, intercept    
+
+    def plot_scatter(stack, bases):
+        for base, color in zip(bases,COLORS):
+            x, y = re_shape(stack['pred'][base]), re_shape(stack['mut'][base])
+            plt.xlabel('1-pairing probability')
+            plt.ylabel('Mutation rate')
+            plt.plot(x,y,color+'.')
+
+    def plot_fit_and_legend(model, score, coef, intercept):
+        legend = []
+        for base, color in zip(bases,COLORS):
+            plt.plot(model[base].predict(np.array([0,1]).reshape(-1,1)))
+            legend.append(f"base:{base}"+'     R2= {:.4},     y = {:.4} x + {:.4}'.format(score[base], coef[base], intercept[base])) 
+        plt.legend(legend)
+
+    if samp is not None:
+        stack = make_stack(df, samp, bases)
+        make_figure(ylim)
+        plot_scatter(stack, bases)
+        plot_fit_and_legend(*make_models(stack, bases))
+    else:
+        plt.figure(figsize=[figsize[0],len(study.samples)*figsize[1]])
+        for ind, samp in enumerate(study.samples):
+            stack = make_stack(df, samp, bases)
+            make_subfigure(study, samp, ylim, ind+1)
+            plot_scatter(stack, bases)
+            plot_fit_and_legend(*make_models(stack, bases))
+
+
+
+
     def plot_scatter(df):
         """Plot scatter plot using a base-wise splitted sample-construct dataframe.
         """
@@ -178,8 +260,12 @@ def mut_rate_vs_base_non_pairing_prob(df:pd.DataFrame, samp:str, construct:int, 
         plt.xlabel('Base non-pairing probability')
         plt.ylabel('Mutation rate')
 
-        model = LinearRegression().fit(x,y)
-        plt.plot(model.predict(np.array([0,1]).reshape(-1,1)))
+        try:
+            model = LinearRegression().fit(x,y)
+            plt.plot(model.predict(np.array([0,1]).reshape(-1,1)))
+        except:
+            "Couldn't fit the model"
+
         plt.title(f"Base non-pairing prob vs mut rate \n \
     sample {samp}, construct {construct} \n " + \
     'R2= {:.5}, y = {:.5} x + {:.5}'.format(model.score(x, y), float(model.coef_[0]),model.intercept_[0])) 

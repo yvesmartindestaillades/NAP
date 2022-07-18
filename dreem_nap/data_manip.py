@@ -24,8 +24,9 @@ def get_construct_attribute(df:pd.DataFrame, column:str)->pd.DataFrame:
     Returns:
         A dataframe with the constructs as index and the column as data.
     """   
-
-    return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+    if not df.empty:
+        return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+    
 
 
 def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases_type:list[str]=['A','C'], structure = 'full', overlay = 0, roi_range=None)->pd.DataFrame:
