@@ -24,8 +24,9 @@ def get_construct_attribute(df:pd.DataFrame, column:str)->pd.DataFrame:
     Returns:
         A dataframe with the constructs as index and the column as data.
     """   
-
-    return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+    if not df.empty:
+        return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+    
 
 
 def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases_type:list[str]=['A','C'], structure = 'full', overlay = 0, roi_range=None)->pd.DataFrame:
@@ -71,6 +72,7 @@ def get_roi_info(df:pd.DataFrame, samp:str, construct:int, bases_type:list[str]=
     df_roi = pd.DataFrame({'mut_rate':pd.Series(np.array(df_SC[f"mut_bases"][1:])/np.array(df_SC[f"info_bases"][1:]), dtype=object),
                             'base':list(df_SC['full_sequence']),
                             'paired': np.array([bool(x != '.') for x in list(df_SC['full_structure'])]),\
+                            'base_pairing_prob': df_SC[f"base_pairing_prob"][1:],\
                             'roi_structure_comparison': pd.Series(list(df_SC['roi_structure_comparison']),index=list(range(df_SC['roi_start_index'], df_SC['roi_end_index'])))\
                             ,'roi_deltaG':df_SC['roi_deltaG']})\
                             .reset_index()
@@ -136,13 +138,16 @@ def rand_sample_construct(df:pd.DataFrame, n_samples:int=1, n_constructs:int=1)-
     Returns:
         Two lists containing the randomly picked elements (resp., samples and constructs).
     """
-    all_samples, constructs = list(df.samp.unique()), list(df.construct.unique())
-    these_samples, these_constructs = np.array(all_samples)[np.random.randint(0, len(all_samples),n_samples)] , np.array(constructs)[np.random.randint(0, len(constructs), n_constructs)]
+    all_samples = list(df.samp.unique())
+    these_samples = np.array(all_samples)[np.random.randint(0, len(all_samples),n_samples)] 
+    these_constructs = []
+    for samp in these_samples:
+        constructs = df[df.samp==samp].construct.unique()
+        these_constructs.append(constructs[np.random.randint(0, len(constructs))])
     if n_samples == 1:
         these_samples = these_samples[0]
     if n_constructs == 1:
         these_constructs = these_constructs[0]
 
-    return these_samples, these_constructs
-
+    return these_samples, these_constructs    
 

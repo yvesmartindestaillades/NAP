@@ -65,7 +65,47 @@ def make_path(path:str)->str:
             os.mkdir(full_path)
     return full_path
 
+def filter_df_by_sub_lib(df:pd.DataFrame, sub_lib:str)->pd.DataFrame:
+    """Returns a dataframe containing only sublibraries that are contains `sub_lib`.
 
+    Args:
+        df (pd.DataFrame): A standard NAP dataframe.
+        sub_lib (str): Libraries containing this string will be filtered in.
+
+    Raises:
+        Exception: No library contains sub_lib
+
+    Returns:
+        pd.DataFrame: A dataframe containing only sublibraries that are contains `sub_lib`.
+    """
+
+    if sub_lib != None:
+        sub_libs = [x for x in df['sub-library'].unique() if sub_lib in x]
+        if sub_libs == []:
+            raise Exception(f"arg {sub_lib} is not a sub-library of the df")
+        df = df[df['sub-library'].isin(sub_libs)]
+    return df
+
+def gini(x:np.array)->float:
+    """Returns Gini index
+
+    Args:
+        x (np.array): the array you want the Gini index from
+
+    Returns:
+        float: Gini index of the input array
+    """
+    # (Warning: This is a concise implementation, but it is O(n**2)
+    # in time and memory, where n = len(x).  *Don't* pass in huge
+    # samples!)
+
+    # Mean absolute difference
+    mad = np.abs(np.subtract.outer(x, x)).mean()
+    # Relative mean absolute difference
+    rmad = mad/np.mean(x)
+    # Gini coefficient
+    g = 0.5 * rmad
+    return g
 
 def save_fig(path:str,title:str, facecolor='white')->None:
     """Save a matplotlib figure and create the directory if it doesn't exists.

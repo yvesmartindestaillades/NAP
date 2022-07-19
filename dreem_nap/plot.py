@@ -12,6 +12,8 @@ from dreem_nap.study import Study
 sys.path.append(os.path.abspath(""))
 from dreem_nap import data_manip, data_wrangler, utils
 from typing import Tuple, List
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import r2_score
 
 
 
@@ -124,6 +126,179 @@ def heatmap(df:pd.DataFrame, column:str)->None:
     sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
 
+def mut_rate_vs_base_non_pairing_prob(df:pd.DataFrame, samp:str, construct:int, plot_type=['mut','prob','corr'], bases_type=['A','C','G','T'], roi_range = list(range(0,170))):
+    """Plot a mutation rate histogram, a base non-pairing probability histogram, and a scatter plot fitting the mutation rate vs the base non-pairing. 
+       The base non-pairing values are 1 - base-pairing values.
+
+    Args:
+        df (pd.DataFrame): your dataset
+        samp (str): your sample of interest
+        construct (int): your construct of interest.
+        plot_type (list[str]): which plots that you want. Default is ['mut','prob','corr'] (all plots). \
+        'mut' is for the mutation histogram. 'prob' is for the non-pairing probability histogram. 'corr' is for the scatter plot correlating \
+        the mutation rate and the non-pairing probability. 'merge' gives all plots together.
+        bases_type (list[str]): which bases that you want to take into account. Default is ['A','C','G','T']
+        roi_range (list[int]): 0-index of the bases that you want to take into account. Default is [0, 1, ..., 168, 169].
+    """
+
+    COLOR_PER_BASE = {'A':'r','C':'b','G':'y','T':'g'}
+
+    def split_bases(df, column):
+        """Split a sample-construct dataframe into 4 columns, one per base. The columns contain the value of the column 'column' entered as an input.
+        """
+
+        df = pd.DataFrame(df[column])
+        df_hist = pd.DataFrame()
+        df_hist.index = df.reset_index()['index']
+
+        for base in bases_type:
+            df_hist[base] = pd.Series(dtype=float)
+            df_hist[base] = df.loc[base]
+
+        return df_hist
+
+    def plot_histogram(df, title, ax = None):
+        """Plot histogram using a base-wise splitted sample-construct dataframe.
+        """
+
+        df.plot.bar(stacked=True, figsize=(35,7), color= [COLOR_PER_BASE[base] for base in bases_type], rot=90, ax=ax)
+        plt.title(f"{title}, sample {samp}, construct {construct}")
+
+    def plot_scatter(df):
+        """Plot scatter plot using a base-wise splitted sample-construct dataframe.
+        """
+        
+        from sklearn.linear_model import LinearRegression
+
+        x, y = df['base non-pairing probability'], df['mut_rate']
+        x, y = np.array(x).reshape(-1,1), np.array(y).reshape(-1,1)
+
+        for base, color in zip(bases_type, [COLOR_PER_BASE[base] for base in bases_type]):
+            px, py = split_bases(df, 'base non-pairing probability'), split_bases(df, 'mut_rate')
+            plt.plot(px[base], py[base],color+'.')
+        plt.legend(['A','C','G','T'])
+        plt.xlabel('Base non-pairing probability')
+        plt.ylabel('Mutation rate')
+
+        try:
+            model = LinearRegression().fit(x,y)
+            plt.plot(model.predict(np.array([0,1]).reshape(-1,1)))
+        except:
+            "Couldn't fit the model"
+
+        plt.title(f"Base non-pairing prob vs mut rate \n \
+    sample {samp}, construct {construct} \n " + \
+    'R2= {:.5}, y = {:.5} x + {:.5}'.format(model.score(x, y), float(model.coef_[0]),model.intercept_[0])) 
+
+
+    # Data wrangling
+    df_sc = data_manip.get_roi_info(df, samp, construct, bases_type=bases_type, roi_range=roi_range)\
+                                    .reset_index()\
+                                    .drop(columns=['paired','roi_structure_comparison','roi_deltaG'])\
+                                    .set_index(['base','index'])
+    df_sc['base non-pairing probability'] = 1 - df_sc['base_pairing_prob']
+
+    # Plots
+    if 'prob' in plot_type:
+        plot_histogram(split_bases(df_sc, 'base non-pairing probability'), 'Base non-pairing probability')
+    if 'mut' in plot_type:
+        plot_histogram(split_bases(df_sc, 'mut_rate'), 'Mutation rate')
+    if 'corr' in plot_type:
+        plot_scatter(df_sc)
+    
+    if 'merge' in plot_type:
+        plt.figure(figsize=(20,10))
+        plot_histogram(split_bases(df_sc, 'base non-pairing probability'), 'Base non-pairing probability', plt.subplot(2,1,1))
+        plot_histogram(split_bases(df_sc, 'mut_rate'), 'Mutation rate', plt.subplot(2,1,2))
+        plt.tight_layout()
+
+
+def base_wise_mut_vs_prob(df:pd.DataFrame, study:Study, bases:list[int], samp:str=None, sub_lib=None, figsize:tuple=(7,4), ylim:tuple=None):
+    """Plot the mutation rate vs 1 - the probability of base-pairing for a set of bases across all constructs in a sample.
+
+    Args:
+        df (pd.DataFrame): A standard dataframe for NAP.
+        study (Study): the study of the sample(s).
+        bases (list[int]): the indexes of the bases that you want to plot.
+        samp (str, optional): Your sample of interest. If none, all samples of the study will be plotted on the same plot. Defaults to None.
+        figsize (tuple, optional): Size of a plot. When multiple plots are stacked, this size extends linearly. Defaults to (7,4).
+        ylim (tuple, optional): ylim of the plots. Defaults to None.
+    """
+    COLORS = ['r','b','g','y']  
+    re_shape = lambda x: np.array(x).reshape(-1,1)
+
+    def make_stack(df, samp, bases):
+        stack = { 'pred':{base:[] for base in bases}, 'mut':{base:[] for base in bases}}
+        for construct in df[df.samp==samp].construct.unique():
+            df_loc = data_manip.get_roi_info(df, samp, construct, bases_type=['A','C','G','T'], roi_range=bases)\
+                                .reset_index()\
+                                .set_index('index')
+            for base in bases:
+                stack['pred'][base].append(1-df_loc['base_pairing_prob'].loc[base])
+                stack['mut'][base].append(df_loc['mut_rate'].loc[base])
+        return stack
+
+    def make_figure(ylim):
+        plt.figure(figsize=figsize)
+        if ylim is not None:
+            plt.ylim(ylim)
+        plt.title(f"Study: {study.title}, Value: {study.conditions[study.samples.index(samp)]},  Sample: {samp}")
+
+    def make_subfigure(study, samp, ylim, ind):        
+        plt.title(f"Study: {study.title}, Value: {study.conditions[study.samples.index(samp)]},  Sample: {samp}")
+        plt.subplot(len(study.samples),1,ind)
+        if ylim is not None:
+            plt.ylim(ylim)
+    
+    def make_models(stack, bases):
+        model, score, coef, intercept = {}, {}, {}, {}
+        for base in bases:
+            x, y = re_shape(stack['pred'][base]), re_shape(stack['mut'][base])
+            try:
+                model[base] = LinearRegression().fit(x,y)
+            except:
+                return None
+                
+            score[base], coef[base], intercept[base] = model[base].score(x, y), float(model[base].coef_[0]),model[base].intercept_[0]
+        return model, score, coef, intercept    
+
+    def plot_scatter(stack, bases):
+        for base, color in zip(bases,COLORS):
+            x, y = re_shape(stack['pred'][base]), re_shape(stack['mut'][base])
+            plt.xlabel('1-pairing probability')
+            plt.ylabel('Mutation rate')
+            plt.plot(x,y,color+'.')
+
+    def plot_fit_and_legend(model, score, coef, intercept):
+        legend = []
+        for base, color in zip(bases,COLORS):
+            plt.plot(model[base].predict(np.array([0,1]).reshape(-1,1)), color)
+            legend.append(f"base:{base}"+'     R2= {:.4},     y = {:.4} x + {:.4}'.format(score[base], coef[base], intercept[base])) 
+        plt.legend(legend)
+
+    df = utils.filter_df_by_sub_lib(df, sub_lib)
+
+    if samp is not None:
+        stack = make_stack(df, samp, bases)
+        make_figure(ylim)
+        plot_scatter(stack, bases)
+        model_items = make_models(stack, bases)
+        if model_items != None:  
+            plot_fit_and_legend(*model_items)
+        plt.tight_layout()
+
+    else:
+        plt.figure(figsize=[figsize[0],len(study.samples)*figsize[1]])
+        for ind, samp in enumerate(study.samples):
+            stack = make_stack(df, samp, bases)
+            make_subfigure(study, samp, ylim, ind+1)
+            plot_scatter(stack, bases)
+            model_items = make_models(stack, bases)
+            if model_items != None:  
+                plot_fit_and_legend(*model_items)
+            plt.tight_layout()
+
+
 def mut_histogram(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None:
     """Plot the mutation rate of a specific (sample, construct).
 
@@ -139,7 +314,7 @@ def mut_histogram(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None
     df_use = df.set_index(['samp','construct'])
     
     if not plot_type in ['index','partition']:
-        raise f"{plot_type} must be 'index' or 'partition', please check this argument"
+        raise Exception(f"{plot_type} must be 'index' or 'partition', please check this argument")
 
     if plot_type == 'index':  # Plot the mutation rate for each base along the sequence
 
@@ -185,8 +360,8 @@ def deltaG(df:pd.DataFrame, samp:str, bases_type=['A','C'])->None:
 
     stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
 
-    for construct in df.construct.unique():
-        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct)
+    for construct in df[df.samp==samp].construct.unique():
+        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct, bases_type=bases_type)
         for base in bases_type:
             for roi_struct_comp in ['0','1']:
                 try:    
@@ -202,38 +377,119 @@ def deltaG(df:pd.DataFrame, samp:str, bases_type=['A','C'])->None:
     plt.ylim([0,0.15])
     fig.tight_layout()
 
-
-def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range:List[int], style='.')->None:
+    
+def deltaG_basewise(df:pd.DataFrame, samp:str, roi_range, sub_lib = None, full_seq_pairing=None, bases_type = ['A','C'], style='.', figsize=(20,5))->None:
     """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
     
     Args:
         df: dataframe of interest.
         sample: sample of interest.
+        roi_range: 0-index index of the bases to plots
+        sub_lib: a str contained in your sub-library(ies) of interest.
+        full_seq_pairing: pairing state of plotted bases, w.r.t the full-seq prediction. default is None. None: both paired and unpaired bases. 'paired': only paired bases. 'unpaired': only unpaired bases.
     """
 
+    # Define utils
+    PAIRED, UNPAIRED = '1','0' 
+    to_str = {PAIRED: 'paired', UNPAIRED:'unpaired'}  
+    to_macro = {v: k for k, v in to_str.items()} 
+    xor = lambda a,b: bool(((not a) and b) or ((not b) and a))
+
+    # filter by sub-library
+    if sub_lib != None:
+        df = df.loc[df['sub-library'].apply(lambda x: sub_lib in x)]
+
+    # Select which pairing
+    sequence_pairings = [PAIRED, UNPAIRED]
+    if full_seq_pairing != None:
+        sequence_pairings = [to_macro[full_seq_pairing]]                   
+
+    # Utils for plotting
+    legend = []
     fig = utils.define_figure(title=samp,
                             xlabel='deltaG [kcal]',
                             ylabel='Mutation ratio',
-                            figsize=(20,5))
+                            figsize=figsize)
 
-    stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
+    stack_for_plot = {PAIRED: {PAIRED:{'x':[],'y':[]},UNPAIRED:{'x':[],'y':[]}}, 
+                      UNPAIRED: {PAIRED:{'x':[],'y':[]},UNPAIRED:{'x':[],'y':[]}}}
 
-    for construct in df.construct.unique():
-        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct)
-        for roi_struct_comp in ['0','1']:
-            try:    
-                this_base_mut = roi_part.xs((True,roi_struct_comp), level=('paired','roi_structure_comparison')).reset_index()
-                this_base_mut = this_base_mut[this_base_mut['index'].isin(roi_range)]
-                stack_for_plot[roi_struct_comp]['x'].extend(this_base_mut['roi_deltaG'].to_list())
-                stack_for_plot[roi_struct_comp]['y'].extend(this_base_mut['mut_rate'].to_list())
-            except:
-                continue
-    plt.plot(stack_for_plot['0']['x'],stack_for_plot['0']['y'],'b.')
-    plt.plot(stack_for_plot['1']['x'],stack_for_plot['1']['y'],'r.')
-    plt.legend(['A and C bases of the ROI, predicted paired by RNAstructure for both the ROI sequence and the full sequence',\
-                'A and C bases of the ROI part, predicted paired by RNAstructure for the full sequence but not for the ROI sequence'])
+    # For each construct of this sample get your data
+    for construct in df[df.samp == samp].construct.unique():
+        roi_part = data_manip.get_roi_info(df=df, samp=samp, construct=construct, roi_range=roi_range, bases_type=bases_type)
+        for sequence_pairing in sequence_pairings:  # Sequence-wise prediction
+            for roi_struct_comp in [UNPAIRED, PAIRED]: 
+                roi_pairing = str(int( xor(bool(int(roi_struct_comp)), bool(int(sequence_pairing))))) # ROI-wise prediction
+                try:    
+                    this_base_mut = roi_part.xs((int(sequence_pairing),roi_struct_comp), level=('paired','roi_structure_comparison')).reset_index()
+                    this_base_mut = this_base_mut[this_base_mut['index'].isin(roi_range)]
+                    stack_for_plot[sequence_pairing][roi_pairing]['x'].extend(this_base_mut['roi_deltaG'].to_list())
+                    stack_for_plot[sequence_pairing][roi_pairing]['y'].extend(this_base_mut['mut_rate'].to_list())
+                except:
+                    continue
+
+    # Plot the data
+    for sequence_pairing in sequence_pairings:  # Sequence-wise prediction
+        for roi_struct_comp in [UNPAIRED, PAIRED]: 
+            roi_pairing = str(int( xor(bool(int(roi_struct_comp)), bool(int(sequence_pairing))))) # ROI-wise prediction
+            plt.plot(stack_for_plot[sequence_pairing][roi_pairing]['x'],stack_for_plot[sequence_pairing][roi_pairing]['y'], style)
+            legend += [f"A and C selected bases, sequence-wise pairing prediction: {to_str[sequence_pairing]}, ROI-wise pairing prediction: sequence-wise pairing prediction: {to_str[roi_pairing]}"]
+    plt.legend(legend)
     plt.ylim([0,0.15])
     fig.tight_layout()
+
+def sliding_window_r2_gini(df, study, samples, construct,sub_lib=None,bases_type = ['A','C','G','T'], roi_range = None, ylim = [-20,1], force_ylim = False, win_len=10):
+
+    def check_sanity(df, samples, construct, roi_range):
+        df_sc_col = lambda df, samp, construct, col: df[(df['construct']==construct) & (df['samp'] == samp)][col].iloc[0]
+
+        # Check that the sample-constructs exists
+        for samp in samples:
+            try: 
+                df_sc_col(df, samp, construct, 'full_sequence')
+            except:
+                raise Exception(f"Sample-construct ({samp},{construct}) wasn't found in the dataframe")
+
+        # Check that both sequences have the same length
+        seq_len = lambda df, samp, construct : len(df_sc_col(df, samp, construct, 'full_sequence'))
+        assert seq_len(df, samples[0], construct) == seq_len(df, samples[1], construct), "sequences don't have the same length"
+        true_seq_len = seq_len(df, samples[0], construct)
+
+        if roi_range == None:
+            roi_range = list(range(0,seq_len(df, samples[0], construct)))
+        
+        return true_seq_len, roi_range
+
+    def compute_stack(true_seq_len, df, construct, bases_type, roi_range, win_len):
+        stack = []
+        get_mut_rate = lambda samp: np.array(data_manip.get_roi_info(df, samp, construct, bases_type=bases_type,roi_range=roi_range)['mut_rate'])
+        X, Y = get_mut_rate(samples[0]), get_mut_rate(samples[1])
+        for i in range(true_seq_len-(win_len+1)):
+            x, y = X[i:i+win_len], Y[i:i+win_len]
+            stack.append(r2_score(x,y))
+        return stack
+
+
+    def plot(stack, study, construct, ylim):
+        gini = utils.gini(np.array(stack))
+        plt.plot(stack)
+        plt.xlabel('Position (bp)')
+        plt.ylabel('Correlation (R^2)')
+        if ylim is not None:
+            bottom, top = plt.ylim()
+            if force_ylim:
+                plt.ylim(ylim)
+            else:
+                plt.ylim((max(bottom, ylim[0]),min(top,ylim[1])))
+        plt.title(f"Study: {study.title}, values: {[study.conditions[study.samples.index(samp)] for samp in samples]}, \
+    \n construct: {construct}, samples: {samples} \n \
+    Gini index: {round(gini,5)}")
+
+    df = utils.filter_df_by_sub_lib(df, sub_lib)
+    true_seq_len, roi_range = check_sanity(df, samples, construct, roi_range)
+    stack = compute_stack(true_seq_len, df, construct, bases_type, roi_range, win_len)
+    plot(stack, study, construct, ylim)
+
 
 
 def _correlation_2_samples(df:pd.DataFrame, samples:Tuple[str,str], constructs:List[int], axs:plt.axes=None)->pd.DataFrame:
@@ -250,7 +506,7 @@ def _correlation_2_samples(df:pd.DataFrame, samples:Tuple[str,str], constructs:L
     """
 
     if axs is None:
-        fig, axs = plt.subplots(1,1)
+        _, axs = plt.subplots(1,1)
 
     paired = {True: '.',False:'x'}
     roi_structure_comparison_color = {'0':'b','1':'r'}
@@ -332,13 +588,8 @@ def study_sample(df:pd.DataFrame, study:Study, bases_type:list[str]=['A','C'], s
         f: if sub-library isn't a valid element of the 'sub-library' column of the dataframe.
     """
 
-    if sub_lib == None:
-        constructs = df.construct.unique()
-    else:
-        if not sub_lib in df['sub-library'].unique():
-            raise f"arg {sub_lib} is not a sub-library of the df"
-
-        constructs = df[df['sub-library'] ==sub_lib].construct.unique()
+    df = utils.filter_df_by_sub_lib(df, sub_lib)
+    constructs = df.construct.unique()
 
     roi_range, roi_range_name = utils.roi_range_calc(overlay, roi_range, 
                                                 roi_bounds=[df[df.construct==construct]['roi_start_index'].iloc[0], df[df.construct==construct]['roi_end_index'].iloc[0]],
