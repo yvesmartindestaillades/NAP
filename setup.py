@@ -3,6 +3,7 @@ from setuptools import setup
 import os, sys
 from dreem_nap import __version__
 import dreem_nap
+import sys
 
 try:
     with open('requirements.txt') as f:
@@ -11,6 +12,10 @@ except:
     with open('../requirements.txt') as f:
         requirements = f.read().splitlines()
 
+PYTHON_VERSION = (3,10)
+
+if sys.version_info < PYTHON_VERSION:
+    sys.exit(f"Python >= {PYTHON_VERSION[0]}.{PYTHON_VERSION[1]} required.")
 
 setup(
    name='dreem_nap',

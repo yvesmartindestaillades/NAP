@@ -31,7 +31,6 @@
 "RNA titration","No info about this study! Check unit","B4",400,"RNA quantity [mM]"
 "RNA titration","No info about this study! Check unit","C4",800,"RNA quantity [mM]"
 ,,,,
-"3.1 DMS","Change the DMS concentration","D4",7,"DMS quantity [mM]"
 "3.1 DMS","Change the DMS concentration","F4",60,"DMS quantity [mM]"
 "3.1 DMS","Change the DMS concentration","G4",180,"DMS quantity [mM]"
 "3.1 DMS","Change the DMS concentration","H4",540,"DMS quantity [mM]"
@@ -62,7 +61,6 @@
 "temperature","Try different temperatures","H7",55,"Temperature [°C]"
 "temperature","Try different temperatures","A8",65,"Temperature [°C]"
 "temperature","Try different temperatures","B8",75,"Temperature [°C]"
-"temperature","Try different temperatures","C8",90,"Temperature [°C]"
 ,,,,
 "60 mM DMS","Change DMS reaction time","D8",1,"DMS reaction time [min]"
 "60 mM DMS","Change DMS reaction time","E8",3,"DMS reaction time [min]"
@@ -72,7 +70,6 @@
 "60 mM DMS","Change DMS reaction time","A9",720,"DMS reaction time [min]"
 ,,,,
 "180 mM DMS","Change DMS reaction time","B9",1,"DMS reaction time [min]"
-"180 mM DMS","Change DMS reaction time","C9",3,"DMS reaction time [min]"
 "180 mM DMS","Change DMS reaction time","D9",9,"DMS reaction time [min]"
 "180 mM DMS","Change DMS reaction time","E9",27,"DMS reaction time [min]"
 "180 mM DMS","Change DMS reaction time","F9",81,"DMS reaction time [min]"
