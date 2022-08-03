@@ -107,7 +107,7 @@ def gini(x:np.array)->float:
     g = 0.5 * rmad
     return g
 
-def save_fig(path:str,title:str, facecolor='white')->None:
+def save_fig(path:str,title:str, facecolor='white', close=True)->None:
     """Save a matplotlib figure and create the directory if it doesn't exists.
 
     Args:
@@ -118,6 +118,13 @@ def save_fig(path:str,title:str, facecolor='white')->None:
 
     full_path = make_path(path)
     plt.savefig(f"{full_path}/{title}", facecolor=facecolor )
+    if close:
+        # Clear the current axes.
+        plt.cla() 
+        # Clear the current figure.
+        plt.clf() 
+        # Closes all the figure windows.
+        plt.close('all')   
 
 
 def define_figure(title:str, xlabel:str, ylabel:str, figsize:Tuple[float, float])->plt.figure:

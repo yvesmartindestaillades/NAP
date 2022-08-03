@@ -299,7 +299,7 @@ def base_wise_mut_vs_prob(df:pd.DataFrame, study:Study, bases:list[int], samp:st
             plt.tight_layout()
 
 
-def mut_histogram(plot_type:str, df:pd.DataFrame, samp:str, construct:int)->None:
+def mut_histogram(df:pd.DataFrame, samp:str, construct:int, plot_type:str)->None:
     """Plot the mutation rate of a specific (sample, construct).
 
     Args:
@@ -567,7 +567,7 @@ def correlation_n_samples(df:pd.DataFrame, study:Study, constructs:List[int])->p
     return df_global_corr
 
 
-def study_sample(df:pd.DataFrame, study:Study, bases_type:list[str]=['A','C'], sub_lib:str=None, structure:str='full', scale_x:str = 'lin', roi_range=None, overlay=0, figsize:Tuple[float,float]=None):
+def study_sample(df:pd.DataFrame, study:Study, bases_type:list[str]=['A','C'], sub_lib:str=None, structure:str='full', scale_x:str = 'lin', roi_range=None, overlay=0,figsize:Tuple[float,float]=None):
     """Plot the mean of the mutation rate of the ROI bases, for each sample of the study.
 
     Args:
@@ -624,7 +624,7 @@ def study_sample(df:pd.DataFrame, study:Study, bases_type:list[str]=['A','C'], s
 
 
 
-def study_base(df:pd.DataFrame, study:Study, construct:int, bases_type = ['A','C'], structure = 'roi', scale_x = 'lin', roi_range:List[int]=None, overlay=0, figsize=(24,10))->None:
+def study_base(df:pd.DataFrame, study:Study, construct:int, bases_type = ['A','C'], structure = 'roi', scale_x = 'lin', roi_range:List[int]=None, overlay=0, split_paired=True,figsize=(24,10))->None:
     """Generate line-plots of each base's mutation rate w.r.t a study's conditions, for a specific construct.
 
     Args:
@@ -639,6 +639,7 @@ def study_base(df:pd.DataFrame, study:Study, construct:int, bases_type = ['A','C
             'all': the roi is all bases
             int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
             tuple[int]-type argument: the roi is the subsequence [start_roi_index+overlay[0], end_roi_index+overlay[1]].
+        split_paired (bool): If True, make two subplots, one for paired bases and one for unpaired bases. If False, join all bases in one plot. Default is True.
         figsize (Tuple(int,int)): size of the plotted figure.
     
     Raise:
@@ -679,9 +680,20 @@ def study_base(df:pd.DataFrame, study:Study, construct:int, bases_type = ['A','C
 
     # Plot it
     fig = plt.figure()
-    fig.suptitle(f"Construct: {construct}, study: {study.name}, bases types: {bases_type}, structure prediction: {structure}, roi_range: {roi_range_name}", fontsize=16)
-    ax1, ax2 = plt.subplot(121), plt.subplot(122)
-
+    fig.suptitle(f"Construct: {construct}, \
+                   study: {study.name},\
+                   ROI deltaG: {df[df.construct==construct]['roi_deltaG'].iloc[0]},\
+                   bases types: {bases_type}, \
+                   structure prediction: {structure},\
+                   roi_range: {roi_range_name}", \
+                   fontsize=16)
+    
+    if split_paired:
+        ax1, ax2 = plt.subplot(121), plt.subplot(122)
+    else: 
+        ax1=plt.axes()
+        ax2 = ax1
+        
     if not df_paired.empty:
         df_paired.plot(figsize=figsize,
                         logx={'lin':False, 'log':True}[scale_x],
