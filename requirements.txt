@@ -20,6 +20,8 @@ backcall==0.2.0
     # via ipython
 biopython==1.79
     # via -r requirements.in
+blockdiag==3.0.0
+    # via -r requirements.in
 cachecontrol==0.12.11
     # via firebase-admin
 cachetools==5.2.0
@@ -52,6 +54,8 @@ firebase-admin==5.2.0
     # via -r requirements.in
 fonttools==4.34.4
     # via matplotlib
+funcparserlib==1.0.0
+    # via blockdiag
 future==0.18.2
     # via -r requirements.in
 google-api-core[grpc]==2.8.2
@@ -173,7 +177,9 @@ pickleshare==0.7.5
     #   -r requirements.in
     #   ipython
 pillow==9.2.0
-    # via matplotlib
+    # via
+    #   blockdiag
+    #   matplotlib
 plotly==5.9.0
     # via -r requirements.in
 pluggy==1.0.0
@@ -295,6 +301,8 @@ urllib3==1.26.11
     # via requests
 wcwidth==0.2.5
     # via prompt-toolkit
+webcolors==1.12
+    # via blockdiag
 zope-interface==5.4.0
     # via datetime
 
