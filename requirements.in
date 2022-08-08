@@ -25,3 +25,5 @@ scipy==1.8.1
 seaborn==0.11.2
 Sphinx==5.0.2
 tabulate==0.8.10
+sphinx_rtd_theme==5.0.2
+mock==4.0.3

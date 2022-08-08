@@ -10,7 +10,7 @@ from matplotlib.offsetbox import AnchoredText
 
 from dreem_nap.study import Study
 sys.path.append(os.path.abspath(""))
-from dreem_nap import data_manip, data_wrangler, utils
+from dreem_nap import data_manip, utils
 from typing import Tuple, List
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
@@ -29,7 +29,6 @@ def sample_coverage_distribution(df:pd.DataFrame)->None:
     plt.xlabel('Constructs (sorted)')
     plt.ylabel('Amount of samples covered')
     plt.grid()
-
 
 def valid_construct_per_sample(df:pd.DataFrame)->None:
     """Plot how many valid constructs each sample has.
@@ -126,7 +125,7 @@ def heatmap(df:pd.DataFrame, column:str)->None:
     sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
 
-def mut_rate_vs_base_non_pairing_prob(df:pd.DataFrame, samp:str, construct:int, plot_type=['mut','prob','corr'], bases_type=['A','C','G','T'], roi_range = list(range(0,170))):
+def mut_rate_vs_base_non_pairing_prob(df:pd.DataFrame, samp:str, construct:int, plot_type=['mut','prob','corr'], bases_type=['A','C','G','T'], roi_range = 'all'):
     """Plot a mutation rate histogram, a base non-pairing probability histogram, and a scatter plot fitting the mutation rate vs the base non-pairing. 
        The base non-pairing values are 1 - base-pairing values.
 
@@ -138,10 +137,14 @@ def mut_rate_vs_base_non_pairing_prob(df:pd.DataFrame, samp:str, construct:int, 
         'mut' is for the mutation histogram. 'prob' is for the non-pairing probability histogram. 'corr' is for the scatter plot correlating \
         the mutation rate and the non-pairing probability. 'merge' gives all plots together.
         bases_type (list[str]): which bases that you want to take into account. Default is ['A','C','G','T']
-        roi_range (list[int]): 0-index of the bases that you want to take into account. Default is [0, 1, ..., 168, 169].
+        roi_range (list[int]): 0-index of the bases that you want to take into account. Default is 'all'.
     """
 
     COLOR_PER_BASE = {'A':'r','C':'b','G':'y','T':'g'}
+
+    if roi_range == 'all':
+        start, end = df[(df['sample']==samp)&(df['construct']==construct)]['start'].iloc[0],df[(df['sample']==samp)&(df['construct']==construct)]['end'].iloc[0]
+        roi_range = list(range(start-1,end))
 
     def split_bases(df, column):
         """Split a sample-construct dataframe into 4 columns, one per base. The columns contain the value of the column 'column' entered as an input.
