@@ -11,7 +11,9 @@ NAP works through two steps:
 #. :ref:`Data analysis`. Define a study, pull the corresponding data from the database, and generate plots and csv files.
 
 
-.. blockdiag::
+[INSERT BLOCKDIAG HERE]
+..
+    .. blockdiag::
     :align: center    
     :width: 400
 
