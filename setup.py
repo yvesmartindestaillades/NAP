@@ -17,6 +17,7 @@ PYTHON_VERSION = (3,10)
 if sys.version_info < PYTHON_VERSION:
     sys.exit(f"Python >= {PYTHON_VERSION[0]}.{PYTHON_VERSION[1]} required.")
 
+
 setup(
    name='dreem_nap',
    version=__version__,

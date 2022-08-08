@@ -14,6 +14,7 @@ import os
 import sys
 import mock
 import matplotlib
+import dreem
 #import scipy
 matplotlib.use('agg')
 #sys.path.append('/home/ymdt/anaconda3/bin/python')
@@ -21,8 +22,9 @@ matplotlib.use('agg')
 
 
 sys.path.append(os.path.abspath("..")+'/..')	
+#sys.path.insert(0, os.path.abspath("../../"))
  
-MOCK_MODULES = ['seaborn', 'dreem']#, 'scipy', 'pandas','pickle-mixin', 'firebase_admin', 'numpy', 'matplotlib.pyplot','matplotlib', 'python-string-utils']
+MOCK_MODULES = ['seaborn']#, 'dreem']#, 'scipy', 'pandas','pickle-mixin', 'firebase_admin', 'numpy', 'matplotlib.pyplot','matplotlib', 'python-string-utils']
 
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
@@ -50,7 +52,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-  #  'sphinxcontrib.blockdiag',
+    'sphinxcontrib.blockdiag',
     'sphinx.ext.autosectionlabel',
 ]
 
