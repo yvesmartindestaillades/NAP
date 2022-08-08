@@ -303,7 +303,7 @@ def mut_histogram(df:pd.DataFrame, samp:str, construct:int, plot_type:str)->None
     """Plot the mutation rate of a specific (sample, construct).
 
     Args:
-        plot_type: 'sequence' or 'partition'. 
+        plot_type: 'index' or 'partition'. 
             - 'index' uses bases numbers as index and the original construct bases as colors.
             - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
         df: dataframe of interest.
@@ -330,7 +330,7 @@ def mut_histogram(df:pd.DataFrame, samp:str, construct:int, plot_type:str)->None
             df_hist[base] = pd.Series(dtype=float)
             df_hist[base] = mut_per_base.loc[base]
 
-        df_hist.index = mut_per_base.reset_index()['base']
+        #df_hist.index = mut_per_base.reset_index()['base']
 
         ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
         plt.title(f"sample {samp}, construct {construct}")
@@ -344,6 +344,8 @@ def mut_histogram(df:pd.DataFrame, samp:str, construct:int, plot_type:str)->None
 
         ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
 
+    return ax
+    
 
 def deltaG(df:pd.DataFrame, samp:str, bases_type=['A','C'])->None:
     """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
