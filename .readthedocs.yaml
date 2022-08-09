@@ -28,4 +28,4 @@ python:
    install:
    - requirements: docs/requirements.txt
    - requirements: requirements.txt
-   - setup_py_install: true
+   setup_py_install: true
