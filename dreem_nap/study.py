@@ -1,9 +1,11 @@
 from re import L
 from typing import Tuple, List, Dict
-from dreem_nap import data, plot, data_manip
+from xml.dom.minidom import AttributeList
+from dreem_nap import loader, plotter, manipulator, utils
 import pandas as pd
 
-class Study(data.Data, plot.Plot, data_manip.Data_manip,  object):
+
+class Study(loader.Loader, plotter.Plotter, manipulator.Manipulator):
     """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
 
     Attributes:
@@ -96,10 +98,64 @@ class Study(data.Data, plot.Plot, data_manip.Data_manip,  object):
         self.__init__(di['name'], di['samples'], di['conditions'], di['title'], di['description'])
         return self
 
+    def update_df(self,df):
+        self.df = df
+
+def load_studies(studies_file_path:str)->pd.DataFrame:
+    """Read formatted file with samples, and turn it into a dataframe containing studies.
+
+    Args:
+        studies_file_path (str): path+title of the csv file containing the samples.
+
+    Returns:
+        (pd.DataFrame): studies of the csv file, indexed by study.
+
+    Example:
+        >>> from dreem_nap import data_wrangler     
+        >>> study_file = 'samples.csv'
+        >>> samples = ['"name","description","samples","conditions","title"',
+        ... ',,,,',
+        ... '"salt","Change the Na concentration","A6",0.15,"Na quantity [M]"',
+        ... '"salt","Change the Na concentration","B6",0.3,"Na quantity [M]"',
+        ... '"salt","Change the Na concentration","C6",0.6,"Na quantity [M]"',
+        ... '"salt","Change the Na concentration","D6",1,"Na quantity [M]"',
+        ... '"salt","Change the Na concentration","E6",1.2,"Na quantity [M]"',
+        ... ',,,,',
+        ... '"spermidine","Change the Spermidine concentration","B3",0.01,"Spermidine quantity [mM]"',
+        ... '"spermidine","Change the Spermidine concentration","D3",1,"Spermidine quantity [mM]"',
+        ... '"spermidine","Change the Spermidine concentration","E3",10,"Spermidine quantity [mM]"',
+        ... '"spermidine","Change the Spermidine concentration","F3",100,"Spermidine quantity [mM]"']
+        >>> with open(study_file, 'w') as f:
+        ...     f.writelines(f"{l}\\n" for l in samples)
+        >>> # Your studies under the shape of a dataframe
+        >>> df_studies = data_wrangler.load_studies(study_file) 
+        >>> df_studies
+                                name                           description                     samples                          title                        conditions
+        salt                    salt           Change the Na concentration        [A6, B6, C6, D6, E6]                Na quantity [M]        [0.15, 0.3, 0.6, 1.0, 1.2]
+        spermidine        spermidine   Change the Spermidine concentration            [B3, D3, E3, F3]       Spermidine quantity [mM]          [0.01, 1.0, 10.0, 100.0]
+        >>> temp = df_studies.to_dict(orient='index')
+        >>> # Your studies under the shape of a dictionary of Study
+        >>> studies = {study: Study().from_dict(temp[study])  for study in temp}
+        >>> print(f"Here are the studies: {studies.keys()}")
+        dict_keys(['salt', 'spermidine'])
+        >>> study_name = 'salt' 
+        >>> study = studies[study_name] 
+        >>> print(f"Here is your study {study.to_dict()}" )
+        Here is your study {'name': 'salt', 'description': 'Change the Na concentration', 'samples': ['A6', 'B6', 'C6', 'D6', 'E6'], 'title': 'Na quantity [M]', 'conditions': [0.15, 0.3, 0.6, 1.0, 1.2]}
+    """
+
+    studies_dict, studies_data = {}, pd.read_csv(studies_file_path)
+
+    for col in studies_data.groupby('name')[Study().attr_list]:
+        solo_item = lambda x: x[0] if len(set(x)) == 1 else x  
+        studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
+    
+    return pd.DataFrame.from_dict(studies_dict, orient='index')
+
 
 if __name__ == '__main__':
     temp = Study('temperature',['A1','B2','B3'], [10, 20, 30], 'Example values [no unit]', 'Just an example study')
-    temp.create_df('data/DEMULTIPLEXED',10)
-    print(temp.df)
-    fig = temp.mut_histogram(temp.samples[0], '9572', 'index')
-    
+    temp.create_df_from_local_files('data/DEMULTIPLEXED',10)
+    temp.mut_histogram(temp.samples[0], '9572', 'index')
+    utils.save_fig('data/figs', 'mut_histogram')
+   
