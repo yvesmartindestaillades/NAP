@@ -14,7 +14,7 @@ from typing import Tuple, List
 
 
 
-def about_a_sample_construct(df:pd.DataFrame, samp:str, construct:int, path:str)->None:
+def about_a_sample_construct(df:pd.DataFrame, samp:str, construct:str, path:str)->None:
     """Gives broad information about a given sample-construct, such as the base coverage, mutation histograms, the deltaG plot of the sample and the raw data. 
 
     Args:

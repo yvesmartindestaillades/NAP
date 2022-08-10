@@ -15,10 +15,8 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
 
-class Plot(object):
-    def __init__(self)->None:
-        pass
-    
+class Plotter:
+
     def sample_coverage_distribution(self)->None:
         """Plot each construct vs its number of samples covered, i.e the number of samples containing this construct.
     
@@ -78,7 +76,7 @@ class Plot(object):
         fig.tight_layout()
 
 
-    def base_coverage(self, samp:str, construct:int)->None:
+    def base_coverage(self, samp:str, construct:str)->None:
         """Plot the base coverage of a specific (sample, construct).
         
         Args:
@@ -115,7 +113,7 @@ class Plot(object):
         sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
 
-    def mut_rate_vs_base_non_pairing_prob(self, samp:str, construct:int, plot_type=['mut','prob','corr'], bases_type=['A','C','G','T'], roi_range = 'all'):
+    def mut_rate_vs_base_non_pairing_prob(self, samp:str, construct:str, plot_type=['mut','prob','corr'], bases_type=['A','C','G','T'], roi_range = 'all'):
         """Plot a mutation rate histogram, a base non-pairing probability histogram, and a scatter plot fitting the mutation rate vs the base non-pairing. 
         The base non-pairing values are 1 - base-pairing values.
 
@@ -289,7 +287,7 @@ class Plot(object):
                 plt.tight_layout()
 
 
-    def mut_histogram(self, samp:str, construct:int, plot_type:str)->None:
+    def mut_histogram(self, samp:str, construct:str, plot_type:str)->None:
         """Plot the mutation rate of a specific (sample, construct).
 
         Args:
@@ -386,9 +384,9 @@ class Plot(object):
 
         # filter by sub-library
         if sub_lib != None:
-            df = self.df.loc[self.df['sub-library'].apply(lambda x: sub_lib in x)]
+            df = self.df.loc[self.df['sub-library'].apply(lambda x: sub_lib in x)].copy()
         else:
-            df = self.df
+            df = self.df.copy()
 
         # Select which pairing
         sequence_pairings = [PAIRED, UNPAIRED]
@@ -577,10 +575,6 @@ class Plot(object):
         df = utils.filter_df_by_sub_lib(self.df, sub_lib)
         constructs = df.construct.unique()
 
-        roi_range, roi_range_name = utils.roi_range_calc(overlay, roi_range, 
-                                                    roi_bounds=[df[df.construct==construct]['roi_start_index'].iloc[0], df[df.construct==construct]['roi_end_index'].iloc[0]],
-                                                    full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])
-
         samples = self.samples
         paired, unpaired = np.zeros(len(samples)), np.zeros(len(samples))
         for count, samp in enumerate(samples):
@@ -608,7 +602,7 @@ class Plot(object):
 
 
 
-    def study_base(self, construct:int, bases_type = ['A','C'], structure = 'roi', scale_x = 'lin', roi_range:List[int]=None, overlay=0, split_paired=True,figsize=(24,10))->None:
+    def study_base(self, construct:str, bases_type = ['A','C'], structure = 'roi', scale_x = 'lin', roi_range:List[int]=None, overlay=0, split_paired=True,figsize=(24,10))->None:
         """Generate line-plots of each base's mutation rate w.r.t a study's conditions, for a specific construct.
 
         Args:
@@ -632,7 +626,7 @@ class Plot(object):
 
         df_paired, df_not_paired = pd.DataFrame(), pd.DataFrame()
 
-        df = self.df
+        df = self.df.copy()
         roi_range, roi_range_name = utils.roi_range_calc(overlay, roi_range, 
                                                     roi_bounds=[df[df.construct==construct]['roi_start_index'].iloc[0], df[df.construct==construct]['roi_end_index'].iloc[0]],
                                                     full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])

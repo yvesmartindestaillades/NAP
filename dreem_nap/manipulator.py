@@ -7,9 +7,10 @@ import matplotlib.pyplot as plt
 from typing import Tuple, List
 from dreem_nap import utils
 
-
-
-class Data_manip(object):
+class Manipulator:
+    ## Building block of Study class
+    # data manipulation tools
+    
     def get_construct_attribute(self, column:str)->pd.DataFrame:   
 
         """Returns a column of the dataframe w.r.t constructs. 
@@ -25,10 +26,31 @@ class Data_manip(object):
         """   
         if not self.df.empty:
             return self.df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
-        
+
+    def filter_df_by_sub_lib(self, sub_lib:str)->pd.DataFrame:
+        """Returns a dataframe containing only sublibraries that are contains `sub_lib`.
+
+        Args:
+            sub_lib (str): Libraries containing this string will be filtered in.
+
+        Raises:
+            Exception: No library contains sub_lib
+
+        Returns:
+            pd.DataFrame: A dataframe containing only sublibraries that are contains `sub_lib`.
+        """
+        df = self.df.copy()
+
+        if sub_lib != None:
+            sub_libs = [x for x in df['sub-library'].unique() if sub_lib in x]
+            if sub_libs == []:
+                raise Exception(f"arg {sub_lib} is not a sub-library of the df")
+            df = df[df['sub-library'].isin(sub_libs)]
+        return df        
 
 
-    def get_roi_info(self, samp:str, construct:int, bases_type:list[str]=['A','C'], structure = 'full', overlay = 0, roi_range=None)->pd.DataFrame:
+
+    def get_roi_info(self, samp:str, construct:str, bases_type:list[str]=['A','C'], structure = 'full', overlay = 0, roi_range=None)->pd.DataFrame:
         """Returns a dataframe of the ROI of a specific (samp, construct).
 
         Args:
@@ -57,12 +79,12 @@ class Data_manip(object):
         """ 
 
         np.seterr(invalid='ignore')
-        df = self.df
+        df = self.df.copy()
         df_SC = df.set_index(['samp','construct']).loc[(samp,construct)]
 
         assert not (overlay != 0 and roi_range != None), "overlay and roi_range are uncompatible arguments"
 
-        roi_range, _ = utils.roi_range_calc(overlay, roi_range,                                                 
+        roi_range, _ = self._roi_range_calc(overlay, roi_range,                                                 
                                         roi_bounds=[df[df.construct==construct]['roi_start_index'].iloc[0], df[df.construct==construct]['roi_end_index'].iloc[0]],
                                         full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])
             
@@ -100,6 +122,40 @@ class Data_manip(object):
             df_roi = df_roi.set_index(['base', 'paired_full', 'paired_roi', 'roi_structure_comparison','index'])
 
         return df_roi
+
+        
+    def _roi_range_calc(self, overlay = 0, roi_range:List[int] = None, roi_bounds:Tuple[int,int] = None, full_bounds:Tuple[int,int] = None):
+        """_summary_
+
+        Args:
+            overlay (str or int or tuple[int]): extend/shrink roi
+                'all': the roi is all bases
+                int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
+                tuple[int]-type argument: the roi is the subsequence [start_roi_index+overlay[0], end_roi_index+overlay[1]].
+                Defaults to 0.
+            roi_range (List[int], optional): Array of base indexes (list[int]). ex: [80, 83, 91]. Defaults to None.
+            roi_bounds (Tuple[int,int], optional): Boundaries of the ROI. roi_bounds[0] is included, roi_bounds[1] is excluded. Defaults to None.
+            full_bounds (Tuple[int,int], optional): Boundaries of the entire sequence. full_bounds[0] is included, roi_bofull_boundsunds[1] is excluded.. Defaults to None.
+        """
+        # Select base indexes
+        roi_range_name = None
+        if overlay == 'all':
+            roi_range_name = 'all'
+            roi_range = list(range(full_bounds[0], full_bounds[1]))
+        if overlay == 0 and roi_range == None:
+            roi_range_name = 'roi'
+            roi_range = list(range(roi_bounds[0],roi_bounds[1]))
+        if overlay != 0 :
+            if type(overlay) == int or type(overlay) == float:
+                overlay = (-overlay, overlay)
+            elif not ((type(overlay) == tuple or type(overlay) == list) and len(overlay) == 2):
+                raise f"Unvalid type {type(overlay)} for overlay, please select int."
+            roi_range = list(range(roi_bounds[0]+overlay[0], roi_bounds[1]+overlay[1]))
+            roi_range_name = f"[start_roi {overlay[0]}, end_roi +{overlay[1]}"
+        if roi_range_name == None:
+            roi_range_name = 'custom'
+
+        return roi_range, roi_range_name
 
     def columns_to_csv(self, columns:List[str], title:str, path:str)->None:
         """Save a subset of a Dataframe to a csv file.
