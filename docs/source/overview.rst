@@ -203,8 +203,8 @@ Each column corresponds to an attribute.
     * ``roi_deltaG``: (float) predicted deltaG for the ROI only.
     * ``structure``: (str) predicted structure for the entire RNA molecule.
     * ``roi_structure_comparison``: (str) comparison between the pairing-prediction of the entire RNA molecule and the pairing-prediction of the ROI only, for the ROI bases. String of '0' and '1', of same length as ROI sequence. '0' means that both predicted structures have the same pairing state for the corresponding base. '1' means that the predicted structures have diverging pairing states for this base.
-    * ``roi_start_index``: (int) index of the first base of the ROI. Index starts with a 0.
-    * ``roi_end_index``: (int) index of the last base of the ROI. Index starts with a 0.
+    * ``ROI_start``: (int) index of the first base of the ROI. Index starts with a 0.
+    * ``ROI_stop``: (int) index of the last base of the ROI. Index starts with a 0.
     * ``flank``: (str) flank.
     * ``sub-library``: (str) name of the sub-library.
 

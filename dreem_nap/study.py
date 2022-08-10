@@ -140,4 +140,5 @@ def load_studies(studies_file_path:str)->dict[str:Study]:
 if __name__ == '__main__':
     temp = Study('temperature',['A1','B2','B3'], [10, 20, 30], 'Example values [no unit]', 'Just an example study')
     temp.load_df_from_local_files('data/DEMULTIPLEXED',10)
-    print(temp.get_samp_const_df(samp='A1',construct='9572',cols=['mut_rate','']))
+    temp.mut_rate_vs_base_non_pairing_prob('A1','9572','mut')
+    utils.save_fig('','temp.png')

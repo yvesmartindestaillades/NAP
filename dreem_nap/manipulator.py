@@ -49,21 +49,6 @@ class Manipulator:
         return df        
 
 
-    def get_samp_const_df(self,  samp:str, construct:str, cols:str)->pd.DataFrame:
-        """Returns a dataframe containing attributes (df cols) of a sample-sconstruct.
-        
-        Args:
-            samp (str): The sample to look at.
-            construct (str): The construct to look at.
-            cols (str): The columns to look at.
-        
-        Returns:
-            pd.DataFrame: A dataframe containing attributes (df cols) of a sample-sconstruct.
-        """
-        df = self.df.copy()
-        df_loc = pd.DataFrame(df[(df['samp'] == samp)&(df['construct'] == construct)][cols])
-        return df_loc
-
 
 
     def get_roi_info(self, samp:str, construct:str, bases_type:list[str]=['A','C'], structure = 'full', overlay = 0, roi_range=None)->pd.DataFrame:
@@ -100,20 +85,17 @@ class Manipulator:
 
         assert not (overlay != 0 and roi_range != None), "overlay and roi_range are uncompatible arguments"
 
-        if roi_range == 'all':
-            roi_range = list(range(0, len(df_SC['sequence'])))
-        
-        if type(roi_range) != list:
-            roi_range, _ = self._roi_range_calc(overlay, roi_range,                                                 
-                                            roi_bounds=[df[df.construct==construct]['roi_start_index'].iloc[0], df[df.construct==construct]['roi_end_index'].iloc[0]],
-                                            full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])
-            assert not (structure != 'full' and (min(roi_range) < int(df_SC['roi_start_index']) or max(roi_range) > int(df_SC['roi_end_index']))), "Impossible to expand the roi when using roi-based structure prediction"
+        roi_range, _ = self._roi_range_calc(overlay, roi_range,                                                 
+                                        roi_bounds=[df[df.construct==construct]['ROI_start'].iloc[0], df[df.construct==construct]['ROI_stop'].iloc[0]],
+                                        full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])
+            
+        assert not (structure != 'full' and (min(roi_range) < int(df_SC['ROI_start']) or max(roi_range) > int(df_SC['ROI_stop']))), "Impossible to expand the roi when using roi-based structure prediction"
 
         df_roi = pd.DataFrame({'mut_rate':pd.Series(np.array(df_SC[f"mut_bases"][1:])/np.array(df_SC[f"info_bases"][1:]), dtype=object),
                                 'base':list(df_SC['sequence']),
                                 'paired': np.array([bool(x != '.') for x in list(df_SC['structure'])]),\
                                 'base_pairing_prob': df_SC[f"base_pairing_prob"][1:],\
-                                'roi_structure_comparison': pd.Series(list(df_SC['roi_structure_comparison']),index=list(range(df_SC['roi_start_index'], df_SC['roi_end_index'])))\
+                                'roi_structure_comparison': pd.Series(list(df_SC['roi_structure_comparison']),index=list(range(df_SC['ROI_start'], df_SC['ROI_stop'])))\
                                 ,'roi_deltaG':df_SC['roi_deltaG']})\
                                 .reset_index()
                                 
@@ -175,6 +157,7 @@ class Manipulator:
             roi_range_name = 'custom'
 
         return roi_range, roi_range_name
+
 
     def columns_to_csv(self, columns:List[str], title:str, path:str)->None:
         """Save a subset of a Dataframe to a csv file.

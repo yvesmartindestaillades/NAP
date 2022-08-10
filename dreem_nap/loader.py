@@ -36,8 +36,9 @@ class Loader:
         Returns:
             A filtered dataframe.
         """
-        df['min_cov_bases'] = df['cov_bases'].apply(lambda x: min(x[1:]))
-        return df[df['min_cov_bases'] >= min_cov_bases].reset_index(drop=True)
+        df['min_cov_bases'] = min_cov_bases
+        df['cov_bases_roi'] = df['cov_bases'].apply(lambda x: min(x[1:]))
+        return df[df['cov_bases_roi'] >= min_cov_bases].reset_index(drop=True)
 
     def __mhs2dict(self, mhs:MutationHistogram, drop_attribute:List[str]=[])->dict:
         """Turns the output of DREEM into a 1-level construct-wise index dictionary.
@@ -69,6 +70,26 @@ class Loader:
         else: print('{} constructs found across all samples for study {}.'.format(len(df.groupby('construct')), self.name))
         return df
 
+    def __add_roi_to_df(self, df:pd.DataFrame):
+        # If no ROI, the entire sequence is considered as ROI.
+        if 'ROI_start' not in df.columns:
+            df['ROI_start'] = 0
+        if 'ROI_stop' not in df.columns:
+            df['ROI_stop'] =  df['sequence'].apply(lambda x: len(x)-1)
+
+        #TODO remove this!!
+        if 'base_pairing_prob' not in df.columns:
+            df['base_pairing_prob'] = np.array([0,0.25,0.5,0.75,1]*34)
+        if df['structure'].unique() == None:
+            df['structure'] = '.(()()))).......)'*10
+        return df
+
+    def __set_indexes_to_0(self, df:pd.DataFrame):
+        for col in df:
+            if type(df[col].iloc[0]) in [np.array, list] and len(df[col].iloc[0]) == (len(df['sequence'].iloc[0])+1):
+                df[col] = df[col].apply(lambda x: x[1:])
+        return df
+
     def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int)->pd.DataFrame:
         all_df = {}
         for s in self.samples:
@@ -76,4 +97,6 @@ class Loader:
             all_df[s] = self.__filter_by_base_cov(all_df[s], min_cov_bases)
         self.df = pd.concat(all_df).reset_index().drop(columns='level_1').rename(columns={'level_0':'samp'})
         self.df = self.__filter_construct(self.df)
+        self.df = self.__add_roi_to_df(self.df)
+        self.df = self.__set_indexes_to_0(self.df)
         return self.df

@@ -16,6 +16,8 @@ from sklearn.metrics import r2_score
 
 
 class Plotter:
+
+    # TODO adapt to study class
     def sample_coverage_distribution(self)->None:
         """Plot each construct vs its number of samples covered, i.e the number of samples containing this construct.
     
@@ -27,30 +29,32 @@ class Plotter:
         plt.ylabel('Amount of samples covered')
         plt.grid()
 
+    
+    # TODO adapt to study class
     def valid_construct_per_sample(self)->None:
         """Plot how many valid constructs each sample has.
 
         Raises:
-            If the min_bases_cov value isn't the same for every samples.
+            If the min_cov_bases value isn't the same for every samples.
         """
         
         self.df.groupby('samp').count().reset_index().plot(kind='bar',x='samp', y='construct')
-        assert len(self.df.min_bases.cov.unique()) == 1, "min_bases_cov isn't unique"
-        plt.ylabel(f"Number of construct above {int(self.df.min_bases_cov.unique())} reads")
+        assert len(self.df.min_cov_bases.unique()) == 1, "min_cov_bases isn't unique"
+        plt.ylabel(f"Number of construct above {int(self.df.min_cov_bases.unique())} reads")
         plt.grid()
 
-
+    # Works!
     def base_coverage_ROI_for_all_constructs(self)->None:
         """Plot the base-coverage of the worst-covered base of the Region of Interest, for each construct. 
         """
         plt.figure()
         plt.plot(np.array(self.df['cov_bases_roi'].sort_values(ascending=False).reset_index())[:,1])
-        plt.plot(np.arange(0,int(self.df.construct.count()),1), [int(self.df.min_bases_cov.unique())]*int(self.df.construct.count()))
+        plt.plot(np.arange(0,int(self.df.construct.count()),1), [int(self.df.min_cov_bases.unique())]*int(self.df.construct.count()))
         plt.legend(['Dataframe', '1000 reads line'])
         plt.xlabel('Constructs (sorted)')
         plt.ylabel('# of reads of the worst covered base in the ROI for each (sample, construct)')
 
-
+    # Works!
     def random_9_base_coverage(self)->None:
         """Plot the base coverage of 9 randomly picked (sample, construct).
 
@@ -61,20 +65,20 @@ class Plotter:
         for i in range(9):
             axes1 = plt.subplot(int('33'+str(i+1)))
             plt.plot(np.array(self.df['cov_bases'].iloc[random_selection[i]]))
-            start, end = self.df['roi_start_index'].iloc[random_selection[i]], self.df['roi_end_index'].iloc[random_selection[i]]
+            start, end = self.df['ROI_start'].iloc[random_selection[i]], self.df['ROI_stop'].iloc[random_selection[i]]
             plt.plot(np.arange(start, end, 1), np.array(self.df['cov_bases'].iloc[random_selection[i]])[start:end])
-            plt.plot(np.arange(0, len(self.df['cov_bases'].iloc[random_selection[i]])), len(self.df['cov_bases'].iloc[random_selection[i]])*[int(self.df.min_bases_cov.unique())])
+            plt.plot(np.arange(0, len(self.df['cov_bases'].iloc[random_selection[i]])), len(self.df['cov_bases'].iloc[random_selection[i]])*[int(self.df.min_cov_bases.unique())])
             plt.xlabel("Bases")
             plt.ylabel("Coverage")
             plt.title(f"Construct {self.df['construct'].iloc[random_selection[i]]}, sample {self.df['samp'].iloc[random_selection[i]]} ")
             plt.grid()
-            plt.legend(["Base coverage (all)", 'Base coverage (ROI)', 'min_bases_cov'])
+            plt.legend(["Base coverage (all)", 'Base coverage (ROI)', 'min_cov_bases'])
             axes2 = axes1.twinx()   
             axes2.set_ylabel('Coverage [%]')
             axes2.set_ylim((0,100*max(self.df['cov_bases'].iloc[random_selection[i]]))/self.df['num_reads'].iloc[random_selection[i]])
         fig.tight_layout()
 
-
+    # Works!
     def base_coverage(self, samp:str, construct:str)->None:
         """Plot the base coverage of a specific (sample, construct).
         
@@ -86,20 +90,20 @@ class Plotter:
         ax1 = plt.subplot()
         serie = self.df.set_index(['samp','construct']).loc[samp, construct]
         plt.plot(np.array(serie['cov_bases']))
-        start, end = serie['roi_start_index'], serie['roi_end_index']
+        start, end = serie['ROI_start']+1, serie['ROI_stop']+1
         plt.plot(np.arange(start, end, 1), np.array(serie['cov_bases'])[start:end])
-        plt.plot(np.arange(0, len(serie['cov_bases'])), len(serie['cov_bases'])*[int(self.df.min_bases_cov.unique())])
+        plt.plot(np.arange(0, len(serie['cov_bases'])), len(serie['cov_bases'])*[int(self.df.min_cov_bases.unique())])
         plt.xlabel("Bases")
         plt.ylabel("Coverage")
         plt.title(f"Construct {construct}, sample {samp} ")
         plt.grid()
-        plt.legend(["Base coverage (all)", 'Base coverage (ROI)', 'min_bases_cov'])
+        plt.legend(["Base coverage (all)", 'Base coverage (ROI)', 'min_cov_bases'])
         ax2 = ax1.twinx()   
         ax2.set_ylabel('Coverage [%]')
         ax2.set_ylim(0,100*max(serie['cov_bases'])/serie['num_reads'])
         plt.tight_layout()
 
-
+    # Works!
     def heatmap(self, column:str)->None:
         """Plot the heatmap of a specific column of your dataframe, w.r.t the samples and constructs.
 
@@ -111,7 +115,7 @@ class Plotter:
         f, ax = plt.subplots()
         sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
-
+    
     def mut_rate_vs_base_non_pairing_prob(self, samp:str, construct:str, plot_type=['mut','prob','corr'], bases_type=['A','C','G','T'], roi_range = 'all'):
         """Plot a mutation rate histogram, a base non-pairing probability histogram, and a scatter plot fitting the mutation rate vs the base non-pairing. 
         The base non-pairing values are 1 - base-pairing values.
