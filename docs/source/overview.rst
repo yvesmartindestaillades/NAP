@@ -197,7 +197,7 @@ Each column corresponds to an attribute.
 
 **Columns names**
     * ``construct``: (str) name of this construct.
-    * ``full_sequence``: (str) sequence of the entire RNA molecule.
+    * ``sequence``: (str) sequence of the entire RNA molecule.
     * ``roi_sequence``: (str) sequence of the ROI only.
     * ``full_deltaG``: (float) predicted deltaG for the entire RNA molecule.
     * ``roi_deltaG``: (float) predicted deltaG for the ROI only.
@@ -231,7 +231,7 @@ The data structure of a sample is the following:
 
     |-- a_sample
         |-- a_construct
-            |-- full_sequence: "ACCGACTACTATC"  # Attribute from RNAstructure.
+            |-- sequence: "ACCGACTACTATC"  # Attribute from RNAstructure.
             |-- roi_sequence: "ACTACT"
             |-- ...
             |-- cov_bases: [0, 1769, 1795, ... ,1814, 1815, 1821] # Attribute from DREEM.
@@ -325,7 +325,7 @@ In a folder is stored the data of a project, using the following structure:
     my_project_1
     |-- sample_1
         |-- construct 1
-            |-- full_sequence
+            |-- sequence
             |-- roi_sequence
             |-- ...
         |-- ...

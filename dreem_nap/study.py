@@ -1,8 +1,9 @@
 from re import L
 from typing import Tuple, List, Dict
+from dreem_nap import data, plot, data_manip
+import pandas as pd
 
-
-class Study:
+class Study(data.Data, plot.Plot, data_manip.Data_manip,  object):
     """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
 
     Attributes:
@@ -52,7 +53,7 @@ class Study:
 
         if conditions != None and len(conditions) != len(samples):
             raise f"Number of samples ({len(samples)})and number of conditions ({len(conditions)}) don't match"
-        
+
 
     def to_dict(self)->dict:
         """Casts the Study object into a dictionary.
@@ -94,3 +95,11 @@ class Study:
                 di[attr]=None
         self.__init__(di['name'], di['samples'], di['conditions'], di['title'], di['description'])
         return self
+
+
+if __name__ == '__main__':
+    temp = Study('temperature',['A1','B2','B3'], [10, 20, 30], 'Example values [no unit]', 'Just an example study')
+    temp.create_df('data/DEMULTIPLEXED',10)
+    print(temp.df)
+    fig = temp.mut_histogram(temp.samples[0], '9572', 'index')
+    

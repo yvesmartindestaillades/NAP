@@ -134,7 +134,7 @@ for plt_type in ['r_value', 'slope']:
 
 utils.columns_to_csv(df=df,
                    tubes=tubes,
-                   columns=['tube', 'construct','full_sequence','roi_sequence','mut_bases','info_bases'],
+                   columns=['tube', 'construct','sequence','roi_sequence','mut_bases','info_bases'],
                    title=f"seq_and_reactivity_{study}",
                    path='data/test_output')
 

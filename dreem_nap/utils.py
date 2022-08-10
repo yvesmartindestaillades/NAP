@@ -5,7 +5,6 @@ from os.path import exists
 import os
 import matplotlib.pyplot as plt
 from typing import Tuple, List
-from dreem_nap.study import Study
 import dreem_nap as nap
 
 

@@ -8,7 +8,6 @@ import os, sys
 from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText   
 
-from dreem_nap.study import Study
 sys.path.append(os.path.abspath(""))
 from dreem_nap import data_manip, data_wrangler, utils, plot
 from typing import Tuple, List

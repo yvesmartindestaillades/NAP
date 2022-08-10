@@ -30,8 +30,6 @@ def json_dump(df:pd.DataFrame, json_file:str, verbose:bool=True)->None:
     if verbose: print("Done!")
 
 
-
-
 def json_load(json_file:str, verbose:bool = True)->pd.DataFrame:
     """A simple function to load data from a (sample, construct)-wise indexed json file.
     
@@ -99,7 +97,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
     
     Args:
         pickles (dict): a dictionary with names of the samples and location of their pickle file: {'name of the sample': 'path to the file'}
-        RNAstructureFile (str): string containing the name of a csv file with additional content. Its columns are: ['construct', 'roi_sequence', 'full_sequence', 'roi_start_index', 'roi_end_index', 'roi_deltaG', 'full_deltaG', 'roi_structure_comparison', 'full_structure', 'flank', 'sub-library']
+        RNAstructureFile (str): string containing the name of a csv file with additional content. Its columns are: ['construct', 'roi_sequence', 'sequence', 'roi_start_index', 'roi_end_index', 'roi_deltaG', 'full_deltaG', 'roi_structure_comparison', 'full_structure', 'flank', 'sub-library']
         firebase_credentials (dict): Firebase credentials to access the database.
         min_bases_cov (int): int type. Mutation rates of bases below this threshold will be considered irrelevant.
         folder (str): where to push the data in the firebase.
@@ -112,7 +110,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
     # Load additional content
     df_additional_content = pd.read_csv(RNAstructureFile)
     df_additional_content.construct = df_additional_content.construct.astype(int).astype(str)
-    df_additional_content.full_sequence = df_additional_content.full_sequence.apply(lambda seq: seq.replace('U','T'))
+    df_additional_content.sequence = df_additional_content.sequence.apply(lambda seq: seq.replace('U','T'))
 
     if verbose: print('Push pickles to firebase!')
     for count, samp in enumerate(pickles):
@@ -124,7 +122,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
 
         # Merge with additional content (excel sheet content) and check the data sanity by sequences comparison
         df_temp = pd.merge(df_additional_content, df_sample, how='inner', on='construct').reset_index()
-        #  assert not df_temp.apply(lambda row: not (str(row['full_sequence']).replace('U','T') in str(row['sequence'])) ,axis=1).sum(), "A sequence didn't match in the fusion"          
+        #  assert not df_temp.apply(lambda row: not (str(row['sequence']).replace('U','T') in str(row['sequence'])) ,axis=1).sum(), "A sequence didn't match in the fusion"          
         df_temp = df_temp.drop(columns='index')
 
         # Count base coverage in the ROI and in the second half            
@@ -137,7 +135,7 @@ def push_samples_to_firebase(pickles:dict, RNAstructureFile:str, min_bases_cov:i
 
         df_temp['base_pairing_prob'] = df_temp['base_pairing_prob'].apply(lambda constr: [0.0]+ [float(p) for p in constr.split(" ")])
 
-        df_temp = df_temp.astype(dtype={'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
+        df_temp = df_temp.astype(dtype={'construct':int, 'roi_sequence':str, 'sequence':str, 'roi_start_index':int,
         'roi_end_index':int, 'roi_structure_comparison':str, 'full_structure':str, 'data_type':str,
         'num_reads':int, 'num_aligned':int, 'num_of_mutations':object, 'mut_bases':object,
         'info_bases':object, 'del_bases':object, 'ins_bases':object, 'cov_bases':object, 'start':int, 'end':int,
@@ -184,7 +182,7 @@ def filter_constructs_study_wise(df_database:pd.DataFrame, studies, verbose:bool
     # Check how many samples reach 1000 reads on each base for a given construct
     df_full['samples_covered'] = pd.Series(dtype=int)
     for construct in df_full.groupby('construct'):
-        df_full['samples_covered'].loc[construct[1].index] = construct[1]['full_sequence'].count()
+        df_full['samples_covered'].loc[construct[1].index] = construct[1]['sequence'].count()
 
     # Only keep constructs that reach 1000 reads in every sample    
     # Check how many samples reach 1000 reads on each base for a given construct
@@ -215,7 +213,7 @@ def filter_constructs_study_wise(df_database:pd.DataFrame, studies, verbose:bool
 
 
 
-    df = df.astype(dtype={'samp': str, 'construct':int, 'roi_sequence':str, 'full_sequence':str, 'roi_start_index':int,
+    df = df.astype(dtype={'samp': str, 'construct':int, 'roi_sequence':str, 'sequence':str, 'roi_start_index':int,
     'roi_end_index':int, 'roi_deltaG':float, 'full_deltaG':float,
     'roi_structure_comparison':str, 'full_structure':str, 'data_type':str,
     'num_reads':int, 'num_aligned':int, 'num_of_mutations':object, 'mut_bases':object,
