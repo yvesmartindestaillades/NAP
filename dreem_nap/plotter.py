@@ -16,7 +16,6 @@ from sklearn.metrics import r2_score
 
 
 class Plotter:
-
     def sample_coverage_distribution(self)->None:
         """Plot each construct vs its number of samples covered, i.e the number of samples containing this construct.
     
@@ -130,7 +129,7 @@ class Plotter:
         COLOR_PER_BASE = {'A':'r','C':'b','G':'y','T':'g'}
 
         if roi_range == 'all':
-            start, end = self.df[(self.df['sample']==samp)&(self.df['construct']==construct)]['start'].iloc[0],self.df[(self.df['sample']==samp)&(self.df['construct']==construct)]['end'].iloc[0]
+            start, end = self.df[(self.df['samp']==samp)&(self.df['construct']==construct)]['start'].iloc[0],self.df[(self.df['samp']==samp)&(self.df['construct']==construct)]['end'].iloc[0]
             roi_range = list(range(start-1,end))
 
         def split_bases(df, column):
@@ -287,7 +286,7 @@ class Plotter:
                 plt.tight_layout()
 
 
-    def mut_histogram(self, samp:str, construct:str, plot_type:str)->None:
+    def mut_histogram(self, samp:str, construct:str, plot_type:str, figsize=(35,7))->None:
         """Plot the mutation rate of a specific (sample, construct).
 
         Args:
@@ -319,7 +318,7 @@ class Plotter:
 
             #df_hist.index = mut_per_base.reset_index()['base']
 
-            ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
+            ax = df_hist.plot.bar(stacked=True, color=['r','b','y','g'],  figsize=figsize)
             plt.title(f"sample {samp}, construct {construct}")
 
         if plot_type == 'partition': # Plot the partition of mutations for each base along the sequence
@@ -329,12 +328,12 @@ class Plotter:
 
             df_hist.index = list(df_use['sequence'].loc[samp,construct])
 
-            ax = df_hist.plot.bar(stacked=True, figsize=(35,7), color=['r','b','y','g'])
+            ax = df_hist.plot.bar(stacked=True, color=['r','b','y','g'], figsize=figsize)
 
         return ax
         
 
-    def deltaG(self, samp:str, bases_type=['A','C'])->None:
+    def deltaG(self, samp:str, bases_type=['A','C'], roi_range='roi')->None:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
         
         Args:
@@ -349,7 +348,7 @@ class Plotter:
         stack_for_plot = {'0':{'x':[],'y':[]},'1':{'x':[],'y':[]}}
 
         for construct in self.df[self.df.samp==samp].construct.unique():
-            roi_part = self.get_roi_info(samp=samp, construct=construct, bases_type=bases_type)
+            roi_part = self.get_roi_info(samp=samp, construct=construct, bases_type=bases_type, roi_range=roi_range)
             for base in bases_type:
                 for roi_struct_comp in ['0','1']:
                     try:    
@@ -627,9 +626,6 @@ class Plotter:
         df_paired, df_not_paired = pd.DataFrame(), pd.DataFrame()
 
         df = self.df.copy()
-        roi_range, roi_range_name = utils.roi_range_calc(overlay, roi_range, 
-                                                    roi_bounds=[df[df.construct==construct]['roi_start_index'].iloc[0], df[df.construct==construct]['roi_end_index'].iloc[0]],
-                                                    full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])
 
         for samp in self.samples:
             df_roi = self.get_roi_info(samp=samp, construct=construct, bases_type=bases_type, structure=structure, roi_range=roi_range)

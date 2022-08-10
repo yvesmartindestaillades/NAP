@@ -6,7 +6,6 @@ import numpy as np
 import pickle
 
 class Loader:
-
     def __load_pickle_to_df(self, path:str, samp:str)->pd.DataFrame:
         """Load a pickle file.
         
@@ -66,10 +65,11 @@ class Loader:
         for cons in df.groupby('construct'):
             if len(cons[1]) != len(self.samples):
                 df = df[df['construct'] != cons[0]]
-        assert not df.empty, 'No construct found across all samples'
+        if df.empty: print('No construct found across all samples for study {}.'.format(self.name))
+        else: print('{} constructs found across all samples for study {}.'.format(len(df.groupby('construct')), self.name))
         return df
 
-    def create_df_from_local_files(self, path_to_data:str, min_cov_bases:int)->pd.DataFrame:
+    def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int)->pd.DataFrame:
         all_df = {}
         for s in self.samples:
             all_df[s] = self.__load_pickle_to_df(path='{}/{}/mh.p'.format(path_to_data,s), samp=s)

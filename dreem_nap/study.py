@@ -56,25 +56,6 @@ class Study(loader.Loader, plotter.Plotter, manipulator.Manipulator):
         if conditions != None and len(conditions) != len(samples):
             raise f"Number of samples ({len(samples)})and number of conditions ({len(conditions)}) don't match"
 
-
-    def to_dict(self)->dict:
-        """Casts the Study object into a dictionary.
-
-        Returns:
-            dict: a dictionary form of the Study object.
-
-        Example:
-        >>> study = Study('example',['A1', 'B2', 'B3'], [10, 20, 30], 'Example values [no unit]', 'Just an example study')
-        >>> study.to_dict()
-        {'name': 'example', 'description': 'Just an example study', 'samples': ['A1', 'B2', 'B3'], 'title': 'Example values [no unit]', 'conditions': [10, 20, 30]}
-         """
-
-        out_dict = {}
-        for attr in self.attr_list:
-            if getattr(self, attr) != None:
-                out_dict[attr] = getattr(self, attr)
-        return out_dict
-
     def from_dict(self, di:dict):
         """Set attributes of this Study object from a dictionary.
 
@@ -100,8 +81,11 @@ class Study(loader.Loader, plotter.Plotter, manipulator.Manipulator):
 
     def update_df(self,df):
         self.df = df
+    
+    def load_studies(studies_file_path:str):
+        return load_studies(studies_file_path)
 
-def load_studies(studies_file_path:str)->pd.DataFrame:
+def load_studies(studies_file_path:str)->dict[str:Study]:
     """Read formatted file with samples, and turn it into a dataframe containing studies.
 
     Args:
@@ -150,12 +134,10 @@ def load_studies(studies_file_path:str)->pd.DataFrame:
         solo_item = lambda x: x[0] if len(set(x)) == 1 else x  
         studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study().attr_list)} 
     
-    return pd.DataFrame.from_dict(studies_dict, orient='index')
+    return {k:Study().from_dict(v) for k,v in studies_dict.items()}
 
 
 if __name__ == '__main__':
     temp = Study('temperature',['A1','B2','B3'], [10, 20, 30], 'Example values [no unit]', 'Just an example study')
-    temp.create_df_from_local_files('data/DEMULTIPLEXED',10)
-    temp.mut_histogram(temp.samples[0], '9572', 'index')
-    utils.save_fig('data/figs', 'mut_histogram')
-   
+    temp.load_df_from_local_files('data/DEMULTIPLEXED',10)
+    print(temp.get_samp_const_df(samp='A1',construct='9572',cols=['mut_rate','']))
