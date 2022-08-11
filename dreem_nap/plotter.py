@@ -312,7 +312,6 @@ class Plotter(manipulator.Manipulator):
                                         ,'base':list(df_use['sequence'].loc[samp, construct])})\
                                         .reset_index()\
                                         .set_index(['base', 'index'])
-            print(mut_per_base)
             df_hist = pd.DataFrame()
             df_hist.index = mut_per_base.reset_index()['index']
 
