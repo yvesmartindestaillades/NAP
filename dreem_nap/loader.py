@@ -101,4 +101,5 @@ class Loader:
         self.df = self.__filter_construct(self.df)
         self.df = self.__add_roi_to_df(self.df)
         self.df = self.__set_indexes_to_0(self.df)
+        self.constructs = self.df['construct'].unique()
         return self.df
