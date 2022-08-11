@@ -79,7 +79,9 @@ class Loader:
 
         #TODO remove this!!
         if 'base_pairing_prob' not in df.columns:
-            df['base_pairing_prob'] = np.array([0,0.25,0.5,0.75,1]*34)
+            df['base_pairing_prob'] = df['samp'].apply(lambda x: np.random.random(170))
+        if 'mut_rates' not in df.columns:
+            df['mut_rates'] = df['samp'].apply(lambda x: np.random.random(170)*0.1)
         if df['structure'].unique() == None:
             df['structure'] = '.(()()))).......)'*10
         return df

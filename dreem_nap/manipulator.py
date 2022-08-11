@@ -48,8 +48,13 @@ class Manipulator:
             df = df[df['sub-library'].isin(sub_libs)]
         return df        
 
+    def get_mut_per_base(self, row:pd.Series)->pd.DataFrame:
+        mut_per_base = pd.DataFrame({'mut_rates': row['mut_rates']
+                                    ,'base':list(row['sequence'])})\
+                                    .reset_index()\
+                                    .set_index(['base', 'index'])
 
-
+        return mut_per_base
 
     def get_roi_info(self, samp:str, construct:str, bases_type:list[str]=['A','C'], structure = 'full', overlay = 0, roi_range=None)->pd.DataFrame:
         """Returns a dataframe of the ROI of a specific (samp, construct).

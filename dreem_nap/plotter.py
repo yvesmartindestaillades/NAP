@@ -9,13 +9,13 @@ from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
 
 sys.path.append(os.path.abspath(""))
-from dreem_nap import utils
+from dreem_nap import manipulator, utils
 from typing import Tuple, List
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
 
-class Plotter:
+class Plotter(manipulator.Manipulator):
 
     # TODO adapt to study class
     def sample_coverage_distribution(self)->None:
@@ -90,7 +90,7 @@ class Plotter:
         ax1 = plt.subplot()
         serie = self.df.set_index(['samp','construct']).loc[samp, construct]
         plt.plot(np.array(serie['cov_bases']))
-        start, end = serie['ROI_start']+1, serie['ROI_stop']+1
+        start, end = serie['ROI_start'], serie['ROI_stop']
         plt.plot(np.arange(start, end, 1), np.array(serie['cov_bases'])[start:end])
         plt.plot(np.arange(0, len(serie['cov_bases'])), len(serie['cov_bases'])*[int(self.df.min_cov_bases.unique())])
         plt.xlabel("Bases")
@@ -115,7 +115,7 @@ class Plotter:
         f, ax = plt.subplots()
         sns.heatmap(base_cov_plot, annot=False, linewidths=0, ax=ax, norm=LogNorm())
 
-    
+
     def mut_rate_vs_base_non_pairing_prob(self, samp:str, construct:str, plot_type=['mut','prob','corr'], bases_type=['A','C','G','T'], roi_range = 'all'):
         """Plot a mutation rate histogram, a base non-pairing probability histogram, and a scatter plot fitting the mutation rate vs the base non-pairing. 
         The base non-pairing values are 1 - base-pairing values.
@@ -308,11 +308,11 @@ class Plotter:
 
         if plot_type == 'index':  # Plot the mutation rate for each base along the sequence
 
-            mut_per_base = pd.DataFrame({'mut_rate': pd.Series(np.array(df_use[f"mut_bases"].loc[samp, construct][1:])/np.array(df_use[f"info_bases"].loc[samp, construct][1:]), dtype=object)
+            mut_per_base = pd.DataFrame({'mut_rates': df_use['mut_rates'].loc[samp, construct]
                                         ,'base':list(df_use['sequence'].loc[samp, construct])})\
                                         .reset_index()\
                                         .set_index(['base', 'index'])
-
+            print(mut_per_base)
             df_hist = pd.DataFrame()
             df_hist.index = mut_per_base.reset_index()['index']
 

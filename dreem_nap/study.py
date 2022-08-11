@@ -49,6 +49,7 @@ class Study(loader.Loader, plotter.Plotter, manipulator.Manipulator):
         self.name = name
         self.description = description
         self.samples = samples
+        self.constructs = None
         self.title = title
         self.conditions = conditions
         self.attr_list = ['name','description','samples','title','conditions']
@@ -136,9 +137,3 @@ def load_studies(studies_file_path:str)->dict[str:Study]:
     
     return {k:Study().from_dict(v) for k,v in studies_dict.items()}
 
-
-if __name__ == '__main__':
-    temp = Study('temperature',['A1','B2','B3'], [10, 20, 30], 'Example values [no unit]', 'Just an example study')
-    temp.load_df_from_local_files('data/DEMULTIPLEXED',10)
-    temp.mut_rate_vs_base_non_pairing_prob('A1','9572','mut')
-    utils.save_fig('','temp.png')
