@@ -37,7 +37,7 @@ class Loader:
             A filtered dataframe.
         """
         df['min_cov_bases'] = min_cov_bases
-        df['cov_bases_roi'] = df['cov_bases'].apply(lambda x: min(x[1:]))
+        df['cov_bases_roi'] = df.apply(lambda x: min(x['cov_bases'][x['ROI_start']:x['ROI_stop']]), axis=1)
         return df[df['cov_bases_roi'] >= min_cov_bases].reset_index(drop=True)
 
     def __mhs2dict(self, mhs:MutationHistogram, drop_attribute:List[str]=[])->dict:
@@ -70,7 +70,7 @@ class Loader:
         else: print('{} constructs found across all samples for study {}.'.format(len(df.groupby('construct')), self.name))
         return df
 
-    def __add_roi_to_df(self, df:pd.DataFrame):
+    def __add_cols_to_df(self, df:pd.DataFrame):
         # If no ROI, the entire sequence is considered as ROI.
         if 'ROI_start' not in df.columns:
             df['ROI_start'] = 0
@@ -79,16 +79,16 @@ class Loader:
 
         #TODO remove this!!
         if 'base_pairing_prob' not in df.columns:
-            df['base_pairing_prob'] = df['samp'].apply(lambda x: np.random.random(170))
+            df['base_pairing_prob'] = df['sequence'].apply(lambda x: np.random.random(170))
         if 'mut_rates' not in df.columns:
-            df['mut_rates'] = df['samp'].apply(lambda x: np.random.random(170)*0.1)
+            df['mut_rates'] = df['sequence'].apply(lambda x: np.random.random(170)*0.1)
         if df['structure'].unique() == None:
             df['structure'] = '.(()()))).......)'*10
         return df
 
     def __set_indexes_to_0(self, df:pd.DataFrame):
-        for col in df:
-            if type(df[col].iloc[0]) in [np.array, list] and len(df[col].iloc[0]) == (len(df['sequence'].iloc[0])+1):
+        for col in df.drop(columns=['sequence','structure']):
+            if type(df[col].iloc[0]) in [list, np.ndarray] and len(df[col].iloc[0]) == (len(df['sequence'].iloc[0])+1):
                 df[col] = df[col].apply(lambda x: x[1:])
         return df
 
@@ -96,10 +96,10 @@ class Loader:
         all_df = {}
         for s in self.samples:
             all_df[s] = self.__load_pickle_to_df(path='{}/{}/mh.p'.format(path_to_data,s), samp=s)
+            all_df[s] = self.__set_indexes_to_0(all_df[s])
+            all_df[s] = self.__add_cols_to_df(all_df[s])
             all_df[s] = self.__filter_by_base_cov(all_df[s], min_cov_bases)
         self.df = pd.concat(all_df).reset_index().drop(columns='level_1').rename(columns={'level_0':'samp'})
         self.df = self.__filter_construct(self.df)
-        self.df = self.__add_roi_to_df(self.df)
-        self.df = self.__set_indexes_to_0(self.df)
         self.constructs = self.df['construct'].unique()
         return self.df

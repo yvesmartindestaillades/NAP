@@ -27,4 +27,5 @@ def test_figs(temp:Study):
 if __name__ == '__main__':
     temp = Study('temperature',['A1','B2','B3'], [10, 20, 30], 'Example values [no unit]', 'Just an example study')
     temp.load_df_from_local_files('data/DEMULTIPLEXED',10)
-    test_figs(temp)
+    #test_figs(temp)
+    print(temp.df.head())
