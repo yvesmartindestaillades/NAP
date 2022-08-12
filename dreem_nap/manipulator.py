@@ -5,7 +5,7 @@ from os.path import exists
 import os
 import matplotlib.pyplot as plt
 from typing import Tuple, List
-from dreem_nap import utils
+from dreem_nap import util
 
 class Manipulator:
     ## Building block of Study class
@@ -177,7 +177,7 @@ class Manipulator:
         """
         samples = self.samples
         np.seterr(invalid='ignore')
-        full_path = utils.make_path(path)
+        full_path = util.make_path(path)
         df_print = self.df[self.df.samp.isin(samples)]
         df_print = df_print[columns] 
         np.set_printoptions(suppress=True)

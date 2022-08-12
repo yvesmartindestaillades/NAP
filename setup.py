@@ -32,7 +32,7 @@ setup(
        'dreem_nap/data_wrangler',
        'dreem_nap/database',
        'dreem_nap/plot',
-       'dreem_nap/utils', 
+       'dreem_nap/util', 
        'dreem_nap/data_manip',
        'dreem_nap/wrapper',
        'dreem_nap/study',
