@@ -75,12 +75,12 @@ Connect, push and pull to the database.
    :show-inheritance:
 
 
-Utils module
+Util module
 ------------
 
 A few low-level functions for the other modules.
 
-.. automodule:: dreem_nap.utils
+.. automodule:: dreem_nap.util
    :members:
    :undoc-members:
    :show-inheritance:

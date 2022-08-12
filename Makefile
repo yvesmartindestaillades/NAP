@@ -25,9 +25,6 @@ upgrade-dependencies:
 	pip-compile -U requirements.in > requirements.txt
 
 push_to_pypi:
-	pip3 uninstall dreem_nap -y
-	pip3 install .
-	rm -fr dist
 	python3 -m build
 	twine upload -r pypi dist/*
 

@@ -8,5 +8,5 @@ path_to_studies: /Users/ymdt/src/dreem_nap/data/DEMULTIPLEXED/samples.csv
 min_cov_bases: 10
 
 # Plot settings
-mpl_rcParams_figure_dpi: 600 # the highest the resolution, the slowest the plotting
+mpl_rcParams_figure_dpi: 200 # the highest the resolution, the slowest the plotting
 mpl_rcParams_figure_figsize: [15,7]

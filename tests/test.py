@@ -1,4 +1,4 @@
-from dreem_nap import utils
+from dreem_nap import util
 from dreem_nap.study import Study
 
 def test_figs(temp:Study):
@@ -21,7 +21,7 @@ def test_figs(temp:Study):
 
     for p in pl:
         eval(f"temp.{p}()")
-        utils.save_fig(f"test/figs/{pl[:-2]}.png")
+        util.save_fig(f"test/figs/{pl[:-2]}.png")
         print(f"passed {p}")
 
 if __name__ == '__main__':

@@ -10,7 +10,7 @@ import shutil
 #sys.path.append(os.path.abspath(".."))
 
 sys.path.append(os.path.abspath(""))
-from NAP import data_wrangler, utils, firebase, plot
+from NAP import data_wrangler, util, firebase, plot
 
 try:
     shutil.rmtree('data/test_output')
@@ -86,7 +86,7 @@ plot.save_fig(path='data/test_output',
                 title='random_9_base_coverage')
 plt.close()
 
-tube, construct = utils.rand_tube_construct(df)
+tube, construct = util.rand_tube_construct(df)
 plot.base_coverage(df, tube, construct , min_bases_cov=min_bases_cov)
 plot.save_fig(path='data/test_output',
                 title='base_coverage')
@@ -99,7 +99,7 @@ plot.save_fig(path='data/test_output',
 plt.close()
 
 # Test data analysis plots
-tube, construct = utils.rand_tube_construct(df)
+tube, construct = util.rand_tube_construct(df)
 plot.mutation_rate(df=df,
                     tube=tube,
                     construct=construct,
@@ -109,20 +109,20 @@ plot.save_fig(path=f"data/test_output",
             title=f"mutation_rate_{tube}_{construct}")
 plt.close()
 
-tube, _ = utils.rand_tube_construct(df)
+tube, _ = util.rand_tube_construct(df)
 plot.deltaG(df=df, tube=tube)
 plot.save_fig(path=f"data/test_output", 
             title=f"deltaG_{tube}")
 plt.close()
 
-_ , construct = utils.rand_tube_construct(df)
+_ , construct = util.rand_tube_construct(df)
 df_global_corr = plot.correlation_n_tubes(df, tubes, construct)
 plot.save_fig(path=f"data/test_output", 
                 title=f"correlation_{study}_{construct}")
 plt.title(f"Correlation_for_{study}")
 plt.close()
 
-_ , constructs = utils.rand_tube_construct(df, n_constructs=3)
+_ , constructs = util.rand_tube_construct(df, n_constructs=3)
 for plt_type in ['r_value', 'slope']:
     pivot = df_global_corr.pivot("tube_0","tube_1", plt_type).astype(float)
     f, ax = plt.subplots(figsize=(28, 10))
@@ -132,13 +132,13 @@ for plt_type in ['r_value', 'slope']:
                     title=f"correlation_{plt_type}_{study}_{constructs}")
     plt.close()
 
-utils.columns_to_csv(df=df,
+util.columns_to_csv(df=df,
                    tubes=tubes,
                    columns=['tube', 'construct','sequence','roi_sequence','mut_bases','info_bases'],
                    title=f"seq_and_reactivity_{study}",
                    path='data/test_output')
 
-utils.deltaG_vs_construct_to_csv(df=df,    
+util.deltaG_vs_construct_to_csv(df=df,    
                                  title=f"deltaG_vs_construct.csv", 
                                  path = f"data/test_output", 
                                  tubes=tubes)

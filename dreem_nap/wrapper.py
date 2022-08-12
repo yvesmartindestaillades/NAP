@@ -9,7 +9,7 @@ from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText   
 
 sys.path.append(os.path.abspath(""))
-from dreem_nap import data_manip, data_wrangler, utils, plot
+from dreem_nap import data_manip, data_wrangler, util, plot
 from typing import Tuple, List
 
 
@@ -25,21 +25,21 @@ def about_a_sample_construct(df:pd.DataFrame, samp:str, construct:str, path:str)
     """
     # base coverage plot
     plot.base_coverage(df, samp, construct)
-    utils.save_fig(path=path,
+    util.save_fig(path=path,
                     title=f"base_cov_{samp}_{construct}")
     plt.close()
     # mut hist plots
     plot.mut_histogram('index',df, samp, construct)
-    utils.save_fig(path=path,
+    util.save_fig(path=path,
                     title=f"mut_hist_index_{samp}_{construct}")
     plt.close()
     plot.mut_histogram('partition',df, samp, construct)
-    utils.save_fig(path=path,
+    util.save_fig(path=path,
                     title=f"mut_hist_partition_{samp}_{construct}")
     plt.close()
     # deltaG plots
     plot.deltaG(df, samp)
-    utils.save_fig(path=path,
+    util.save_fig(path=path,
                     title=f"deltaG_{samp}")
     plt.close()
     # raw data

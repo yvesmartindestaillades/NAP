@@ -9,7 +9,7 @@ from scipy.stats import linregress
 from matplotlib.offsetbox import AnchoredText
 
 sys.path.append(os.path.abspath(""))
-from dreem_nap import manipulator, utils
+from dreem_nap import manipulator, util
 from typing import Tuple, List
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
@@ -267,7 +267,7 @@ class Plotter(manipulator.Manipulator):
                 legend.append(f"base:{base}"+'     R2= {:.4},     y = {:.4} x + {:.4}'.format(score[base], coef[base], intercept[base])) 
             plt.legend(legend)
 
-        df = utils.filter_df_by_sub_lib(self.df, sub_lib)
+        df = util.filter_df_by_sub_lib(self.df, sub_lib)
 
         if samp is not None:
             stack = make_stack(df, samp, bases)
@@ -343,7 +343,7 @@ class Plotter(manipulator.Manipulator):
             sample: sample of interest.
         """
 
-        fig = utils.define_figure(title=samp,
+        fig = util.define_figure(title=samp,
                                 xlabel='deltaG [kcal]',
                                 ylabel='Mutation ratio',
                                 figsize=(20,5))
@@ -378,7 +378,7 @@ class Plotter(manipulator.Manipulator):
             full_seq_pairing: pairing state of plotted bases, w.r.t the full-seq prediction. default is None. None: both paired and unpaired bases. 'paired': only paired bases. 'unpaired': only unpaired bases.
         """
 
-        # Define utils
+        # Define util
         PAIRED, UNPAIRED = '1','0' 
         to_str = {PAIRED: 'paired', UNPAIRED:'unpaired'}  
         to_macro = {v: k for k, v in to_str.items()} 
@@ -395,9 +395,9 @@ class Plotter(manipulator.Manipulator):
         if full_seq_pairing != None:
             sequence_pairings = [to_macro[full_seq_pairing]]                   
 
-        # Utils for plotting
+        # util for plotting
         legend = []
-        fig = utils.define_figure(title=samp,
+        fig = util.define_figure(title=samp,
                                 xlabel='deltaG [kcal]',
                                 ylabel='Mutation ratio',
                                 figsize=figsize)
@@ -462,7 +462,7 @@ class Plotter(manipulator.Manipulator):
 
 
         def plot(stack, study, construct, ylim):
-            gini = utils.gini(np.array(stack))
+            gini = util.gini(np.array(stack))
             plt.plot(stack)
             plt.xlabel('Position (bp)')
             plt.ylabel('Correlation (R^2)')
@@ -476,7 +476,7 @@ class Plotter(manipulator.Manipulator):
         \n construct: {construct}, samples: {samples} \n \
         Gini index: {round(gini,5)}")
 
-        df = utils.filter_df_by_sub_lib(self.df, sub_lib)
+        df = util.filter_df_by_sub_lib(self.df, sub_lib)
         true_seq_len, roi_range = check_sanity(df, samples, construct, roi_range)
         stack = compute_stack(true_seq_len, df, construct, bases_type, roi_range, win_len)
         plot(stack, study, construct, ylim)
@@ -574,7 +574,7 @@ class Plotter(manipulator.Manipulator):
             f: if sub-library isn't a valid element of the 'sub-library' column of the dataframe.
         """
 
-        df = utils.filter_df_by_sub_lib(self.df, sub_lib)
+        df = util.filter_df_by_sub_lib(self.df, sub_lib)
         constructs = df.construct.unique()
 
         samples = self.samples

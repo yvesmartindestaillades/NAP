@@ -1,7 +1,7 @@
 from re import L
 from typing import Tuple, List, Dict
 from xml.dom.minidom import AttributeList
-from dreem_nap import loader, plotter, manipulator, utils
+from dreem_nap import loader, plotter, manipulator, util
 import pandas as pd
 
 
