@@ -76,14 +76,12 @@ class Loader:
             df['ROI_start'] = 0
         if 'ROI_stop' not in df.columns:
             df['ROI_stop'] =  df['sequence'].apply(lambda x: len(x)-1)
+        if 'mut_rates' not in df.columns:
+            df['mut_rates'] = df.apply(lambda x: np.divide(x['mut_bases'],x['info_bases']), axis=1)
 
         #TODO remove this!!
         if 'base_pairing_prob' not in df.columns:
             df['base_pairing_prob'] = df['sequence'].apply(lambda x: np.random.random(170))
-        if 'mut_rates' not in df.columns:
-            df['mut_rates'] = df['sequence'].apply(lambda x: np.random.random(170)*0.1)
-        if df['structure'].unique() == None:
-            df['structure'] = '.(()()))).......)'*10
         return df
 
     def __set_indexes_to_0(self, df:pd.DataFrame):
@@ -95,7 +93,7 @@ class Loader:
     def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int)->pd.DataFrame:
         all_df = {}
         for s in self.samples:
-            all_df[s] = self.__load_pickle_to_df(path='{}/{}/mh.p'.format(path_to_data,s), samp=s)
+            all_df[s] = self.__load_pickle_to_df(path='{}/{}.p'.format(path_to_data,s), samp=s)
             all_df[s] = self.__set_indexes_to_0(all_df[s])
             all_df[s] = self.__add_cols_to_df(all_df[s])
             all_df[s] = self.__filter_by_base_cov(all_df[s], min_cov_bases)

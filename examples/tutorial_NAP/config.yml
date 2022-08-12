@@ -1,0 +1,10 @@
+# Data paths
+path_to_data: data
+path_to_studies: studies.csv
+
+# Data manip 
+min_cov_bases: 10
+
+# Plot settings
+mpl_rcParams_figure_dpi: 600 # the highest the resolution, the slowest the plotting
+mpl_rcParams_figure_figsize: [15,7]
