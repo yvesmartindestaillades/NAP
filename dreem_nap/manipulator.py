@@ -33,7 +33,6 @@ class Manipulator():
         raise ValueError(f"Index {index} not recognized")
 
     def filter_base_paired(self, df_loc, base_paired):
-
         if base_paired == True:
             df_loc = df_loc[df_loc['paired'] == True]
         elif base_paired == False:
@@ -57,7 +56,29 @@ class Manipulator():
         df_loc = self.filter_base_type(df_loc, base_type)
         return df_loc
 
-    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, deltaG=None, base_type = ['A','C','G','T'], index='all', base_paired=None):
+    def filter_flank(self, df, flank):
+        if flank == None:
+            return df
+        if type(flank) == str:
+            assert len((df_out:= df[df['flank'].apply(lambda x: flank == x)]).index) >=1, f"No row found with flank {flank}"
+            return df_out
+        if type(flank) in [list, tuple]:
+            assert len((df_out:= df[df['flank'].apply(lambda x: x in flank)]).index) >=1, f"No row found with flanks {flank}"
+            return df_out
+        raise ValueError(f"Flank {flank} not recognized")        
+
+    def filter_sub_lib(self, df, sub_lib):
+        if sub_lib == None:
+            return df
+        if type(sub_lib) == str:
+            assert len((df_out:= df[df['sub-library'].apply(lambda x: sub_lib == x)]).index) >=1, f"No row found with sub-library {sub_lib}"
+            return df_out
+        if type(sub_lib) in [list, tuple]:
+            assert len((df_out:= df[df['sub-library'].apply(lambda x: x in sub_lib)]).index) >=1, f"No row found with sub-libraries {sub_lib}"
+            return df_out
+        raise ValueError(f"Sub-library {sub_lib} not recognized")
+
+    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, deltaG=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None):
         """Returns a dataframe containing the content of a cluster of a sample-construct.
 
         Args:
@@ -77,6 +98,8 @@ class Manipulator():
         """
 
         df = self._df.copy()
+        df = self.filter_flank(df, flank)
+        df = self.filter_sub_lib(df, sub_lib)
         
         for cat, input in zip(['structure','deltaG'], [structure,deltaG]):
             if input != None:
