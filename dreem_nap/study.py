@@ -5,7 +5,7 @@ from dreem_nap import loader, plotter, manipulator, util
 import pandas as pd
 
 
-class Study(loader.Loader, plotter.Plotter, manipulator.Manipulator):
+class Study(object):
     """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
 
     Attributes:
@@ -53,9 +53,21 @@ class Study(loader.Loader, plotter.Plotter, manipulator.Manipulator):
         self.title = title
         self.conditions = conditions
         self.attr_list = ['name','description','samples','title','conditions']
+        self._df = None
+        self.plot = plotter.Plotter(self._df)
+        self.mani = manipulator.Manipulator(self._df)
 
         if conditions != None and len(conditions) != len(samples):
             raise f"Number of samples ({len(samples)})and number of conditions ({len(conditions)}) don't match"
+
+    def get_df(self):
+        return self._df
+
+    def set_df(self, df):
+        self._df = df
+        self.plot = plotter.Plotter(df)
+        self.mani = manipulator.Manipulator(df)
+        return df
 
     def from_dict(self, di:dict):
         """Set attributes of this Study object from a dictionary.
@@ -80,11 +92,16 @@ class Study(loader.Loader, plotter.Plotter, manipulator.Manipulator):
         self.__init__(di['name'], di['samples'], di['conditions'], di['title'], di['description'])
         return self
 
-    def update_df(self,df):
-        self.df = df
-    
+       
     def load_studies(studies_file_path:str):
         return load_studies(studies_file_path)
+
+    def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int)->pd.DataFrame:
+        df = self.set_df(loader.Loader().df_from_local_files(path_to_data, min_cov_bases, self.samples, self.name))
+        self.constructs = df['construct'].unique()
+        return df
+
+
 
 def load_studies(studies_file_path:str)->dict[str:Study]:
     """Read formatted file with samples, and turn it into a dataframe containing studies.

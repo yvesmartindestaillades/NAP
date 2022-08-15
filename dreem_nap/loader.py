@@ -65,12 +65,12 @@ class Loader:
                 setattr(mhs, k, tuple(v))
         return mhs.__dict__
 
-    def __filter_construct(self, df):
+    def __filter_construct(self, df, samples, name):
         for cons in df.groupby('construct'):
-            if len(cons[1]) != len(self.samples):
+            if len(cons[1]) != len(samples):
                 df = df[df['construct'] != cons[0]]
-        if df.empty: print('No construct found across all samples for study {}.'.format(self.name))
-        else: print('{} constructs found across all samples for study {}.'.format(len(df.groupby('construct')), self.name))
+        if df.empty: print('No construct found across all samples for study {}.'.format(name))
+        else: print('{} constructs found across all samples for study {}.'.format(len(df.groupby('construct')), name))
         return df
 
     def __add_cols_to_df(self, df:pd.DataFrame):
@@ -89,17 +89,16 @@ class Loader:
                 df[col] = df[col].apply(lambda x: x[1:])
         return df
 
-    def df_from_local_files(self, path_to_data:str, min_cov_bases:int)->pd.DataFrame:
+    def df_from_local_files(self, path_to_data:str, min_cov_bases:int, samples, name)->pd.DataFrame:
         all_df = {}
-        for s in self.samples:
+        for s in samples:
             all_df[s] = self.__load_pickle_to_df(path='{}/{}.p'.format(path_to_data,s), samp=s)
             all_df[s] = self.__set_indexes_to_0(all_df[s])
             all_df[s] = self.__add_cols_to_df(all_df[s])
             all_df[s] = self.__filter_by_base_cov(all_df[s], min_cov_bases)
-        self.df = pd.concat(all_df).reset_index().drop(columns='level_1').rename(columns={'level_0':'samp'})
-        self.df = self.__filter_construct(self.df)
-        self.constructs = self.df['construct'].unique()
-        return self.df
+        df = pd.concat(all_df).reset_index().drop(columns='level_1').rename(columns={'level_0':'samp'})
+        df = self.__filter_construct(df, samples, name)
+        return df
 
         
 

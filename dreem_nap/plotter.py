@@ -22,6 +22,10 @@ class OutputPlot(object):
         self.data = data
 
 class Plotter():
+    def __init__(self, df):
+        self.__man = manipulator.Manipulator(df)
+        self._df = df
+
     def mut_histogram(self, samp:str, construct:str, plot_type:str='index', figsize=(35,7), **kwargs)->None:
         """Plot the mutation rate of a specific (sample, construct).
 
@@ -32,7 +36,9 @@ class Plotter():
                 - 'index' uses bases numbers as index and the original construct bases as colors.
                 - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
             figsize: figure size.
-            **kwargs: keyword arguments for matplotlib.pyplot
+            **kwargs: 
+                - keyword arguments for base_type, index, base_paired.
+                - keyword arguments for matplotlib.pyplot
         
         Returns:
             OutputPlot: output plot data:
@@ -42,12 +48,13 @@ class Plotter():
         """
         fig = plt.figure(figsize=figsize)
 
-        df_use = self.df.set_index(['samp','construct'])
+        df_use = self._df.set_index(['samp','construct'])
         
         if not plot_type in ['index','partition']:
             raise Exception(f"{plot_type} must be 'index' or 'partition', please check this argument")
 
         df_hist = pd.DataFrame()
+        self.__man
 
         if plot_type == 'index':  # Plot the mutation rate for each base along the sequence
 

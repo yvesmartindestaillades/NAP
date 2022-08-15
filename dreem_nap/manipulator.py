@@ -8,6 +8,9 @@ from typing import Tuple, List
 from dreem_nap import util
 
 class Manipulator:
+    def __init__(self, df):
+        self._df = df
+
     ## Building block of Study class
     # data manipulation tools
   
@@ -73,8 +76,8 @@ class Manipulator:
         Returns:
             _type_: dataframe containing the content of a cluster of a sample-construct.
         """
-        
-        df = self.df.copy()
+
+        df = self._df.copy()
         self.assert_structure(df, structure)
         self.assert_deltaG(df, deltaG)
         cols = [c for c in cols if not (c.startswith('deltaG') or c.startswith('structure'))]
@@ -118,8 +121,8 @@ class Manipulator:
         Returns:
             A dataframe with the constructs as index and the column as data.
         """   
-        if not self.df.empty:
-            return self.df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+        if not self._df.empty:
+            return self._df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
     def filter_df_by_sub_lib(self, sub_lib:str)->pd.DataFrame:
         """Returns a dataframe containing only sublibraries that are contains `sub_lib`.
@@ -133,7 +136,7 @@ class Manipulator:
         Returns:
             pd.DataFrame: A dataframe containing only sublibraries that are contains `sub_lib`.
         """
-        df = self.df.copy()
+        df = self._df.copy()
 
         if sub_lib != None:
             sub_libs = [x for x in df['sub-library'].unique() if sub_lib in x]
@@ -156,7 +159,7 @@ class Manipulator:
         samples = self.samples
         np.seterr(invalid='ignore')
         full_path = util.make_path(path)
-        df_print = self.df[self.df.samp.isin(samples)]
+        df_print = self._df[self._df.samp.isin(samples)]
         df_print = df_print[columns] 
         np.set_printoptions(suppress=True)
         if 'mut_rate' in columns:
@@ -175,11 +178,11 @@ class Manipulator:
         Returns:
             Two lists containing the randomly picked elements (resp., samples and constructs).
         """
-        all_samples = list(self.df.samp.unique())
+        all_samples = list(self._df.samp.unique())
         these_samples = np.array(all_samples)[np.random.randint(0, len(all_samples),n_samples)] 
         these_constructs = []
         for samp in these_samples:
-            constructs = self.df[self.df.samp==samp].construct.unique()
+            constructs = self._df[self._df.samp==samp].construct.unique()
             these_constructs.append(constructs[np.random.randint(0, len(constructs))])
         if n_samples == 1:
             these_samples = these_samples[0]
