@@ -1,12 +1,9 @@
 # Data paths
-path: /Users/ymdt/src/dreem_nap/data/
-path_to_data: /Users/ymdt/src/dreem_nap/data/DEMULTIPLEXED
-firebase_credentials_file: /Users/ymdt/src/dreem_nap/data/credentials_firebase.json
-path_to_studies: /Users/ymdt/src/dreem_nap/data/DEMULTIPLEXED/samples.csv
+path_to_data: /Users/ymdt/src/data/Gabe
+path_to_studies: /Users/ymdt/src/data/Gabe/studies.csv
 
 # Data manip 
-min_cov_bases: 10
+min_cov_bases: 100
 
 # Plot settings
-mpl_rcParams_figure_dpi: 200 # the highest the resolution, the slowest the plotting
-mpl_rcParams_figure_figsize: [15,7]
+mpl_rcParams_figure_dpi: 100 # the highest the resolution, the slowest the plotting

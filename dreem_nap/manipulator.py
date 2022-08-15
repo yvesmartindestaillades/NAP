@@ -10,6 +10,82 @@ from dreem_nap import util
 class Manipulator:
     ## Building block of Study class
     # data manipulation tools
+  
+    def assert_structure(self, df, structure):
+        assert structure in df.columns, f"Structure {structure} not found"
+
+
+    def assert_deltaG(self, df, deltaG):
+        assert deltaG in df.columns, f"deltaG {deltaG} not found"
+
+
+    def define_index(self, df, samp, construct, cluster, index):
+        if index in ['all','full'] :
+            return df.index
+        if index == 'roi':
+            assert [roi in df.columns for roi in ['ROI_start','ROI_stop']], 'ROI_start and ROI_stop not found'
+            return list(range(int(self.get_series(df, samp, construct, cluster)['ROI_start']), int(self.get_series(df, samp, construct, cluster)['ROI_stop'])))
+        if type(index) in [list,tuple]:
+            assert [i in list(range(len(self.get_series(df, samp, construct, cluster)['sequence']))) for i in index], 'Index out of range'
+            return index
+        raise ValueError(f"Index {index} not recognized")
+
+    def filter_base_paired(self, df_loc, base_paired):
+        # base_type = ['A','C','G','T']
+        # base_index = 'roi', 'all', [93,95,96]
+        # base_paired = True, False or None (=both) # default is None 
+
+        if base_paired == True:
+            df_loc = df_loc[df_loc['paired'] == True]
+        elif base_paired == False:
+            df_loc = df_loc[df_loc['paired'] == False]
+        elif base_paired == None:
+            pass
+        return df_loc
+
+    def filter_index(self, df_loc, index):
+        return df_loc.loc[index]
+
+    def filter_base_type(self, df_loc, base_type):
+        df_loc = pd.concat([df_loc[df_loc['base'] == base] for base in base_type], axis=0)
+        return df_loc
+
+    def filter(self, df_loc, base_type, index, base_paired):
+        df_loc = self.filter_index(df_loc, index)
+        df_loc = self.filter_base_paired(df_loc, base_paired)
+        df_loc = self.filter_base_type(df_loc, base_type)
+        return df_loc
+
+    def get_df(self, df, samp, construct, cols, cluster=0, structure='structure', deltaG='deltaG', base_type = ['A','C','G','T'], index='all', base_paired=None):
+        self.assert_structure(df, structure)
+        self.assert_deltaG(df, deltaG)
+        cols = [c for c in cols if not (c.startswith('deltaG') or c.startswith('structure'))]
+        cols = cols + [structure, deltaG]
+
+        for col in cols:
+            assert col in df.columns, f"Column {col} not found"
+
+        df_loc = self.get_series(df, samp, construct, cluster)
+        for col in [c for c in cols if type(df_loc[c]) in [str]]:
+            df_loc[col] = list(df_loc[col])
+
+        df_loc = pd.DataFrame({col: df_loc[col] for col in cols})
+
+        for st in [col for col in cols if 'structure' in col]:
+            df_loc['paired'] = [{'.':False,'(':True,')':True}[x] for x in df_loc[st]]
+            df_loc = df_loc.drop(columns=st)
+        
+        df_loc = df_loc.rename(columns={'sequence':'base'})
+        
+        index = self.define_index(df_loc, samp, construct, cluster, index)
+        df_loc = filter(df_loc, base_type, index, base_paired)
+        return df_loc.sort_index()
+
+    def get_series(self, df, samp, construct, cluster):
+        assert len(df_out := df[(df['construct'] == construct)&(df['samp'] == samp)&(df['cluster'] == cluster)]) <= 1, 'More than one row found'
+        assert len(df_out) >= 1, 'No row found'
+        return df_out.iloc[0]
+
     
     def get_construct_attribute(self, column:str)->pd.DataFrame:   
 
@@ -47,122 +123,6 @@ class Manipulator:
                 raise Exception(f"arg {sub_lib} is not a sub-library of the df")
             df = df[df['sub-library'].isin(sub_libs)]
         return df        
-
-    def get_mut_per_base(self, row:pd.Series)->pd.DataFrame:
-        mut_per_base = pd.DataFrame({'mut_rates': row['mut_rates']
-                                    ,'base':list(row['sequence'])})\
-                                    .reset_index()\
-                                    .set_index(['base', 'index'])
-
-        return mut_per_base
-
-    def get_roi_info(self, samp:str, construct:str, bases_type:list[str]=['A','C'], structure = 'full', overlay = 0, roi_range=None)->pd.DataFrame:
-        """Returns a dataframe of the ROI of a specific (samp, construct).
-
-        Args:
-            samp: a specific sample.
-            construct: a specific construct.
-            bases_type: list of the bases types to filter-in
-            structure: 'full', 'roi', or 'both'. If 'full' or 'roi', the index 'paired' of the output will be corresponding to the structure prediction of the full RNA or only the ROI, respectively. If 'both', the output will be indexed w.r.t 'paired_full' and 'paired_roi'.  
-            overlay (str or int or tuple[int]): extend/shrink roi
-                'all': the roi is all bases
-                int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
-                tuple[int]-type argument: the roi is the subsequence [start_roi_index-overlay[0], end_roi_index+overlay[1]] 
-            roi_range: default is None. Array of base indexes (list[int]). ex: [80, 83, 91]. Base-0 index.
-
-        Return:
-            Indexes:
-                base: A, C, G, T.
-                paired: pairing prediction of an RNA structure prediction software.
-                roi_structure_comparison: comparison between the pairing prediction of the ROI sequence alone and the entire sequence. 0 means no difference, 1 means difference. 
-                index: base-0 index
-            Columns:
-                mut_rate: mutation rate of this base.
-                roi_deltaG: the deltaG of the ROI sequence predicted b a RNA structure prediction software. 
-
-        Raise:
-            structure is 'roi' or 'full' and overlay is expanding the roi.
-        """ 
-
-        np.seterr(invalid='ignore')
-        df = self.df.copy()
-        df_SC = df.set_index(['samp','construct']).loc[(samp,construct)]
-
-        assert not (overlay != 0 and roi_range != None), "overlay and roi_range are uncompatible arguments"
-
-        roi_range, _ = self._roi_range_calc(overlay, roi_range,                                                 
-                                        roi_bounds=[df[df.construct==construct]['ROI_start'].iloc[0], df[df.construct==construct]['ROI_stop'].iloc[0]],
-                                        full_bounds=[df[df.construct==construct]['start'].iloc[0]-1, df[df.construct==construct]['end'].iloc[0]-1])
-            
-        assert not (structure != 'full' and (min(roi_range) < int(df_SC['ROI_start']) or max(roi_range) > int(df_SC['ROI_stop']))), "Impossible to expand the roi when using roi-based structure prediction"
-
-        df_roi = pd.DataFrame({'mut_rate':pd.Series(np.array(df_SC[f"mut_bases"][1:])/np.array(df_SC[f"info_bases"][1:]), dtype=object),
-                                'base':list(df_SC['sequence']),
-                                'paired': np.array([bool(x != '.') for x in list(df_SC['structure'])]),\
-                                'base_pairing_prob': df_SC[f"base_pairing_prob"][1:],\
-                                'roi_structure_comparison': pd.Series(list(df_SC['roi_structure_comparison']),index=list(range(df_SC['ROI_start'], df_SC['ROI_stop'])))\
-                                ,'roi_deltaG':df_SC['roi_deltaG']})\
-                                .reset_index()
-                                
-        df_roi = df_roi.where(df_roi['base'].isin(bases_type))#.dropna()
-        
-        df_roi = df_roi[df_roi['index'].notnull()]
-        df_roi['index'] =  df_roi['index'].astype(int)
-
-        df_roi = df_roi[df_roi['index'].isin(roi_range)]
-
-        if structure in ['roi','ROI','both']:
-            df_roi['paired_roi'] = df_roi.apply(lambda row:  bool((int(row['paired'])+int(row['roi_structure_comparison']))%2)  , axis=1 )
-
-        if structure == 'both':
-            df_roi = df_roi.rename(columns={'paired':'paired_full'})
-
-        if structure == 'roi':
-            df_roi = df_roi.drop(columns=['paired'])
-            df_roi = df_roi.rename(columns={'paired_roi':'paired'})
-
-        if structure in ['roi','ROI','full']:
-            df_roi = df_roi.set_index(['base', 'paired', 'roi_structure_comparison','index'])
-
-        if structure == 'both':
-            df_roi = df_roi.set_index(['base', 'paired_full', 'paired_roi', 'roi_structure_comparison','index'])
-
-        return df_roi
-
-        
-    def _roi_range_calc(self, overlay = 0, roi_range:List[int] = None, roi_bounds:Tuple[int,int] = None, full_bounds:Tuple[int,int] = None):
-        """_summary_
-
-        Args:
-            overlay (str or int or tuple[int]): extend/shrink roi
-                'all': the roi is all bases
-                int-type argument: the roi is the subsequence [start_roi_index-overlay, end_roi_index+overlay] 
-                tuple[int]-type argument: the roi is the subsequence [start_roi_index+overlay[0], end_roi_index+overlay[1]].
-                Defaults to 0.
-            roi_range (List[int], optional): Array of base indexes (list[int]). ex: [80, 83, 91]. Defaults to None.
-            roi_bounds (Tuple[int,int], optional): Boundaries of the ROI. roi_bounds[0] is included, roi_bounds[1] is excluded. Defaults to None.
-            full_bounds (Tuple[int,int], optional): Boundaries of the entire sequence. full_bounds[0] is included, roi_bofull_boundsunds[1] is excluded.. Defaults to None.
-        """
-        # Select base indexes
-        roi_range_name = None
-        if overlay == 'all':
-            roi_range_name = 'all'
-            roi_range = list(range(full_bounds[0], full_bounds[1]))
-        if overlay == 0 and roi_range == None:
-            roi_range_name = 'roi'
-            roi_range = list(range(roi_bounds[0],roi_bounds[1]))
-        if overlay != 0 :
-            if type(overlay) == int or type(overlay) == float:
-                overlay = (-overlay, overlay)
-            elif not ((type(overlay) == tuple or type(overlay) == list) and len(overlay) == 2):
-                raise f"Unvalid type {type(overlay)} for overlay, please select int."
-            roi_range = list(range(roi_bounds[0]+overlay[0], roi_bounds[1]+overlay[1]))
-            roi_range_name = f"[start_roi {overlay[0]}, end_roi +{overlay[1]}"
-        if roi_range_name == None:
-            roi_range_name = 'custom'
-
-        return roi_range, roi_range_name
-
 
     def columns_to_csv(self, columns:List[str], title:str, path:str)->None:
         """Save a subset of a Dataframe to a csv file.

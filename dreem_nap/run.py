@@ -15,5 +15,5 @@ def run(args):
     print('Done!')
 
 if __name__ == "__main__":
-    sys.argv = ['run.py']
+    sys.argv = sys.argv[0]
     main()
