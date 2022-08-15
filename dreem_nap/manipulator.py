@@ -1,3 +1,4 @@
+from types import NoneType
 import pandas as pd
 import numpy as np
 import datetime
@@ -7,7 +8,7 @@ import matplotlib.pyplot as plt
 from typing import Tuple, List
 from dreem_nap import util
 
-class Manipulator:
+class Manipulator():
     def __init__(self, df):
         self._df = df
 
@@ -17,7 +18,6 @@ class Manipulator:
     def assert_structure(self, df, structure):
         assert structure in df.columns, f"Structure {structure} not found"
 
-
     def assert_deltaG(self, df, deltaG):
         assert deltaG in df.columns, f"deltaG {deltaG} not found"
 
@@ -26,9 +26,9 @@ class Manipulator:
             return df.index
         if index == 'roi':
             assert [roi in df.columns for roi in ['ROI_start','ROI_stop']], 'ROI_start and ROI_stop not found'
-            return list(range(int(self.get_series(df, samp, construct, cluster)['ROI_start']), int(self.get_series(df, samp, construct, cluster)['ROI_stop'])))
+            return list(range(int(self.get_series(self._df, samp, construct, cluster)['ROI_start']), int(self.get_series(self._df, samp, construct, cluster)['ROI_stop'])))
         if type(index) in [list,tuple]:
-            assert [i in list(range(len(self.get_series(df, samp, construct, cluster)['sequence']))) for i in index], 'Index out of range'
+            assert [i in list(range(len(self.get_series(self._df, samp, construct, cluster)['sequence']))) for i in index], 'Index out of range'
             return index
         raise ValueError(f"Index {index} not recognized")
 
@@ -50,11 +50,11 @@ class Manipulator:
         return df_loc
 
     def filter_bases(self, df_loc, base_type, index, base_paired):
+        df_loc = self.filter_index(df_loc, index)
         if base_paired != None:
-            df_loc = self.filter_index(df_loc, index)
             assert 'paired' in df_loc.columns, 'Give structure to filter on'
             df_loc = self.filter_base_paired(df_loc, base_paired)
-            df_loc = self.filter_base_type(df_loc, base_type)
+        df_loc = self.filter_base_type(df_loc, base_type)
         return df_loc
 
     def get_SCC(self, samp, construct, cols, cluster=0, structure=None, deltaG=None, base_type = ['A','C','G','T'], index='all', base_paired=None):
@@ -77,7 +77,6 @@ class Manipulator:
         """
 
         df = self._df.copy()
-
         
         for cat, input in zip(['structure','deltaG'], [structure,deltaG]):
             if input != None:
@@ -93,15 +92,14 @@ class Manipulator:
             df_loc[col] = list(df_loc[col])
 
         df_loc = pd.DataFrame({col: df_loc[col] for col in cols})
-
         for st in [col for col in cols if col.startswith('structure')]:
             df_loc['paired'] = [{'.':False,'(':True,')':True}[x] for x in df_loc[st]]
             df_loc = df_loc.drop(columns=st)
         
         df_loc = df_loc.rename(columns={'sequence':'base'})
-        
         index = self.define_index(df_loc, samp, construct, cluster, index)
         df_loc = self.filter_bases(df_loc, base_type, index, base_paired)
+
         return df_loc.sort_index()
 
     def get_series(self, df, samp, construct, cluster):
@@ -109,7 +107,7 @@ class Manipulator:
         assert len(df_out) >= 1, 'No row found'
         return df_out.iloc[0]
 
-    
+
     def get_construct_attribute(self, column:str)->pd.DataFrame:   
 
         """Returns a column of the dataframe w.r.t constructs. 
@@ -124,7 +122,8 @@ class Manipulator:
             A dataframe with the constructs as index and the column as data.
         """   
         if not self._df.empty:
-            return self._df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+            df = self._df.copy()
+            return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
 
     def filter_df_by_sub_lib(self, sub_lib:str)->pd.DataFrame:
         """Returns a dataframe containing only sublibraries that are contains `sub_lib`.
@@ -159,14 +158,15 @@ class Manipulator:
             The csv file content under the dataframe format.    
         """
         samples = self.samples
+        df = self._df.copy()
         np.seterr(invalid='ignore')
         full_path = util.make_path(path)
-        df_print = self._df[self._df.samp.isin(samples)]
+        df_print = df[df.samp.isin(samples)]
         df_print = df_print[columns] 
         np.set_printoptions(suppress=True)
         if 'mut_rate' in columns:
             df_print['mut_rate'] = df_print.apply(lambda row: np.float32(np.array(row['mut_bases'])/np.array(row['info_bases'])), axis=1)
-        df_print = df_print.reset_index().drop(columns='index')
+        df_print = df_print.drop(columns='index')
         df_print.to_csv(f"{full_path}/{title}")
         return df_print
 
@@ -180,11 +180,12 @@ class Manipulator:
         Returns:
             Two lists containing the randomly picked elements (resp., samples and constructs).
         """
-        all_samples = list(self._df.samp.unique())
+        df = self._df.copy()
+        all_samples = list(df.samp.unique())
         these_samples = np.array(all_samples)[np.random.randint(0, len(all_samples),n_samples)] 
         these_constructs = []
         for samp in these_samples:
-            constructs = self._df[self._df.samp==samp].construct.unique()
+            constructs = df[df.samp==samp].construct.unique()
             these_constructs.append(constructs[np.random.randint(0, len(constructs))])
         if n_samples == 1:
             these_samples = these_samples[0]
