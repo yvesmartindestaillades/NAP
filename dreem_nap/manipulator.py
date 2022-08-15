@@ -33,9 +33,6 @@ class Manipulator:
         raise ValueError(f"Index {index} not recognized")
 
     def filter_base_paired(self, df_loc, base_paired):
-        # base_type = ['A','C','G','T']
-        # base_index = 'roi', 'all', [93,95,96]
-        # base_paired = True, False or None (=both) # default is None 
 
         if base_paired == True:
             df_loc = df_loc[df_loc['paired'] == True]
@@ -52,13 +49,15 @@ class Manipulator:
         df_loc = pd.concat([df_loc[df_loc['base'] == base] for base in base_type], axis=0)
         return df_loc
 
-    def filter(self, df_loc, base_type, index, base_paired):
-        df_loc = self.filter_index(df_loc, index)
-        df_loc = self.filter_base_paired(df_loc, base_paired)
-        df_loc = self.filter_base_type(df_loc, base_type)
+    def filter_bases(self, df_loc, base_type, index, base_paired):
+        if base_paired != None:
+            df_loc = self.filter_index(df_loc, index)
+            assert 'paired' in df_loc.columns, 'Give structure to filter on'
+            df_loc = self.filter_base_paired(df_loc, base_paired)
+            df_loc = self.filter_base_type(df_loc, base_type)
         return df_loc
 
-    def get_SCC(self, samp, construct, cols, cluster=0, structure='structure', deltaG='deltaG', base_type = ['A','C','G','T'], index='all', base_paired=None):
+    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, deltaG=None, base_type = ['A','C','G','T'], index='all', base_paired=None):
         """Returns a dataframe containing the content of a cluster of a sample-construct.
 
         Args:
@@ -67,8 +66,8 @@ class Manipulator:
             construct (str): The construct name.
             cols (list): The columns to be returned.
             cluster (int, optional): The cluster number. Defaults to 0.
-            structure (str, optional): Structure to use, such as 'structure_ROI_DMS'. Defaults to 'structure'.
-            deltaG (str, optional): DeltaG to use, such as 'deltaG_ens_DMS'. Defaults to 'deltaG'.
+            structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
+            deltaG (str, optional): DeltaG to use for the 'deltaG' column, such as 'deltaG_ens_DMS'. Defaults to 'deltaG'.
             base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
             index (str, optional): Index to include. Defaults to 'all'.
             base_paired (_type_, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
@@ -78,10 +77,13 @@ class Manipulator:
         """
 
         df = self._df.copy()
-        self.assert_structure(df, structure)
-        self.assert_deltaG(df, deltaG)
-        cols = [c for c in cols if not (c.startswith('deltaG') or c.startswith('structure'))]
-        cols = cols + [structure, deltaG]
+
+        
+        for cat, input in zip(['structure','deltaG'], [structure,deltaG]):
+            if input != None:
+                getattr(self, 'assert_'+cat)(df, input)
+                assert len([c for c in cols if c.startswith(cat)])==0, f"{input} should be entered as a {cat} argument, not as a col. Cols can't contain {cat}."
+                cols += [input]
 
         for col in cols:
             assert col in df.columns, f"Column {col} not found"
@@ -92,14 +94,14 @@ class Manipulator:
 
         df_loc = pd.DataFrame({col: df_loc[col] for col in cols})
 
-        for st in [col for col in cols if 'structure' in col]:
+        for st in [col for col in cols if col.startswith('structure')]:
             df_loc['paired'] = [{'.':False,'(':True,')':True}[x] for x in df_loc[st]]
             df_loc = df_loc.drop(columns=st)
         
         df_loc = df_loc.rename(columns={'sequence':'base'})
         
         index = self.define_index(df_loc, samp, construct, cluster, index)
-        df_loc = filter(df_loc, base_type, index, base_paired)
+        df_loc = self.filter_bases(df_loc, base_type, index, base_paired)
         return df_loc.sort_index()
 
     def get_series(self, df, samp, construct, cluster):

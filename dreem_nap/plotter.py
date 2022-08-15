@@ -26,7 +26,7 @@ class Plotter():
         self.__man = manipulator.Manipulator(df)
         self._df = df
 
-    def mut_histogram(self, samp:str, construct:str, plot_type:str='index', figsize=(35,7), **kwargs)->None:
+    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], base_index='all', base_paired=None, structure=None, deltaG=None,**kwargs)->None:
         """Plot the mutation rate of a specific (sample, construct).
 
         Args:
@@ -37,7 +37,6 @@ class Plotter():
                 - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
             figsize: figure size.
             **kwargs: 
-                - keyword arguments for base_type, index, base_paired.
                 - keyword arguments for matplotlib.pyplot
         
         Returns:
@@ -46,6 +45,14 @@ class Plotter():
                 - ax: axis object.
                 - data: plotted data.
         """
+
+        args = locals()
+        for attr in ['self','kwargs']:
+            del args[attr]
+            
+        colors = [{'A':'r','C':'b','G':'y','T':'g'}[b] for b in base_type]
+
+
         fig = plt.figure(figsize=figsize)
 
         df_use = self._df.set_index(['samp','construct'])
@@ -54,31 +61,31 @@ class Plotter():
             raise Exception(f"{plot_type} must be 'index' or 'partition', please check this argument")
 
         df_hist = pd.DataFrame()
-        self.__man
-
+        df = self.__man.get_SCC(cols = ['sequence','mut_rates']+[f"mod_bases_{base}" for base in base_type],\
+                        **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
+   
         if plot_type == 'index':  # Plot the mutation rate for each base along the sequence
 
-            mut_per_base = pd.DataFrame({'mut_rates': df_use['mut_rates'].loc[samp, construct]
-                                        ,'base':list(df_use['sequence'].loc[samp, construct])})\
-                                        .reset_index()\
-                                        .set_index(['base', 'index'])
-            df_hist.index = mut_per_base.reset_index()['index']
+            mut_per_base = df[['base','mut_rates']].reset_index().set_index(['base', 'index'])
+            df_hist.index = df.index
 
-            for base in ['A','C','G','T']:
+            for base in base_type:
                 df_hist[base] = pd.Series(dtype=float)
                 df_hist[base] = mut_per_base.loc[base]
-
-            ax = df_hist.plot.bar(stacked=True, color=['r','b','y','g'],  figsize=figsize)
-            plt.title(f"sample {samp}, construct {construct}")
+            df_hist.dropna(inplace=True, how='all')
+            ax = df_hist.plot.bar(stacked=True, color=colors,  figsize=figsize)
 
         if plot_type == 'partition': # Plot the partition of mutations for each base along the sequence
-            for base in ['A','C','G','T']:
+            for base in base_type:
                 df_hist[f"mod_bases_{base}"]  = np.array(df_use[f"mod_bases_{base}"].loc[samp, construct][1:])/df_use['info_bases'].loc[samp, construct][1:]
 
             df_hist.index = list(df_use['sequence'].loc[samp,construct])
 
-            ax = df_hist.plot.bar(stacked=True, color=['r','b','y','g'], figsize=figsize)
-        
-        [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
+            ax = df_hist.plot.bar(stacked=True, color=colors, figsize=figsize)
 
+        plt.title('  '.join([f"{k}: {v}" for k,v in args.items() if \
+            k not in ['self','kwargs', 'plot_type','figsize','base_type'] and v is not None]))
+
+        [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
+        
         return OutputPlot(fig, ax, df_hist)
