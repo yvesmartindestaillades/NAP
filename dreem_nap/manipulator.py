@@ -56,7 +56,8 @@ class Manipulator:
         df_loc = self.filter_base_type(df_loc, base_type)
         return df_loc
 
-    def get_df(self, df, samp, construct, cols, cluster=0, structure='structure', deltaG='deltaG', base_type = ['A','C','G','T'], index='all', base_paired=None):
+    def get_SCC(self, df, samp, construct, cols, cluster=0, structure='structure', deltaG='deltaG', base_type = ['A','C','G','T'], index='all', base_paired=None):
+        
         self.assert_structure(df, structure)
         self.assert_deltaG(df, deltaG)
         cols = [c for c in cols if not (c.startswith('deltaG') or c.startswith('structure'))]
