@@ -18,7 +18,6 @@ class Manipulator:
     def assert_deltaG(self, df, deltaG):
         assert deltaG in df.columns, f"deltaG {deltaG} not found"
 
-
     def define_index(self, df, samp, construct, cluster, index):
         if index in ['all','full'] :
             return df.index
@@ -56,8 +55,26 @@ class Manipulator:
         df_loc = self.filter_base_type(df_loc, base_type)
         return df_loc
 
-    def get_SCC(self, df, samp, construct, cols, cluster=0, structure='structure', deltaG='deltaG', base_type = ['A','C','G','T'], index='all', base_paired=None):
+    def get_SCC(self, samp, construct, cols, cluster=0, structure='structure', deltaG='deltaG', base_type = ['A','C','G','T'], index='all', base_paired=None):
+        """Returns a dataframe containing the content of a cluster of a sample-construct.
+
+        Args:
+            df (pd.Dataframe): A study dataframe.
+            samp (str): The sample name.
+            construct (str): The construct name.
+            cols (list): The columns to be returned.
+            cluster (int, optional): The cluster number. Defaults to 0.
+            structure (str, optional): Structure to use, such as 'structure_ROI_DMS'. Defaults to 'structure'.
+            deltaG (str, optional): DeltaG to use, such as 'deltaG_ens_DMS'. Defaults to 'deltaG'.
+            base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
+            index (str, optional): Index to include. Defaults to 'all'.
+            base_paired (_type_, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
+
+        Returns:
+            _type_: dataframe containing the content of a cluster of a sample-construct.
+        """
         
+        df = self.df.copy()
         self.assert_structure(df, structure)
         self.assert_deltaG(df, deltaG)
         cols = [c for c in cols if not (c.startswith('deltaG') or c.startswith('structure'))]
