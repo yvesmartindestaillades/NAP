@@ -65,7 +65,7 @@ class Loader:
                 setattr(mhs, k, tuple(v))
         return mhs.__dict__
 
-    def __filter_construct(self, df, samples, name):
+    def __filter_by_study(self, df, samples, name):
         for cons in df.groupby('construct'):
             if len(cons[1]) != len(samples):
                 df = df[df['construct'] != cons[0]]
@@ -89,15 +89,17 @@ class Loader:
                 df[col] = df[col].apply(lambda x: x[1:])
         return df
 
-    def df_from_local_files(self, path_to_data:str, min_cov_bases:int, samples, name)->pd.DataFrame:
+    def df_from_local_files(self, path_to_data:str, min_cov_bases:int, samples, name, filter_by)->pd.DataFrame:
         all_df = {}
+        assert filter_by in ['study','sample'], 'filter_by must be either study or sample.'
         for s in samples:
             all_df[s] = self.__load_pickle_to_df(path='{}/{}.p'.format(path_to_data,s), samp=s)
             all_df[s] = self.__set_indexes_to_0(all_df[s])
             all_df[s] = self.__add_cols_to_df(all_df[s])
             all_df[s] = self.__filter_by_base_cov(all_df[s], min_cov_bases)
         df = pd.concat(all_df).reset_index().drop(columns='level_1').rename(columns={'level_0':'samp'})
-        df = self.__filter_construct(df, samples, name)
+        if filter_by == 'study':
+            df = self.__filter_by_study(df, samples, name)
         return df
 
         

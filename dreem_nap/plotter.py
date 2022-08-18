@@ -15,6 +15,10 @@ from typing import Tuple, List
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
 
+from scipy.optimize import curve_fit
+import matplotlib as mpl
+from itertools import cycle
+
 class OutputPlot(object):
     def __init__(self, fig, ax, data) -> None:
         self.fig = fig
@@ -82,8 +86,11 @@ class Plotter():
             for base in base_type:
                 df_hist[base]  = np.array(df[f"mod_bases_{base}"]/df['info_bases']).astype(float)
 
-            ax = df_hist.plot.bar(stacked=True, color=colors, figsize=figsize)
+            ax = df_hist.plot.bar(stacked=True,
+             color=colors, figsize=figsize)
 
+        if len(str(args['index'])) >50:
+            args['index'] = str(args['index'])[:50]+'... ]'
         plt.title('  '.join([f"{k}: {v}" for k,v in args.items() if \
             k not in ['self','kwargs', 'plot_type','figsize','base_type'] and not hasattr(plt,k) \
                 and v is not None]))
@@ -91,3 +98,39 @@ class Plotter():
         [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
         
         return OutputPlot(fig, ax, df_hist)
+
+
+    def deltaG_sample(self, samp:str, structure, figsize=(20,5), base_type=['A','C','G','T'], index='all', flank=None, sub_lib=None, max_mutation= 0.15,models=[],**kwargs):
+        """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
+        
+        Args:
+        """
+        args = locals()
+        for attr in ['self','kwargs']:
+            del args[attr]
+        fit = manipulator.Fit()        
+        fig = plt.figure(figsize=figsize)
+        ax = plt.axes()
+        data = self.__man.collect_x_y_paired_unpaired(cols=['deltaG','mut_rates'], **{k:v for k,v in args.items() if ((k in self.__man.collect_x_y_paired_unpaired.__code__.co_varnames) and (k != 'cols'))})
+
+        for is_paired, color in zip([True,False],['g','r']):
+            plt.plot(data[is_paired]['x'],data[is_paired]['y'], color+'.')
+
+        for color, is_paired, prefix in zip(['g','r'],[True,False], ['Paired bases ','Unpaired bases ']):
+            style = cycle(['-','--',':','-.'])
+            for m in models:
+                plt.plot(*fit.predict(data[is_paired]['x'],data[is_paired]['y'],  m, prefix=prefix), color=color, linestyle=next(style))
+            
+        plt.legend(['Paired bases data','Unpaired bases data'] + fit.legend )
+
+        if len(str(args['index'])) >50:
+            args['index'] = str(args['index'])[:50]+'... ]'
+        plt.title('  '.join([f"{k}: {v}" for k,v in args.items() if \
+            k not in ['self','kwargs', 'plot_type','figsize','base_type','df']\
+            and not hasattr(plt,k) and v is not None]))
+
+        [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
+
+        return OutputPlot(fig, ax, data)
+
+

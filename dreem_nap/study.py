@@ -12,7 +12,7 @@ class Study(object):
         name (str, optional): Short description (<~20 char) of your study. Defaults to None.
         samples (List[str], optional): Names of your study's samples. Defaults to None.
         conditions (List[float], optional): Values of the experimental condition that changes between the samples. Defaults to None.
-        title (str, optional): Short description of the conditions. Defaults to None.
+        label (str, optional): Short description of the conditions. Defaults to None.
         description (str, optional): More information about your study. Defaults to None.
         
     Example:
@@ -20,21 +20,21 @@ class Study(object):
         >>> study.description
         'Just an example study'
         >>> study.to_dict()
-        {'name': 'example', 'description': 'Just an example study', 'samples': ['A1', 'B2', 'B3'], 'title': 'Example values [no unit]', 'conditions': [10, 20, 30]}
+        {'name': 'example', 'description': 'Just an example study', 'samples': ['A1', 'B2', 'B3'], 'label': 'Example values [no unit]', 'conditions': [10, 20, 30]}
         >>> di = {'name':'temperature','samples':['A1','B1','C3']}
         >>> study = Study().from_dict(di)
         >>> print(study.name, study.samples, study.description)
         temperature ['A1', 'B1', 'C3'] None
     """
 
-    def __init__(self, name:str=None, samples:List[str]=None, conditions:List[float]=None, title:str= None, description:str = None) -> None:
+    def __init__(self, name:str=None, samples:List[str]=None, conditions:List[float]=None, label:str= None, description:str = None) -> None:
         """Creates a Study object.
 
         Args:
             name (str, optional): Short description (<~20 char) of your study. Defaults to None.
             samples (List[str], optional): names of your study's samples. Defaults to None.
             conditions (List[float], optional): values of the experimental condition that changes between the samples. Defaults to None.
-            title (str, optional): Short description of the conditions. Defaults to None.
+            label (str, optional): Short description of the conditions. Defaults to None.
             description (str, optional): More information about your study. Defaults to None.
 
         Raises:
@@ -50,9 +50,9 @@ class Study(object):
         self.description = description
         self.samples = samples
         self.constructs = None
-        self.title = title
+        self.label = label
         self.conditions = conditions
-        self.attr_list = ['name','description','samples','title','conditions']
+        self.attr_list = ['name','description','samples','label','conditions']
         self._df = None
         self.plot = plotter.Plotter(self._df)
         self.mani = manipulator.Manipulator(self._df)
@@ -73,7 +73,7 @@ class Study(object):
         """Set attributes of this Study object from a dictionary.
 
         Args:
-            di (dict): a dictionary containing keys such as ['name','description','samples','title','conditions'].
+            di (dict): a dictionary containing keys such as ['name','description','samples','label','conditions'].
 
         Returns:
             Study: a study object.
@@ -89,15 +89,15 @@ class Study(object):
                 di[attr]
             except: 
                 di[attr]=None
-        self.__init__(di['name'], di['samples'], di['conditions'], di['title'], di['description'])
+        self.__init__(di['name'], di['samples'], di['conditions'], di['label'], di['description'])
         return self
 
        
     def load_studies(studies_file_path:str):
         return load_studies(studies_file_path)
 
-    def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int)->pd.DataFrame:
-        df = self.set_df(loader.Loader().df_from_local_files(path_to_data, min_cov_bases, self.samples, self.name))
+    def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int, filter_by='study')->pd.DataFrame:
+        df = self.set_df(loader.Loader().df_from_local_files(path_to_data, min_cov_bases, self.samples, self.name, filter_by))
         self.constructs = df['construct'].unique()
         return df
 
@@ -115,7 +115,7 @@ def load_studies(studies_file_path:str)->dict[str:Study]:
     Example:
         >>> from dreem_nap import data_wrangler     
         >>> study_file = 'samples.csv'
-        >>> samples = ['"name","description","samples","conditions","title"',
+        >>> samples = ['"name","description","samples","conditions","label"',
         ... ',,,,',
         ... '"salt","Change the Na concentration","A6",0.15,"Na quantity [M]"',
         ... '"salt","Change the Na concentration","B6",0.3,"Na quantity [M]"',
@@ -132,7 +132,7 @@ def load_studies(studies_file_path:str)->dict[str:Study]:
         >>> # Your studies under the shape of a dataframe
         >>> df_studies = data_wrangler.load_studies(study_file) 
         >>> df_studies
-                                name                           description                     samples                          title                        conditions
+                                name                           description                     samples                          label                        conditions
         salt                    salt           Change the Na concentration        [A6, B6, C6, D6, E6]                Na quantity [M]        [0.15, 0.3, 0.6, 1.0, 1.2]
         spermidine        spermidine   Change the Spermidine concentration            [B3, D3, E3, F3]       Spermidine quantity [mM]          [0.01, 1.0, 10.0, 100.0]
         >>> temp = df_studies.to_dict(orient='index')
@@ -143,7 +143,7 @@ def load_studies(studies_file_path:str)->dict[str:Study]:
         >>> study_name = 'salt' 
         >>> study = studies[study_name] 
         >>> print(f"Here is your study {study.to_dict()}" )
-        Here is your study {'name': 'salt', 'description': 'Change the Na concentration', 'samples': ['A6', 'B6', 'C6', 'D6', 'E6'], 'title': 'Na quantity [M]', 'conditions': [0.15, 0.3, 0.6, 1.0, 1.2]}
+        Here is your study {'name': 'salt', 'description': 'Change the Na concentration', 'samples': ['A6', 'B6', 'C6', 'D6', 'E6'], 'label': 'Na quantity [M]', 'conditions': [0.15, 0.3, 0.6, 1.0, 1.2]}
     """
 
     studies_dict, studies_data = {}, pd.read_csv(studies_file_path)

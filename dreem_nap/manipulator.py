@@ -8,6 +8,41 @@ import matplotlib.pyplot as plt
 from typing import Tuple, List
 from dreem_nap import util
 
+MAX_MUTATION = 0.3
+
+from typing import Tuple
+from scipy.optimize import curve_fit
+import matplotlib as mpl
+from itertools import cycle
+
+class Fit(object):
+    def __init__(self) -> None:
+        self.legend = []
+    
+    def clean_legend(self):
+        self.legend = []
+
+    def predict(self, x, y, model, prefix='', suffix=''):
+        fit = self.fit(x,y,model, prefix, suffix)
+        m = eval(model)
+        return np.sort(x), m(np.sort(x),*fit)
+
+    def fit(self, x,y, model, prefix, suffix):
+        fit = curve_fit(eval(model), x, y)[0]
+        self._generate_legend(fit, model, prefix, suffix)
+        return fit
+
+    def _generate_legend(self, fit, m, prefix, suffix):
+        slice_m = lambda start, stop: ','.join(str(m).split(',')[start:stop])
+        first_slice = slice_m(0,len(fit))+','+slice_m(len(fit), len(fit)+1).split(':')[0]
+        second_slice = ','.join(m.split(',')[len(fit):])[2:]
+        fun_args = [a.strip() for a in str(m).split(',')[1:len(fit)+1]]
+        fun_args[-1] = fun_args[-1][0]
+        for a,b in zip(fun_args,fit):
+            second_slice = second_slice.replace(a.strip(),str(round(b,5)))
+        self.legend += [prefix+ str(m) + 5*' ' + second_slice + suffix]
+
+
 class Manipulator():
     def __init__(self, df):
         self._df = df
@@ -78,7 +113,26 @@ class Manipulator():
             return df_out
         raise ValueError(f"Sub-library {sub_lib} not recognized")
 
-    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, deltaG=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None):
+    def assert_SCC_exists(self, samp, construct, cluster):
+        assert samp in list(self._df['samp']), f"Sample {samp} not found"
+        assert construct in list(self._df[self._df['samp']==samp].construct.unique()), f"Construct {construct} not found"
+        if cluster != None:
+            assert len(self._df[(self._df['samp'] == samp) & (self._df['construct'] == construct) & (self._df['cluster'] == cluster)]) >= 1, f"No row found for {samp} {construct} {cluster}"
+
+
+    def get_col_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ):
+        args = locals()
+        df = self._df
+        stack = pd.DataFrame()
+        if constructs == 'all':
+            constructs = list(df[df.samp == samp].construct.unique())
+        
+        for c in constructs:
+            stack = pd.concat((stack, self.get_SCC(construct=c, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T))
+        stack.index = constructs
+        return stack
+
+    def get_SCC(self, samp, construct, cols, cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ,can_be_empty=False):
         """Returns a dataframe containing the content of a cluster of a sample-construct.
 
         Args:
@@ -88,29 +142,34 @@ class Manipulator():
             cols (list): The columns to be returned.
             cluster (int, optional): The cluster number. Defaults to 0.
             structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
-            deltaG (str, optional): DeltaG to use for the 'deltaG' column, such as 'deltaG_ens_DMS'. Defaults to 'deltaG'.
             base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
             index (str, optional): Index to include. Defaults to 'all'.
             base_paired (_type_, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
+            can_be_empty (bool, optional): If True, returns an empty dataframe if no row is found. Defaults to False.
 
         Returns:
             _type_: dataframe containing the content of a cluster of a sample-construct.
         """
 
+        self.assert_SCC_exists( samp, construct, cluster)
         df = self._df.copy()
         df = self.filter_flank(df, flank)
         df = self.filter_sub_lib(df, sub_lib)
-        
-        for cat, input in zip(['structure','deltaG'], [structure,deltaG]):
-            if input != None:
-                getattr(self, 'assert_'+cat)(df, input)
-                assert len([c for c in cols if c.startswith(cat)])==0, f"{input} should be entered as a {cat} argument, not as a col. Cols can't contain {cat}."
-                cols += [input]
+
+        if structure != None:
+            self.assert_structure(df, structure)
+            assert len([c for c in cols if c.startswith('structure')])==0, f"{structure} should be entered as a structure= argument, not as a col. Cols can't contain structure."
+            cols += [structure]
+
+        remove_bases_flag = False
+        if 'sequence' not in cols:
+            cols += ['sequence']
+            remove_bases_flag = True
 
         for col in cols:
             assert col in df.columns, f"Column {col} not found"
 
-        df_loc = self.get_series(df, samp, construct, cluster)
+        df_loc = self.get_series(df, samp, construct, cluster, can_be_empty)
         for col in [c for c in cols if type(df_loc[c]) in [str]]:
             df_loc[col] = list(df_loc[col])
 
@@ -122,12 +181,21 @@ class Manipulator():
         df_loc = df_loc.rename(columns={'sequence':'base'})
         index = self.define_index(df_loc, samp, construct, cluster, index)
         df_loc = self.filter_bases(df_loc, base_type, index, base_paired)
-
+        if remove_bases_flag:
+            df_loc = df_loc.drop(columns='base')
         return df_loc.sort_index()
 
-    def get_series(self, df, samp, construct, cluster):
-        assert len(df_out := df[(df['construct'] == construct)&(df['samp'] == samp)&(df['cluster'] == cluster)]) <= 1, 'More than one row found'
-        assert len(df_out) >= 1, 'No row found'
+    def get_series(self, df, samp, construct, cluster, can_be_empty=False):
+        if cluster == None:
+            df_out = df[(df['samp'] == samp) & (df['construct'] == construct)]
+        else:
+            df_out = df[(df['samp'] == samp) & (df['construct'] == construct) & (df['cluster'] == cluster)]
+        assert len(df_out) <= 1, 'More than one row found'
+        if not can_be_empty:
+            assert len(df_out) >= 1, 'No row found'
+        else: 
+            if len(df_out) == 0: 
+                return None
         return df_out.iloc[0]
 
 
@@ -147,27 +215,42 @@ class Manipulator():
         if not self._df.empty:
             df = self._df.copy()
             return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
+      
 
-    def filter_df_by_sub_lib(self, sub_lib:str)->pd.DataFrame:
-        """Returns a dataframe containing only sublibraries that are contains `sub_lib`.
+    def collect_x_y_paired_unpaired(self, cols:Tuple, samp, structure, cluster=None, max_mutation=MAX_MUTATION, base_type=['A','C','G','T'], index='all', flank=None, sub_lib=None):
 
-        Args:
-            sub_lib (str): Libraries containing this string will be filtered in.
-
-        Raises:
-            Exception: No library contains sub_lib
-
-        Returns:
-            pd.DataFrame: A dataframe containing only sublibraries that are contains `sub_lib`.
-        """
+        args = locals()
+        args.pop('self')
+        stack = {True:{'x':[],'y':[]},False:{'x':[],'y':[]}}
         df = self._df.copy()
 
-        if sub_lib != None:
-            sub_libs = [x for x in df['sub-library'].unique() if sub_lib in x]
-            if sub_libs == []:
-                raise Exception(f"arg {sub_lib} is not a sub-library of the df")
-            df = df[df['sub-library'].isin(sub_libs)]
-        return df        
+        def stack_up(x,y,stack,is_paired):
+            if len(x) != 0:
+                stack[is_paired]['x'] += list(x)
+                stack[is_paired]['y'] += list(y)
+
+        def clean_stack(stack, max_mutation):
+            for is_paired in [True,False]:
+                for ax in ['x','y']:
+                    stack[is_paired][ax] = np.array(stack[is_paired][ax]).reshape(1,-1)[0]
+                if max_mutation:
+                    assert 'mut_rates' in cols, 'max_mutation requires mut_rates'
+                    stack[is_paired]['y'][stack[is_paired]['y'] >= max_mutation] = np.nan
+
+            for is_paired in [True,False]:
+                for ax in ['x','y']:
+                    v = stack[is_paired]['x']
+                    stack[is_paired]['x'] = stack[is_paired]['x'][~np.isnan(stack[is_paired][ax])]
+                    stack[is_paired]['y'] = stack[is_paired]['y'][~np.isnan(stack[is_paired][ax])]
+            return stack
+
+        for construct in df[df['samp']==samp]['construct'].unique():
+            for cluster in df[df['construct'] == construct].cluster.unique() if cluster is None else [cluster]:
+                df_SCC = self.get_SCC(cols=cols.copy(),construct=construct,can_be_empty=True, **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and (k not in ['cols','df'])})
+                for is_paired in [True,False]:
+                    stack_up(df_SCC[df_SCC.paired == is_paired][cols[0]], df_SCC[df_SCC.paired == is_paired][cols[1]], stack, is_paired)
+        stack = clean_stack(stack, max_mutation)
+        return stack
 
     def columns_to_csv(self, columns:List[str], title:str, path:str)->None:
         """Save a subset of a Dataframe to a csv file.
@@ -216,4 +299,3 @@ class Manipulator():
             these_constructs = these_constructs[0]
 
         return these_samples, these_constructs    
-
