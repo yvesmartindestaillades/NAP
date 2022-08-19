@@ -7,7 +7,7 @@ import pickle
 import os
 
 class Loader:
-    def __load_pickle_to_df(self, path:str, samp:str)->pd.DataFrame:
+    def __load_pickle_to_df(self, file:str)->pd.DataFrame:
         """Load a pickle file.
         
         Args:
@@ -16,13 +16,10 @@ class Loader:
         Returns:
             The pickle file content under the dataframe format.    
         """
-        assert os.path.exists(path), '{} does not exist.'.format(path)
+        assert os.path.exists(file), '{} does not exist.'.format(file)
 
-        if not path[-1] == '/': 
-            path += '/'
-        with open(path+samp+'.p', 'rb') as f:
+        with open(file, 'rb') as f:
             mut_hist = pickle.load(f)
-        
 
         dict_df = {}
         for construct, mh in mut_hist.items():
@@ -97,7 +94,7 @@ class Loader:
         all_df = {}
         assert filter_by in ['study','sample'], 'filter_by must be either study or sample.'
         for s in samples:
-            all_df[s] = self.__load_pickle_to_df(path='{}/{}.p'.format(path_to_data,s), samp=s)
+            all_df[s] = self.__load_pickle_to_df(file='{}/{}.p'.format(path_to_data,s))
             all_df[s] = self.__set_indexes_to_0(all_df[s])
             all_df[s] = self.__add_cols_to_df(all_df[s])
             all_df[s] = self.__filter_by_base_cov(all_df[s], min_cov_bases)
