@@ -77,6 +77,8 @@ class Loader:
 
     def __add_cols_to_df(self, df:pd.DataFrame):
         # If no ROI, the entire sequence is considered as ROI.
+        if 'cluster' not in df.columns:
+            df['cluster'] = 0
         if 'ROI_start' not in df.columns:
             df['ROI_start'] = 0
         if 'ROI_stop' not in df.columns:
