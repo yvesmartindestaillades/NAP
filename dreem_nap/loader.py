@@ -18,7 +18,9 @@ class Loader:
         """
         assert os.path.exists(path), '{} does not exist.'.format(path)
 
-        with open(path, 'rb') as f:
+        if not path[-1] == '/': 
+            path += '/'
+        with open(path+samp+'.p', 'rb') as f:
             mut_hist = pickle.load(f)
         
 

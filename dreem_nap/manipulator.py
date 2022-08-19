@@ -1,4 +1,3 @@
-from types import NoneType
 import pandas as pd
 import numpy as np
 import datetime
@@ -12,7 +11,6 @@ MAX_MUTATION = 0.3
 
 from typing import Tuple
 from scipy.optimize import curve_fit
-import matplotlib as mpl
 from itertools import cycle
 
 class Fit(object):
@@ -65,6 +63,8 @@ class Manipulator():
         if type(index) in [list,tuple]:
             assert [i in list(range(len(self.get_series(self._df, samp, construct, cluster)['sequence']))) for i in index], 'Index out of range'
             return index
+        if type(index) == str and not sum([int(a not in ['A','C','G','T']) for a in index]):
+            return self.find_sequence_index(samp, construct, index)
         raise ValueError(f"Index {index} not recognized")
 
     def filter_base_paired(self, df_loc, base_paired):
@@ -120,6 +120,15 @@ class Manipulator():
             assert len(self._df[(self._df['samp'] == samp) & (self._df['construct'] == construct) & (self._df['cluster'] == cluster)]) >= 1, f"No row found for {samp} {construct} {cluster}"
 
 
+    def find_sequence_index(self, samp, construct, sequence):
+        df = self._df
+        self.assert_SCC_exists(samp, construct, cluster = None)
+        full_seq = df[(df['samp']==samp)&(df['construct']==construct)]['sequence'].iloc[0]
+        assert (count:=full_seq.count(sequence)) == 1, f"{count} sequences {sequence} found in sequence of sample {samp} construct {construct} (sequence: {full_seq})"
+        ind = full_seq.find(sequence)
+        return list(range(ind, ind+len(sequence)))
+
+
     def get_col_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ):
         args = locals()
         df = self._df
@@ -132,7 +141,26 @@ class Manipulator():
         stack.index = constructs
         return stack
 
-    def get_SCC(self, samp, construct, cols, cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ,can_be_empty=False):
+
+    def get_cols_by_sequence_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ):
+        args = locals()
+        df = self._df
+        assert (type(index) == str and not sum([int(a not in ['A','C','G','T']) for a in index])), f"Index is {index}, should be a str of 'A','C','G','T'."
+        stack = pd.DataFrame()
+        if constructs == 'all':
+            constructs = list(df[df.samp == samp].construct.unique())
+        
+        for c in constructs:
+            temp = self.get_SCC(construct=c, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T
+            temp.columns = list(index)
+            stack = pd.concat((stack, temp))
+        stack.index = constructs
+        return stack
+
+
+
+
+    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ,can_be_empty=False):
         """Returns a dataframe containing the content of a cluster of a sample-construct.
 
         Args:
@@ -143,7 +171,7 @@ class Manipulator():
             cluster (int, optional): The cluster number. Defaults to 0.
             structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
             base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
-            index (str, optional): Index to include. Defaults to 'all'.
+            index (str, optional): Index to include. Defaults to 'all'. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
             base_paired (_type_, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
             can_be_empty (bool, optional): If True, returns an empty dataframe if no row is found. Defaults to False.
 
