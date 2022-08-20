@@ -100,7 +100,7 @@ class Plotter():
         return OutputPlot(fig, ax, df_hist)
 
 
-    def deltaG_sample(self, samp:str, structure, figsize=(20,5), base_type=['A','C','G','T'], index='all', flank=None, sub_lib=None, max_mutation= 0.15,models=[],**kwargs):
+    def deltaG_sample(self, samp:str, structure, deltaG, figsize=(20,5), base_type=['A','C','G','T'], index='all', flank=None, sub_lib=None, max_mutation= 0.15,models=[],**kwargs):
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
         
         Args:
@@ -111,7 +111,8 @@ class Plotter():
         fit = manipulator.Fit()        
         fig = plt.figure(figsize=figsize)
         ax = plt.axes()
-        data = self.__man.collect_x_y_paired_unpaired(cols=['deltaG','mut_rates'], **{k:v for k,v in args.items() if ((k in self.__man.collect_x_y_paired_unpaired.__code__.co_varnames) and (k != 'cols'))})
+        assert deltaG in self.__man._df.columns, f"deltaG arg {deltaG} isn't in df columns"
+        data = self.__man.collect_x_y_paired_unpaired(cols=[deltaG,'mut_rates'], **{k:v for k,v in args.items() if ((k in self.__man.collect_x_y_paired_unpaired.__code__.co_varnames) and (k != 'cols'))})
 
         for is_paired, color in zip([True,False],['g','r']):
             plt.plot(data[is_paired]['x'],data[is_paired]['y'], color+'.')
