@@ -51,9 +51,6 @@ class Manipulator():
     def assert_structure(self, df, structure):
         assert structure in df.columns, f"Structure {structure} not found"
 
-    def assert_deltaG(self, df, deltaG):
-        assert deltaG in df.columns, f"deltaG {deltaG} not found"
-
     def define_index(self, df, samp, construct, cluster, index):
         if index in ['all','full'] :
             return df.index
@@ -195,6 +192,7 @@ class Manipulator():
             remove_bases_flag = True
 
         for col in cols:
+            print(col)
             assert col in df.columns, f"Column {col} not found"
 
         df_loc = self.get_series(df, samp, construct, cluster, can_be_empty)
