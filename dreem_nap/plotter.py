@@ -29,7 +29,7 @@ class Plotter():
     def __init__(self, df):
         self.__man = manipulator.Manipulator(df)
 
-    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, deltaG=None, flank=None, sub_lib=None,**kwargs)->None:
+    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, flank=None, sub_lib=None,**kwargs)->None:
         """Plot the mutation rate of a specific (sample, construct).
 
         Args:
@@ -129,6 +129,8 @@ class Plotter():
         plt.title('  '.join([f"{k}: {v}" for k,v in args.items() if \
             k not in ['self','kwargs', 'plot_type','figsize','base_type','df']\
             and not hasattr(plt,k) and v is not None]))
+        plt.xlabel(f'DeltaG: {deltaG} [Kcal/mol]')
+        plt.ylabel(f'Mutation rate')
 
         [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
 

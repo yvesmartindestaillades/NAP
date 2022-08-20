@@ -192,7 +192,6 @@ class Manipulator():
             remove_bases_flag = True
 
         for col in cols:
-            print(col)
             assert col in df.columns, f"Column {col} not found"
 
         df_loc = self.get_series(df, samp, construct, cluster, can_be_empty)
