@@ -1,22 +1,10 @@
-from turtle import filling
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
-import seaborn as sns
-from os.path import exists, dirname
 import os, sys
-from scipy.stats import linregress
-from matplotlib.offsetbox import AnchoredText
 
 sys.path.append(os.path.abspath(""))
-from dreem_nap import manipulator, util
-from typing import Tuple, List
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import r2_score
-
-from scipy.optimize import curve_fit
-import matplotlib as mpl
+from dreem_nap import manipulator
 from itertools import cycle
 
 class OutputPlot(object):
@@ -58,7 +46,7 @@ class Plotter():
 
         fig = plt.figure(figsize=figsize)
         ax = plt.axes()
-        
+
         if not plot_type in ['index','partition']:
             raise Exception(f"{plot_type} must be 'index' or 'partition', please check this argument")
 
