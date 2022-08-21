@@ -34,45 +34,33 @@ Description of the functions shown in the :doc: gallery.
 
    Most plots requires a Pandas dataframe, a specific sample or a study, and sometimes a (list of) construct(s).
 
-.. automodule:: dreem_nap.plot
+.. automodule:: dreem_nap.plotter
    :members:
    :undoc-members:
    :show-inheritance:
 
 
-Data manipulation module
+Manipulator module
 ------------------------
 
 Just a few fonctions to navigate through your dataframes with ease, and to save data to csv files. 
 
-.. automodule:: dreem_nap.data_manip
+.. automodule:: dreem_nap.manipulator
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. _data_wrangler_module:
-
-Data wrangler module
+.. _loader_module:
+Loader module
 --------------------
 
-Process DREEM's MutationHistogram pickle files, interface with the database and with local file, and get your dataframe clean.
+Load and filter DREEM's MutationHistogram pickle files.
 
-.. automodule:: dreem_nap.data_wrangler
+.. automodule:: dreem_nap.loader
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. _database_module:
-
-Database module
----------------
-
-Connect, push and pull to the database. 
-
-.. automodule:: dreem_nap.database
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 
 Util module
