@@ -111,11 +111,16 @@ class Manipulator():
         raise ValueError(f"Sub-library {sub_lib} not recognized")
 
     def assert_SCC_exists(self, samp, construct, cluster):
-        assert samp in list(self._df['samp']), f"Sample {samp} not found"
-        assert construct in list(self._df[self._df['samp']==samp].construct.unique()), f"Construct {construct} not found"
-        if cluster != None:
-            assert len(self._df[(self._df['samp'] == samp) & (self._df['construct'] == construct) & (self._df['cluster'] == cluster)]) >= 1, f"No row found for {samp} {construct} {cluster}"
-
+        if samp != None:
+            assert samp in list(self._df['samp']), f"Sample {samp} not found"
+            assert construct in list(self._df[self._df['samp']==samp].construct.unique()), f"Construct {construct} not found"
+            if cluster != None:
+                assert len(self._df[(self._df['samp'] == samp) & (self._df['construct'] == construct) & (self._df['cluster'] == cluster)]) >= 1, f"No row found for {samp} {construct} {cluster}"
+        else:
+            assert construct in list(self._df.construct.unique()), f"Construct {construct} not found"
+            if cluster != None:
+                assert len(self._df[(self._df['construct'] == construct) & (self._df['cluster'] == cluster)]) >= 1, f"No row found for {samp} {construct} {cluster}"
+            
 
     def find_sequence_index(self, samp, construct, sequence):
         df = self._df
@@ -211,11 +216,17 @@ class Manipulator():
         return df_loc.sort_index()
 
     def get_series(self, df, samp, construct, cluster, can_be_empty=False):
-        if cluster == None:
-            df_out = df[(df['samp'] == samp) & (df['construct'] == construct)]
+        if samp == None:
+            if cluster == None:
+                df_out = df[df['construct'] == construct]
+            else:
+                df_out = df[(df['construct'] == construct) & (df['cluster'] == cluster)]            
         else:
-            df_out = df[(df['samp'] == samp) & (df['construct'] == construct) & (df['cluster'] == cluster)]
-        assert len(df_out) <= 1, 'More than one row found'
+            if cluster == None:
+                df_out = df[(df['samp'] == samp) & (df['construct'] == construct)]
+            else:
+                df_out = df[(df['samp'] == samp) & (df['construct'] == construct) & (df['cluster'] == cluster)]
+            assert len(df_out) <= 1, 'More than one row found'
         if not can_be_empty:
             assert len(df_out) >= 1, 'No row found'
         else: 

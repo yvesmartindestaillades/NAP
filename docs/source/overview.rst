@@ -108,8 +108,9 @@ Your data has to look like this:
         |-- D6.p
         |-- E6.p
 
-When loading your data, you need to give a base-coverage filter. 
-# TO docs
+When loading your data, you need to give a base-coverage high-pass filter.
+All con 
+
 
 
 
