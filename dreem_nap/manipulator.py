@@ -65,12 +65,8 @@ class Manipulator():
         raise ValueError(f"Index {index} not recognized")
 
     def filter_base_paired(self, df_loc, base_paired):
-        if base_paired == True:
-            df_loc = df_loc[df_loc['paired'] == True]
-        elif base_paired == False:
-            df_loc = df_loc[df_loc['paired'] == False]
-        elif base_paired == None:
-            pass
+        if base_paired != None:
+            df_loc = df_loc[df_loc['paired'] == base_paired]
         return df_loc
 
     def filter_index(self, df_loc, index):
