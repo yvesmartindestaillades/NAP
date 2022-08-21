@@ -69,7 +69,8 @@ class Study(object):
         self.mani = manipulator.Manipulator(df)
         return df
 
-    def from_dict(self, di:dict):
+    @classmethod
+    def from_dict(cls, di:dict):
         """Set attributes of this Study object from a dictionary.
 
         Args:
@@ -84,13 +85,13 @@ class Study(object):
         >>> print(study.name, study.samples)
         temperature ['A1', 'B2', 'B3']
         """
-        for attr in  self.attr_list:
+        for attr in cls.attr_list:
             try: 
                 di[attr]
             except: 
                 di[attr]=None
-        self.__init__(di['name'], di['samples'], di['conditions'], di['label'], di['description'])
-        return self
+        return cls(di['name'], di['samples'], di['conditions'], di['label'], di['description'])
+         
 
        
     def load_studies(studies_file_path:str):
