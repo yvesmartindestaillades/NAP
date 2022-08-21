@@ -53,31 +53,37 @@ class Plotter():
         for attr in ['self','kwargs']:
             del args[attr]
 
-        colors = [{'A':'r','C':'b','G':'y','T':'g'}[b] for b in base_type]
+        colors = {'A':'r','C':'b','G':'y','T':'g'}
+        colors_base = [colors[b] for b in base_type]
 
         fig = plt.figure(figsize=figsize)
+        ax = plt.axes()
         
         if not plot_type in ['index','partition']:
             raise Exception(f"{plot_type} must be 'index' or 'partition', please check this argument")
 
         df_hist = pd.DataFrame()
         
-        if plot_type == 'index':  # Plot the mutation rate for each base along the sequence
+        df = self.__man.get_SCC(cols = ['sequence','mut_rates','poisson_low','poisson_high'],\
+                        **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
 
-            df = self.__man.get_SCC(cols = ['sequence','mut_rates'],\
-                            **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
+        mut_per_base = df[['base','mut_rates']].reset_index().set_index(['base', 'index'])
+        df_err_low = df[['base','poisson_low']].reset_index().set_index(['base', 'index'])
+        df_err_high = df[['base','poisson_high']].reset_index().set_index(['base', 'index'])
+        df_hist.index = df.index
 
-            mut_per_base = df[['base','mut_rates']].reset_index().set_index(['base', 'index'])
-            df_hist.index = df.index
-
-            for base in base_type:
-                df_hist[base] = pd.Series(dtype=float)
-                try:
-                    df_hist[base] = mut_per_base.loc[base]
-                except:
-                    f"No mutations for base {base}"
-            df_hist.dropna(inplace=True, how='all')
-            ax = df_hist.plot.bar(stacked=True, color=colors,  figsize=figsize)
+        for base in base_type:
+            df_hist[base], df_hist[base+'_min'], df_hist[base+'_max'] = pd.Series(dtype=float), pd.Series(dtype=float), pd.Series(dtype=float)
+            try:
+                df_hist[base] = mut_per_base.loc[base]
+                df_hist[base+'_min'] =  df_err_low.loc[base] #+ mut_per_base.loc[base] 
+                df_hist[base+'_max'] =  df_err_high.loc[base] #- mut_per_base.loc[base]
+            except:
+                f"No mutations for base {base}"
+        df_hist.dropna(inplace=True, how='all')
+        for b in base_type:
+            yerr = np.array(df_hist[[b+'_min',b+'_max']]).T
+            ax = df_hist.plot.bar(y = b, stacked=True, yerr = yerr, legend=b, color=colors[b], ax=ax)
 
         if plot_type == 'partition': # Plot the partition of mutations for each base along the sequence
             df = self.__man.get_SCC(cols = ['sequence','info_bases']+[f"mod_bases_{base}" for base in base_type],\
@@ -87,7 +93,7 @@ class Plotter():
                 df_hist[base]  = np.array(df[f"mod_bases_{base}"]/df['info_bases']).astype(float)
 
             ax = df_hist.plot.bar(stacked=True,
-             color=colors, figsize=figsize)
+             color=colors_base, figsize=figsize)
 
         if len(str(args['index'])) >50:
             args['index'] = str(args['index'])[:50]+'... ]'
