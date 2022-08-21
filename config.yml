@@ -1,6 +1,6 @@
 # Data paths
-path_to_data: /Users/ymdt/src/data/Gabe
-path_to_studies: /Users/ymdt/src/data/Gabe/studies.csv
+path_to_data: /Users/ymdt/src/data/Lauren
+path_to_studies: /Users/ymdt/src/data/Lauren/studies.csv
 
 # Data manip 
 min_cov_bases: 1000

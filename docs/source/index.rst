@@ -6,20 +6,26 @@
 Welcome to NAP's documentation!
 ===============================
 
-NAP (New Analysis Pipeline) is a plotting extension of Yesselman and Rouskin's DREEM module. 
+Welcome to NAP's documentation!
 
-NAP merges the MutationHistogram class of DREEM and a csv file from a RNA structure prediction as a dataset.
-The data is stored online using Google Firebase.
-NAP provides plots and data selection functions to analyse this dataset. 
+NAP loads the output of `Prof. Joe Yesselman's dreem python package <https://github.com/jyesselm/dreem>`_, that implement Prof. Silvi Rouskin's DREEM algorithm. 
+If you have any doubts regarding the terminology used here, please refer to the :ref:`terminology`.
+
+.. include:: installation.rst
+
+Index
+=====
 
 .. toctree::
-   overview
-   release_notes
    installation
+   examples
+   terminology
+   loading_data
+   plotting_data
    gallery
-   tutorial
+   reference
    api
-
+   release_notes
 
 .. note::
 

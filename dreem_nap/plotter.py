@@ -17,7 +17,7 @@ class Plotter():
     def __init__(self, df):
         self.__man = manipulator.Manipulator(df)
 
-    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, flank=None, sub_lib=None,**kwargs)->None:
+    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, **kwargs)->None:
         """Plot the mutation rate of a specific (sample, construct).
 
         Args:
@@ -40,6 +40,9 @@ class Plotter():
         args = locals()
         for attr in ['self','kwargs']:
             del args[attr]
+        
+        if 'facecolor' not in kwargs:
+            kwargs['facecolor'] = 'w'
 
         colors = {'A':'r','C':'b','G':'y','T':'g'}
         colors_base = [colors[b] for b in base_type]

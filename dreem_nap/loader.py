@@ -30,7 +30,7 @@ def __load_pickle_to_df(file:str)->pd.DataFrame:
 
     return df
 
-def __filter_by_base_cov(df:pd.DataFrame, min_cov_bases:int, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None):
+def __filter_by_base_cov(df:pd.DataFrame, min_cov_bases:int, samp:str, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None):
     """Filter a dataframe by base coverage.
     
     Args:
@@ -44,7 +44,7 @@ def __filter_by_base_cov(df:pd.DataFrame, min_cov_bases:int, structure=None, bas
     man = manipulator.Manipulator(df)
     df['worst_cov_bases'] = pd.Series(dtype=float)
     df['min_cov_bases'] = min_cov_bases
-    for i, row in tqdm(df.iterrows(), total= len(df.index), unit='construct filtered', colour='green'):
+    for i, row in tqdm(df.iterrows(), total= len(df.index), unit='construct filtered', colour='green', postfix= 'sample:'+str(samp)):
         if base_type != ['A','C','G','T'] or index != 'all' or base_paired!=None or flank!=None or sub_lib!=None :
             df_loc = man.get_SCC(samp=None, construct=row['construct'], cols=['cov_bases'], cluster=row['cluster'], \
                         **{k:v for k,v in args.items() if k in man.get_SCC.__code__.co_varnames})
@@ -101,7 +101,7 @@ def __set_indexes_to_0(df:pd.DataFrame):
             df[col] = df[col].apply(lambda x: x[1:])
     return df
 
-def df_from_local_files(path_to_data:str, min_cov_bases:int, samples, name, filter_by,  structure, base_type, index, base_paired, flank, sub_lib)->pd.DataFrame:
+def df_from_local_files(path_to_data:str, min_cov_bases:int, samples, name, filter_by,  structure, base_type, index, base_paired)->pd.DataFrame:
     args = locals()
     all_df = {}
     assert filter_by in ['study','sample'], 'filter_by must be either study or sample.'
@@ -109,7 +109,7 @@ def df_from_local_files(path_to_data:str, min_cov_bases:int, samples, name, filt
         all_df[s] = __load_pickle_to_df(file='{}/{}.p'.format(path_to_data,s))
         all_df[s] = __set_indexes_to_0(all_df[s])
         all_df[s] = __add_cols_to_df(all_df[s])
-        all_df[s] = __filter_by_base_cov(all_df[s], min_cov_bases, **{k:v for k,v in args.items() if k in manipulator.Manipulator(pd.DataFrame()).get_SCC.__code__.co_varnames})
+        all_df[s] = __filter_by_base_cov(all_df[s], min_cov_bases, s, **{k:v for k,v in args.items() if k in manipulator.Manipulator(pd.DataFrame()).get_SCC.__code__.co_varnames})
     df = pd.concat(all_df).reset_index().drop(columns='level_1').rename(columns={'level_0':'samp'})
     if filter_by == 'study':
         df = __filter_by_study(df, samples, name)

@@ -133,7 +133,10 @@ class Manipulator():
 
     def get_col_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ):
         args = locals()
-        df = self._df
+        df_dont_touch = self._df
+        df = self.filter_flank(df_dont_touch, flank)
+        df = self.filter_sub_lib(df, sub_lib)
+
         stack = pd.DataFrame()
         if constructs == 'all':
             constructs = list(df[df.samp == samp].construct.unique())
@@ -146,7 +149,9 @@ class Manipulator():
 
     def get_cols_by_sequence_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ):
         args = locals()
-        df = self._df
+        df_dont_touch = self._df
+        df = self.filter_flank(df_dont_touch, flank)
+        df = self.filter_sub_lib(df, sub_lib)
         assert (type(index) == str and not sum([int(a not in ['A','C','G','T']) for a in index])), f"Index is {index}, should be a str of 'A','C','G','T'."
         stack = pd.DataFrame()
         if constructs == 'all':
@@ -162,7 +167,7 @@ class Manipulator():
 
 
 
-    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ,can_be_empty=False):
+    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None,can_be_empty=False):
         """Returns a dataframe containing the content of a cluster of a sample-construct.
 
         Args:
@@ -182,9 +187,7 @@ class Manipulator():
         """
 
         self.assert_SCC_exists( samp, construct, cluster)
-        df_dont_touch = self._df
-        df = self.filter_flank(df_dont_touch, flank)
-        df = self.filter_sub_lib(df, sub_lib)
+        df = self._df
 
         if structure != None:
             self.assert_structure(df, structure)
@@ -253,7 +256,7 @@ class Manipulator():
             return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
       
 
-    def collect_x_y_paired_unpaired(self, cols:Tuple, samp, structure, cluster=None, max_mutation=MAX_MUTATION, base_type=['A','C','G','T'], index='all', flank=None, sub_lib=None):
+    def collect_x_y_paired_unpaired(self, cols:Tuple, samp, structure, cluster=None, max_mutation=MAX_MUTATION, base_type=['A','C','G','T'], index='all'):
 
         args = locals()
         args.pop('self')

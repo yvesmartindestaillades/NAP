@@ -99,7 +99,7 @@ class Study(object):
     def load_studies(studies_file_path:str):
         return load_studies(studies_file_path)
 
-    def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int, filter_by='study', index='all', base_type = ['A','C','G','T'], base_paired=None, structure=None, flank=None, sub_lib=None)->pd.DataFrame:
+    def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int, filter_by='study', index='all', base_type = ['A','C','G','T'], base_paired=None, structure=None)->pd.DataFrame:
         args = locals()
         del args['self']
         df = self.set_df(df_from_local_files(path_to_data, min_cov_bases, self.samples, self.name, filter_by, **{k:v for k,v in args.items() if k in manipulator.Manipulator(pd.DataFrame()).get_SCC.__code__.co_varnames}))
