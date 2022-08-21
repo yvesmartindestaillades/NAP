@@ -5,29 +5,8 @@ Overview
 Introduction
 ============
 
-NAP works through two steps:
-
-#. :ref:`Data processing`. Merge the output of DREEM with the output of RNAstructure (or any other RNA structure prediction tool), process it and push it to the database.
-#. :ref:`Data analysis`. Define a study, pull the corresponding data from the database, and generate plots and csv files.
-
-
-
-.. blockdiag::
-    :align: center    
-    :width: 400
-
-    blockdiag {
-        group {
-            orientation = landscape;
-            color = lightgray;
-            'NAP data wrangler' -> database -> 'NAP plot';
-            }
-    }
-
-
-Both steps will be described here.
-
-
+NAP loads the output of Prof. Joe Yesselman's dreem python package, that implement Prof. Silvi Rouskin's DREEM algorithm. 
+The Herschlag lab's dreem_herschlag python package formats DREEM's output to make it fit NAP's requirements.
 
 
 Terminology
@@ -58,26 +37,30 @@ Let's define a few terms for a good understanding of this page.
     A **construct** is a DNA/RNA/protein molecule with a specific (usually artificial) sequence, which can have attributes like a name, structures, functions, etc.    
     Several samples can have the same sub-library - and therefore the same constructs. 
 
+:Cluster:
 
-:Sample-construct:
+    A **cluster** is one of the outputs of DREEM's Expectation-Maximization clustering algorithm applied to the mutation rates of a construct in a sample is clustered.
+    Clusters are numbered 0, 1, 2 and so on.
 
-    A **sample-construct** corresponds to one construct of a sample.
-    Each sample-construct has a set of **attributes**.
-    
-    A sample-construct can be nicknamed a construct if the corresponding sample is mentioned beforehand.
+
+:Sample-construct-cluster (SCC):
+
+    A **SCC** corresponds to a cluster of a construct in a sample.
+    Each SCC has a set of **attributes**.
 
 
 :Attributes:
 
-    **Attributes** are a set of experimental results and properties related to a **sample-construct**.
-    DREEM, RNAstructure and NAP provide attributes.
+    **Attributes** are a set of experimental results and properties related to a **sample-construct**, read from dreem package's mutation_histogram.  
     
-    Examples: ``ROI_sequence``, ``mut_bases``, ``cov_bases``. 
+    Examples: ``flank``, ``mut_bases``, ``user``. 
 
 :Study:
 
     A **study** is a set of **samples** that are relevant to be studied together, typically because of their experimental conditions.
     For example, a study can be a set of replicates, or the same library with temperature variating, etc.
+
+    The study object contains methods to load and plot the data for its samples.
 
 :ROI:
 
@@ -95,29 +78,12 @@ Let's define a few terms for a good understanding of this page.
 
 
 
-Data processing
-===============
+Data loading
+============
 
-This section explains how NAP builds .json dataframes from sources such as DREEM and a RNA structure prediction software.
-NAP's module ``data_wrangler`` merges the sources, filters out the unvalid data, and pushes the data to database using NAP's module ``database``.
+This section will describe how to load your data with NAP.
 
-.. note::
-    The functions are built for specific formats, indicated below. 
-    You must respect this formatting to have NAP working.
-
-.. blockdiag::
-    :align: center    
-    :caption: Diagram 1: Data processing
-    :width: 1200
-
-    blockdiag {
-        group {
-            orientation = portrait;
-            color = lightgray;
-            DREEM -> 'NAP data wrangler' -> database ;
-            RNAstructure -> 'NAP data wrangler';
-            }
-    }
+First, you have to create a **study**, like 
 
 
 DREEM
