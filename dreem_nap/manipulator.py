@@ -177,8 +177,8 @@ class Manipulator():
         """
 
         self.assert_SCC_exists( samp, construct, cluster)
-        df = self._df.copy()
-        df = self.filter_flank(df, flank)
+        df_dont_touch = self._df
+        df = self.filter_flank(df_dont_touch, flank)
         df = self.filter_sub_lib(df, sub_lib)
 
         if structure != None:

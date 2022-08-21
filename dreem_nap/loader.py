@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import pickle
 import os
+from dreem_nap import manipulator
 
 class Loader:
     def __load_pickle_to_df(self, file:str)->pd.DataFrame:
@@ -29,7 +30,7 @@ class Loader:
 
         return df
 
-    def __filter_by_base_cov(self, df:pd.DataFrame, min_cov_bases:int)->pd.DataFrame:
+    def __filter_by_base_cov(self, df:pd.DataFrame, min_cov_bases:int, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None):
         """Filter a dataframe by base coverage.
         
         Args:
@@ -38,9 +39,16 @@ class Loader:
         Returns:
             A filtered dataframe.
         """
+        args = locals()
+        man = manipulator.Manipulator(df)
         df['min_cov_bases'] = min_cov_bases
-        df['cov_bases_roi'] = df.apply(lambda x: min(x['cov_bases'][int(x['ROI_start']):int(x['ROI_stop'])]), axis=1)
-        return df[df['cov_bases_roi'] >= min_cov_bases].reset_index(drop=True)
+        samples = df.samp.unique()
+        assert len(samples) ==1, "More than one sample in the dataframe to filter."
+        for _, row in df.iterrows():
+            df_loc = man.get_SCC(samples[0], row['construct'], cols=['mut_rates'], cluster=row['cluster'], \
+                     **{k:v for k,v in args.items() if k in man.get_SCC.__code__.co_varnames})
+            df['worst_cov_bases'] = min(df_loc['mut_rates'])
+        return df[df['worst_cov_bases'] >= min_cov_bases].reset_index(drop=True)
 
     def __mhs2dict(self, mhs:MutationHistogram, drop_attribute:List[str]=[])->dict:
         """Turns the output of DREEM into a 1-level construct-wise index dictionary.
@@ -90,14 +98,14 @@ class Loader:
                 df[col] = df[col].apply(lambda x: x[1:])
         return df
 
-    def df_from_local_files(self, path_to_data:str, min_cov_bases:int, samples, name, filter_by)->pd.DataFrame:
+    def df_from_local_files(self, path_to_data:str, min_cov_bases:int, index, samples, name, filter_by)->pd.DataFrame:
         all_df = {}
         assert filter_by in ['study','sample'], 'filter_by must be either study or sample.'
         for s in samples:
             all_df[s] = self.__load_pickle_to_df(file='{}/{}.p'.format(path_to_data,s))
             all_df[s] = self.__set_indexes_to_0(all_df[s])
             all_df[s] = self.__add_cols_to_df(all_df[s])
-            all_df[s] = self.__filter_by_base_cov(all_df[s], min_cov_bases)
+            all_df[s] = self.__filter_by_base_cov(all_df[s], min_cov_bases, index)
         df = pd.concat(all_df).reset_index().drop(columns='level_1').rename(columns={'level_0':'samp'})
         if filter_by == 'study':
             df = self.__filter_by_study(df, samples, name)

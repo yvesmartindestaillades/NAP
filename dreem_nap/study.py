@@ -139,7 +139,7 @@ def load_studies(studies_file_path:str)->dict[str:Study]:
         spermidine        spermidine   Change the Spermidine concentration            [B3, D3, E3, F3]       Spermidine quantity [mM]          [0.01, 1.0, 10.0, 100.0]
         >>> temp = df_studies.to_dict(orient='index')
         >>> # Your studies under the shape of a dictionary of Study
-        >>> studies = {study: Study().from_dict(temp[study])  for study in temp}
+        >>> studies = {study: Study.from_dict(temp[study])  for study in temp}
         >>> print(f"Here are the studies: {studies.keys()}")
         dict_keys(['salt', 'spermidine'])
         >>> study_name = 'salt' 
