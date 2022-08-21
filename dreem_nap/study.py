@@ -27,6 +27,8 @@ class Study(object):
         temperature ['A1', 'B1', 'C3'] None
     """
 
+    attr_list = ['name','description','samples','label','conditions']
+
     def __init__(self, name:str=None, samples:List[str]=None, conditions:List[float]=None, label:str= None, description:str = None) -> None:
         """Creates a Study object.
 
@@ -52,7 +54,6 @@ class Study(object):
         self.constructs = None
         self.label = label
         self.conditions = conditions
-        self.attr_list = ['name','description','samples','label','conditions']
         self._df = None
         self.plot = plotter.Plotter(self._df)
         self.mani = manipulator.Manipulator(self._df)
