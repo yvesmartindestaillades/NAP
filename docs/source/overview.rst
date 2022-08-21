@@ -83,7 +83,35 @@ Data loading
 
 This section will describe how to load your data with NAP.
 
-First, you have to create a **study**, like 
+First, you have to create a **study**.
+
+Example:
+
+::
+
+    salt = Study.from_dict({'name': 'salt',
+                            'description': 'Change the Na concentration', 
+                            'samples': ['A6', 'B6', 'C6', 'D6', 'E6'], 
+                            'label': 'Na quantity [M]', 
+                            'conditions': [0.15, 0.3, 0.6, 1.0, 1.2]})
+
+
+Then, you want to load your data. 
+Your data has to look like this:
+
+::
+
+    path_to_data/
+        |-- A6.p
+        |-- B6.p
+        |-- C6.p
+        |-- D6.p
+        |-- E6.p
+
+When loading your data, you need to give a base-coverage filter. 
+# TO docs
+
+
 
 
 DREEM
@@ -100,21 +128,7 @@ This data needs to be read by ``data_wrangler``.
 
 To make DREEM's files easy, we suggest the following tree structure: 
 
-::
 
-    model:
-    path_to_dreem                   
-        |-- sample_name                     
-            |-- mutation_histos.p              
-                                               
-    ex: 
-
-    data/DREEM
-        |-- A1
-            |-- mutation_histos.p
-        |-- A2
-            |-- mutation_histos.p
-        |-- ...
 
 
 And to generate the dictionary, use the following code:
