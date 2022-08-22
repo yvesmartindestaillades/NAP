@@ -19,10 +19,10 @@ Index
 .. toctree::
    installation
    examples
-   terminology
+   gallery
    loading_data
    plotting_data
-   gallery
+   terminology
    reference
    api
    release_notes

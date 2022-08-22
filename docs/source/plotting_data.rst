@@ -1,14 +1,15 @@
-=============
-Plotting data
-=============
+================
+How to plot data
+================
 
 Plotting data requires a study with loaded data. Please check :ref:`loading_data` if you haven't.
 We will use the study ``salt`` from the example.
 
-Selective plotting
+Plot selected data
 ==================
 
 Let's plot a basic mutation histogram. 
+This is a good example of how to use the ``plot`` module with selected data.
 
 A mutation histogram shows the frequency of mutations of a construct in a sample. 
 So we need to indicate the construct and the sample.
@@ -113,23 +114,6 @@ You can cumulate constrains on the same plotting function. Here, plot only As an
     :align: center
 
 
-Select at the same time specific indexes and base types
-=======================================================
-
-You can cumulate constrains on the same plotting function. Here, plot only As and Cs in a list of 0-indexed positions to plot, [19, 20, .., 40, 41].
-
-.. code-block:: python
-
-    study.plot.mut_histogram(samp='C6', 
-                             construct='9572', 
-                             cluster=0, 
-                             index=list(range(19,42)), 
-                             base_type=['A','C'])
-
-.. image:: img/ac_list_index.png
-    :align: center
-
-
 
 Select only paired bases based on RNAstructure prediction
 =========================================================
@@ -152,6 +136,6 @@ You can use the RNAstructure prediction to select only paired or unpaired bases.
                              paired=True,
                              structure='structure')
 
-.. image:: img/ac_list_index.png
+.. image:: img/sequence.png
     :align: center
 
