@@ -3,7 +3,7 @@ Data reference
 =========
 
 
-DREEM's columns
+DREEM's output
 ===============
 
     * ``num_reads``: number of reads for this construct.
@@ -27,4 +27,9 @@ DREEM's columns
     * ``cov_bases_sec_half`` : (int) worst base coverage among the bases of the second half of the sequence.
 
 
+Library
+=======
+
+
+See the attributes of the library at 
 
