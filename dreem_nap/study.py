@@ -1,6 +1,4 @@
-from re import L
-from typing import Tuple, List, Dict
-from xml.dom.minidom import AttributeList
+from typing import List
 from dreem_nap import plotter, manipulator, util
 from dreem_nap.loader import df_from_local_files
 import pandas as pd
