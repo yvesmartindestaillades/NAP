@@ -25,7 +25,9 @@ upgrade-dependencies:
 	pip-compile -U requirements.in > requirements.txt
 
 push_to_pypi:
+	rm -fr dist
 	python3 -m build
 	twine upload -r pypi dist/*
+	rm -fr dist
 
 

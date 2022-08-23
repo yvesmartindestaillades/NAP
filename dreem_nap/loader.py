@@ -1,6 +1,5 @@
 from array import array
 from typing import Tuple, List, Dict
-from dreem.bit_vector import MutationHistogram
 import pandas as pd
 import numpy as np
 import pickle
@@ -53,7 +52,7 @@ def __filter_by_base_cov(df:pd.DataFrame, min_cov_bases:int, samp:str, structure
             df.loc[i, 'worst_cov_bases'] = np.array(row['cov_bases']).min()
     return df[df['worst_cov_bases'] >= min_cov_bases].reset_index(drop=True)
 
-def __mhs2dict(mhs:MutationHistogram, drop_attribute:List[str]=[])->dict:
+def __mhs2dict(mhs, drop_attribute:List[str]=[])->dict:
     """Turns the output of DREEM into a 1-level construct-wise index dictionary.
 
     Args:

@@ -5,9 +5,6 @@ How to plot data
 Plotting data requires a study with loaded data. Please check :ref:`loading_data` if you haven't.
 We will use the study ``salt`` from the example.
 
-Plot selected data
-==================
-
 Let's plot a basic mutation histogram. 
 This is a good example of how to use the ``plot`` module with selected data.
 
