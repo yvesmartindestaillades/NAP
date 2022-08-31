@@ -94,7 +94,7 @@ class Plotter():
 
         [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
         
-        return OutputPlot(fig, ax, df_hist)
+        return OutputPlot(fig, ax, df)
 
 
     def deltaG_sample(self, samp:str, structure, deltaG, figsize=(20,5), base_type=['A','C','G','T'], index='all', flank=None, sub_lib=None, max_mutation= 0.15,models=[],**kwargs):
