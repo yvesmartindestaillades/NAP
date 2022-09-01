@@ -17,7 +17,7 @@ class Plotter():
     def __init__(self, df):
         self.__man = manipulator.Manipulator(df)
 
-    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, **kwargs)->None:
+    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, show_ci=True, **kwargs)->None:
         """Plot the mutation rate of a specific (sample, construct).
 
         Args:
@@ -26,6 +26,7 @@ class Plotter():
             plot_type: 'index' or 'partition'. 
                 - 'index' uses bases numbers as index and the original construct bases as colors.
                 - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
+            show_ci: show confidence interval if True. Default is true.
             figsize: figure size.
             **kwargs: 
                 - keyword arguments for matplotlib.pyplot
@@ -74,7 +75,10 @@ class Plotter():
         df_hist.dropna(inplace=True, how='all')
         for b in base_type:
             yerr = np.array(df_hist[[b+'_min',b+'_max']]).T
-            ax = df_hist.plot.bar(y = b, stacked=True, yerr = yerr, legend=b, color=colors[b], ax=ax)
+            if show_ci:
+                ax = df_hist.plot.bar(y = b, stacked=True, yerr = yerr, legend=b, color=colors[b], ax=ax)
+            else:
+                ax = df_hist.plot.bar(y = b, stacked=True, legend=b, color=colors[b], ax=ax)
 
         if plot_type == 'partition': # Plot the partition of mutations for each base along the sequence
             df = self.__man.get_SCC(cols = ['sequence','info_bases']+[f"mod_bases_{base}" for base in base_type],\
@@ -83,8 +87,7 @@ class Plotter():
             for base in base_type:
                 df_hist[base]  = np.array(df[f"mod_bases_{base}"]/df['info_bases']).astype(float)
 
-            ax = df_hist.plot.bar(stacked=True,
-             color=colors_base, figsize=figsize)
+            ax = df_hist.plot.bar(stacked=True, color=colors_base, figsize=figsize)
 
         if len(str(args['index'])) >50:
             args['index'] = str(args['index'])[:50]+'... ]'
