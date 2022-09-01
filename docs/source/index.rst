@@ -25,7 +25,6 @@ Index
    terminology
    reference
    api
-   release_notes
 
 .. note::
 
