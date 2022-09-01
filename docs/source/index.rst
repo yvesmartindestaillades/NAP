@@ -19,7 +19,7 @@ Index
 .. toctree::
    installation
    examples
-   gallery
+   plots
    loading_data
    selecting_data
    terminology

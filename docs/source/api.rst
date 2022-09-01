@@ -51,6 +51,7 @@ Just a few fonctions to navigate through your dataframes with ease, and to save 
    :show-inheritance:
 
 .. _loader_module:
+
 Loader module
 --------------------
 

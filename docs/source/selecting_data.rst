@@ -5,6 +5,35 @@ How to select data
 This part shows how to select specific bases in a sequence. 
 This is typically useful to print selected data to a csv file, or to plot only the data that you need.
 
+**Examples**:
+
+.. code-block:: python
+
+    df = study.mani.get_SCC(samp='C6', construct='9572', cluster=0,    # select sample-construct
+                            base_type=['C'], index=list(range(40,50)), # select bases
+                            cols=['mut_rates','sequence'])
+    df.to_csv('example.csv')
+    df.head()
+
+.. figure:: img/intro_get_data.png
+    :align: center
+    :width: 200
+
+    Save selected data to csv.
+
+
+.. code-block:: python
+
+    study.plot.mut_histogram(samp='C6', construct='9572', cluster=0,   # select sample-construct
+                            base_type=['C'], index=list(range(40,50)), # select bases
+                            figsize=(10,2)) 
+
+.. figure:: img/intro_plot_data.png
+    :align: center
+    
+    Plot selected data.
+
+
 All selection criterias
 =======================
 
@@ -157,7 +186,7 @@ Select only paired bases based on RNAstructure prediction
 
 You can use the RNAstructure prediction to select only paired or unpaired bases.
 
-Set ``base_paired`` to True to keep paired bases and to False to keep unpaired bases.
+``base_paired`` is True to keep paired bases and False to keep unpaired bases.
 
 ``structure`` argument is the RNAstructure prediction you want to use for base-pairing.
 
@@ -169,6 +198,6 @@ Set ``base_paired`` to True to keep paired bases and to False to keep unpaired b
                              base_paired=True,
                              structure='structure_DMS')
 
-.. image:: img/sequence.png
+.. image:: img/paired_predicted.png
     :align: center
 
