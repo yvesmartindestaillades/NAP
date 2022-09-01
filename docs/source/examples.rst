@@ -83,6 +83,9 @@ Load data
 Plot data
 =========
 
+A single plot
+*************
+
 .. code-block:: python
 
     salt.plot.mut_histogram(samp='B6',
@@ -95,6 +98,19 @@ Plot data
 .. image:: img/mut_histogram.png
     :align: center
 
+Multiple plots
+**************
+
+.. code-block:: python
+
+    from dreem_nap import util
+    mpl.use('agg') # use this to avoid display issues
+    for samp in salt.samples:
+        for construct in salt.constructs:
+            salt.plot.mut_histogram(samp=samp,construct=construct)
+            # save the figure and closes it
+            util.save_fig(path_to_figs+'/'+salt.name+'/'+samp+'_'+construct+'_mut_histogram.png') 
+    
 
 Download data
 =============
@@ -112,7 +128,7 @@ A sub-dataframe of a single sample-construct-cluster
     df.to_csv('example.csv')
 
 ===== ======================= ======= ============ ========= 
-    mut_rates               base    cov_bases    paired   
+ .    mut_rates               base    cov_bases    paired   
 ===== ======================= ======= ============ ========= 
 41    0.008445106805762544    C       1991.0       False    
 43    0.06855439642324888     C       1988.0       False    
