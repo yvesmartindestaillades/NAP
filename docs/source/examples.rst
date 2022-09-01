@@ -104,13 +104,17 @@ Multiple plots
 .. code-block:: python
 
     from dreem_nap import util
-    mpl.use('agg') # use this to avoid display issues
+    sub_lib = 'MS2' # say that you only want to plot this sub-library
+    mpl.use('agg')  # use this to avoid display issues
+    df = salt.get_df()
     for samp in salt.samples:
         for construct in salt.constructs:
-            salt.plot.mut_histogram(samp=samp,construct=construct)
-            # save the figure and closes it
-            util.save_fig(path_to_figs+'/'+salt.name+'/'+samp+'_'+construct+'_mut_histogram.png') 
-    
+            for cluster in df[(df['samp']==samp)&(df['construct']==construct)]['cluster'].unique():
+                if df[(df['samp']==samp)&(df['construct']==construct)&(df['cluster']==cluster)]['sub-library'].iloc[0] == sub_lib:
+                    salt.plot.mut_histogram(samp=samp,construct=construct, cluster=cluster)
+                    # save the figure and closes it
+                    util.save_fig(path_to_figs+'/'+salt.name+'/'+samp+'_'+construct+'_mut_histogram.png') 
+            
 
 Download data
 =============
