@@ -1,9 +1,61 @@
-================
-How to plot data
-================
+==================
+How to select data
+==================
 
-Plotting data requires a study with loaded data. Please check :ref:`loading_data` if you haven't.
-We will use the study ``salt`` from the example.
+This part shows how to select specific bases in a sequence. 
+This is typically useful to print selected data to a csv file, or to plot only the data that you need.
+
+All selection criterias
+=======================
+
+The following selection criterias can be applied:
+
+:index (str):
+    
+    Index to include. Defaults to ``all``. 
+
+    Arguments:
+
+    * ``all``: all bases of the construct.
+    * ``roi``: region of interest, i.e of series of 0-indexes such as [``roi_start``, ``roi_start+1``,  ``...``,  ``roi_stop-1``].
+    * ``[43,44,45,48]`` (ex): series of 0-indexes.
+    * ``ATTACACAGCA`` (ex): a unique sub-sequence of your sequence.
+
+:base_type (list):
+    
+    Bases types to include.
+
+    Arguments:
+
+    * ``['A','C','G','T']``: all bases (default).
+    * Any subset of ``['A','C','G','T']`` (ex:  ``['A','C']``)
+
+
+:base_paired (bool):
+    
+    Base pairing to include. 
+    
+    Arguments:
+
+    * ``None``: (default) paired + unpaired.
+    * ``True``: only keep paired bases.
+    * ``False``: only keep unpaired bases.
+
+
+:structure (str):
+
+    Structure from RNAstructure to use for the base-pairing prediction. Only use if argument ``base_paired`` is not ``None``.
+
+    Arguments:
+    
+    * ``structure``: structure prediction of the sequence only
+    * ``structure_DMS``: structure prediction of the sequence using the DMS signal
+    * ``structure_ROI``: structure prediction of the ROI sub-sequence
+    * ``structure_DMS_ROI``: structure prediction of the ROI sub-sequence using the DMS signal
+
+
+Select a list of indexes
+========================
 
 Let's plot a basic mutation histogram. 
 This is a good example of how to use the ``plot`` module with selected data.
@@ -13,18 +65,6 @@ So we need to indicate the construct and the sample.
 
 If your dataframe has different clusters for each sample-construct combination, you can use the ``cluster`` argument to select a specific cluster.
 Default is to use the first cluster (0).
-
-.. code-block:: python
-
-    study.plot.mut_histogram(samp='C6', 
-                             construct='9572', 
-                             cluster=0)
-
-.. image:: img/mut_hist_only.png
-    :align: center
-   
-Select only specific indexes
-==========================
 
 You can use the ``index`` argument to give a list of 0-indexed positions to plot, here, [19, 20, .., 40, 41].
 
@@ -39,8 +79,8 @@ You can use the ``index`` argument to give a list of 0-indexed positions to plot
     :align: center
 
 
-Select only the Region of Interest (ROI)
-=====================================
+Select the Region of Interest (ROI)
+===================================
 
 The ROI is defined in the library. 
 You can pass ``roi`` to the ``index`` argument to plot the ROI only.
@@ -57,7 +97,7 @@ You can pass ``roi`` to the ``index`` argument to plot the ROI only.
     :align: center
 
 Select a unique sub-sequence 
-=====================================
+============================
 
 You can pass a unique sub-sequence to the ``index`` argument to plot it.
 
@@ -77,7 +117,7 @@ You can pass a unique sub-sequence to the ``index`` argument to plot it.
     :align: center
 
 
-Select only As and Cs
+Select by base type
 ===================
 
 You can keep only certain types of bases by giving the ``base_type`` argument, here, As and Cs.
@@ -117,21 +157,17 @@ Select only paired bases based on RNAstructure prediction
 
 You can use the RNAstructure prediction to select only paired or unpaired bases.
 
-``paired`` is a boolean argument, True to select only paired bases, False to select only unpaired bases.
+Set ``base_paired`` to True to keep paired bases and to False to keep unpaired bases.
 
-``structure`` is the name of the RNAstructure prediction. 
- - ``structure``: structure prediction of the sequence only
- - ``structure_DMS``: structure prediction of the sequence using the DMS signal
- - ``structure_ROI``: structure prediction of the ROI sub-sequence
- - ``structure_DMS_ROI``: structure prediction of the ROI sub-sequence using the DMS signal
+``structure`` argument is the RNAstructure prediction you want to use for base-pairing.
 
 .. code-block:: python
 
     study.plot.mut_histogram(samp='C6', 
                              construct='9572', 
                              cluster=0, 
-                             paired=True,
-                             structure='structure')
+                             base_paired=True,
+                             structure='structure_DMS')
 
 .. image:: img/sequence.png
     :align: center

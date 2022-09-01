@@ -21,7 +21,7 @@ Index
    examples
    gallery
    loading_data
-   plotting_data
+   selecting_data
    terminology
    reference
    api
