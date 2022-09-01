@@ -1,3 +1,4 @@
+from typing import Tuple, List
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,6 +7,7 @@ import os, sys
 sys.path.append(os.path.abspath(""))
 from dreem_nap import manipulator
 from itertools import cycle
+
 
 class OutputPlot(object):
     def __init__(self, fig, ax, data) -> None:
@@ -17,27 +19,31 @@ class Plotter():
     def __init__(self, df):
         self.__man = manipulator.Manipulator(df)
 
-    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, show_ci=True, **kwargs)->OutputPlot:
-        """Plot the mutation rate of a specific (sample, construct).
+    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(35,7), **kwargs)->OutputPlot:
+        """Plot the mutation rates as histograms.
 
         Args:
-            samp: sample of interest.
-            construct: construct of interest.
-            plot_type: 'index' or 'partition'. 
-                - 'index' uses bases numbers as index and the original construct bases as colors.
-                - 'partition' uses original sequence bases as index and the partition of mutated bases as colors.
-            show_ci: show confidence interval if True. Default is true.
-            figsize: figure size.
-            **kwargs: 
-                - keyword arguments for matplotlib.pyplot
-        
-        Returns:
-            OutputPlot: output plot data:
-                - fig: figure object.
-                - ax: axis object.
-                - data: plotted data.
-        """
+            samp (str): Sample of your sample-construct-cluster.
+            construct (str): Construct of your sample-construct-cluster.
+            cluster (int, optional): Cluster of your sample-construct-cluster. Defaults to 0. 
+            plot_type (str, optional): Colors of the bars.
 
+                * ``'index'`` (default) uses bases numbers as index and the original construct bases as colors.
+                * ``'partition'`` uses original sequence bases as index and the partition of mutated bases as colors.
+            index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
+            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
+            base_paired (bool, optional): Base-pairing predicition to plot. Defaults to None.
+            structure (str, optional): Structure to use for base_paired filtering. Defaults to None.
+            show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
+            figsize (Tuple[int], optional): Figure size. Defaults to (35,7).
+            **kwargs: Other arguments to pass to matplotlib.pyplot.
+
+        Raises:
+            Exception: plot_type is not ``index`` or ``partition``.
+
+        Returns:
+            OutputPlot: Figure, axis and data of the output plot.
+        """
         args = locals()
         for attr in ['self','kwargs']:
             del args[attr]
@@ -99,12 +105,26 @@ class Plotter():
         
         return OutputPlot(fig, ax, df)
 
-
-    def deltaG_sample(self, samp:str, structure, deltaG, figsize=(20,5), base_type=['A','C','G','T'], index='all', flank=None, sub_lib=None, max_mutation= 0.15,models=[],**kwargs):
+    def deltaG_sample(self, samp:str, deltaG:str, structure:str, index='all', base_type:List[str]=['A','C','G','T'], flank:str=None, sub_lib:str=None, max_mutation:float= 0.15, models:List[str]=[], figsize:Tuple[int]=(20,5), **kwargs)->OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
-        
+
         Args:
+            samp (str): Sample of your sample-construct-cluster.
+            deltaG (str): DeltaG to use as x axis.
+            structure (str, optional): Structure to use for base-paired filtering.
+            index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
+            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
+            flank (str, optional): Flank or list of flanks to filter by. Defaults to None.
+            sub_lib (str, optional): Sub-library or list of sub-libraries to filter by. Defaults to None.
+            max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
+            models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
+            figsize (Tuple[int], optional): Figure size. Defaults to (20,5).
+            **kwargs: Other arguments to pass to matplotlib.pyplot.
+
+        Returns:
+            OutputPlot: Figure, axis and data of the output plot.
         """
+
         args = locals()
         for attr in ['self','kwargs']:
             del args[attr]
