@@ -38,6 +38,10 @@ Samples.csv content
 
 See the attributes per-sample at `samples.csv attributes from dreem_herschlag <https://github.com/yvesmartindestaillades/dreem_herschlag/blob/main/DREEM_Herschlag/resources/sample_attributes.yml>`_.
 
+.. note:: 
+
+    Additional library or per-sample attributes can be provided by the user.
+
 
 RNAstructure predictions
 ========================

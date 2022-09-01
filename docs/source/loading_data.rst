@@ -69,6 +69,10 @@ You also can create a study from a csv file.
 Load and filter the data
 ========================
 
+Load
+****
+
+
 Then, you want to load your data. 
 Your data has to be organized like this:
 
@@ -85,6 +89,8 @@ Your data has to be organized like this:
 
     To get the output of DREEM in this format, use Herschlag lab's ``dreem_herschlag`` python package to run DREEM.
 
+Filter by study or by sample
+****************************
 
 When loading your data, you need to give a **minimal base-coverage**.
 If a construct has any of its bases covered by less than this value, this construct will be discarded.
@@ -99,7 +105,11 @@ If a construct has any of its bases covered by less than this value, this constr
 If you use the argument ``filter_by='study'``, NAP will filter out constructs that didn't reach the right amount of coverage **in all samples**.
 If you use the argument ``filter_by='sample'``, NAP will filter out constructs that didn't reach the right amount of coverage **in the sample**.
 
+Advanced filtering
+******************
+
 You can use more advanced filtering by specifying which bases you want to reach the minimum coverage.
+See :ref:`selecting_data` for more details.
 
 .. code-block:: python
 
@@ -110,6 +120,11 @@ You can use more advanced filtering by specifying which bases you want to reach 
         base_type = ['A', 'C'], # only filter by A, C
         base_paired = True, # only filter by paired bases. Can be False (only non-paired bases) or None (all bases, default).
         structure = 'structure_DMS') # the structure prediction to use if you want to filter by base-pairing. Default is None.
+
+.. note::
+
+  Advanced filtering technique takes approximately 50 times as long as the basic filtering technique.
+
 
 Use a config file (optional)
 ============================
@@ -130,7 +145,7 @@ Write a file ``config.yaml`` that contains the parameters you want to use.
 
 Load your config file using:
 
-:: 
+.. code-block:: python
 
     with open(path+'config.yml', 'r') as ymlfile:
         cfg = yaml.safe_load(ymlfile)
@@ -142,6 +157,9 @@ Summary of the code (using a config file)
 .. code-block:: python
 
     from dreem_nap.study import Study
+
+    with open(path+'config.yml', 'r') as ymlfile:
+      cfg = yaml.safe_load(ymlfile)
 
     salt = Study.load_studies(cfg['path_to_studies'])['salt']
 

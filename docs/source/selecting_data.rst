@@ -1,3 +1,6 @@
+
+.. _selecting_data:
+
 ==================
 How to select data
 ==================
