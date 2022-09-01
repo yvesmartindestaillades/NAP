@@ -8,7 +8,7 @@ Welcome to NAP's documentation!
 
 Welcome to NAP's documentation!
 
-NAP loads the output of `Prof. Joe Yesselman's dreem python package <https://github.com/jyesselm/dreem>`_, that implement Prof. Silvi Rouskin's DREEM algorithm. 
+NAP is a Python module that loads the output of `Prof. Joe Yesselman's dreem python package <https://github.com/jyesselm/dreem>`_, that implement Prof. Silvi Rouskin's DREEM algorithm. 
 If you have any doubts regarding the terminology used here, please refer to the :ref:`terminology`.
 
 .. include:: installation.rst

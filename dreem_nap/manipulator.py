@@ -127,47 +127,54 @@ class Manipulator():
         return list(range(ind, ind+len(sequence)))
 
 
-    def get_col_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ):
+    def get_col_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None )->pd.DataFrame:
+        """_summary_
+
+        Args:
+            samp (str): The sample name.
+            construct (str): The construct name.
+            col (list): The column to be returned.
+            cluster (int, optional): The cluster number. Defaults to 0.
+            structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
+            base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
+            index (str, optional): Index to include. Defaults to 'all'. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
+            base_paired (bool, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
+            flank (str or list, optional): Flank or list of flanks to filter constructs by. Defaults to None.
+            sub_lib (str or list, optional): Sub-library or list of sub-libraries to filter constructs by. Defaults to None.
+
+        Returns:
+            pd.Dataframe: content of the column col across constructs. Columns names are the indexes provided by index and index names (y axis) are the constructs.
+        """
+        
         args = locals()
         df_dont_touch = self._df
         df = self.filter_flank(df_dont_touch, flank)
         df = self.filter_sub_lib(df, sub_lib)
+
+        if (type(index) == str and not sum([int(a not in ['A','C','G','T']) for a in index])):
+            is_seq = True
+        else:
+            is_seq = False        
 
         stack = pd.DataFrame()
         if constructs == 'all':
             constructs = list(df[df.samp == samp].construct.unique())
         
         for c in constructs:
-            stack = pd.concat((stack, self.get_SCC(construct=c, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T))
+            if is_seq:
+                temp = self.get_SCC(construct=c, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T
+                temp.columns = list(index)
+                stack = pd.concat((stack, temp))
+            else:
+                stack = pd.concat((stack, self.get_SCC(construct=c, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T))
         stack.index = constructs
         return stack
-
-
-    def get_cols_by_sequence_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None ):
-        args = locals()
-        df_dont_touch = self._df
-        df = self.filter_flank(df_dont_touch, flank)
-        df = self.filter_sub_lib(df, sub_lib)
-        assert (type(index) == str and not sum([int(a not in ['A','C','G','T']) for a in index])), f"Index is {index}, should be a str of 'A','C','G','T'."
-        stack = pd.DataFrame()
-        if constructs == 'all':
-            constructs = list(df[df.samp == samp].construct.unique())
-        
-        for c in constructs:
-            temp = self.get_SCC(construct=c, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T
-            temp.columns = list(index)
-            stack = pd.concat((stack, temp))
-        stack.index = constructs
-        return stack
-
-
 
 
     def get_SCC(self, samp, construct, cols, cluster=0, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None,can_be_empty=False):
         """Returns a dataframe containing the content of a cluster of a sample-construct.
 
         Args:
-            df (pd.Dataframe): A study dataframe.
             samp (str): The sample name.
             construct (str): The construct name.
             cols (list): The columns to be returned.
@@ -175,7 +182,7 @@ class Manipulator():
             structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
             base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
             index (str, optional): Index to include. Defaults to 'all'. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
-            base_paired (_type_, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
+            base_paired (bool, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
             can_be_empty (bool, optional): If True, returns an empty dataframe if no row is found. Defaults to False.
 
         Returns:
