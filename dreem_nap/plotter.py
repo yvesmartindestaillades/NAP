@@ -17,7 +17,7 @@ class Plotter():
     def __init__(self, df):
         self.__man = manipulator.Manipulator(df)
 
-    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, show_ci=True, **kwargs)->None:
+    def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', figsize=(35,7), base_type=['A','C','G','T'], index='all', base_paired=None, structure=None, show_ci=True, **kwargs)->OutputPlot:
         """Plot the mutation rate of a specific (sample, construct).
 
         Args:

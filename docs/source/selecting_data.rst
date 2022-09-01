@@ -80,7 +80,7 @@ The following selection criterias can be applied:
     * ``structure``: structure prediction of the sequence only
     * ``structure_DMS``: structure prediction of the sequence using the DMS signal
     * ``structure_ROI``: structure prediction of the ROI sub-sequence
-    * ``structure_DMS_ROI``: structure prediction of the ROI sub-sequence using the DMS signal
+    * ``structure_ROI_DMS``: structure prediction of the ROI sub-sequence using the DMS signal
 
 
 Select a list of indexes

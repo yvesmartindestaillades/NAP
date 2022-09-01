@@ -1,6 +1,6 @@
-=========
-Data reference
-=========
+=========================
+Dataframe columns content
+=========================
 
 
 DREEM's output
@@ -27,9 +27,49 @@ DREEM's output
     * ``cov_bases_sec_half`` : (int) worst base coverage among the bases of the second half of the sequence.
 
 
-Library
-=======
+Library.csv content
+===================
+
+See the attributes of the library at `library.csv attributes from dreem_herschlag <https://github.com/yvesmartindestaillades/dreem_herschlag/blob/main/DREEM_Herschlag/resources/library_attributes.yml>`_.
 
 
-See the attributes of the library at 
+Samples.csv content
+===================
+
+See the attributes per-sample at `samples.csv attributes from dreem_herschlag <https://github.com/yvesmartindestaillades/dreem_herschlag/blob/main/DREEM_Herschlag/resources/sample_attributes.yml>`_.
+
+
+RNAstructure predictions
+========================
+
+**Structure predictions**:
+
+    * ``structure``: structure prediction of the sequence only
+    * ``structure_DMS``: structure prediction of the sequence using the DMS signal
+    * ``structure_ROI``: structure prediction of the ROI sub-sequence
+    * ``structure_ROI_DMS``: structure prediction of the ROI sub-sequence using the DMS signal
+
+**DeltaG predictions**:
+
+    * ``deltaG_min``: minimum energy for the full sequence structure prediction.
+    * ``deltaG_min_DMS``: minimum energy for the full sequence structure prediction using the DMS signal.
+    * ``deltaG_min_ROI``: minimum energy for the region of interest sub-sequence structure prediction.
+    * ``deltaG_min_ROI_DMS``: minimum energy for the region of interest sub-sequence structure prediction using the DMS signal.
+    * ``deltaG_ens``: ensemble energy for the full sequence structure prediction.
+    * ``deltaG_ens_ROI``: ensemble energy for the region of interest sub-sequence structure prediction.
+
+**Base-pairing prediction**
+
+    * ``base_pairing_prob``: probability of mutation for each residue. Computed using the full-sequence only.
+
+.. note::
+
+    The ensemble energy is the average of the deltaG prediction values, weighted by the alternative structures partition shares.
+
+
+Poisson confidence intervals
+============================
+
+    * ``poisson_low``: lower bound of the 95% confidence interval for the real mutation rate.
+    * ``poisson_high``: upper bound of the 95% confidence interval for the real mutation rate.
 
