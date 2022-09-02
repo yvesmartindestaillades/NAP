@@ -1,133 +1,34 @@
 
-=========
-Examples
-=========
+.. _to_csv:
 
+======
+To CSV
+======
 
-Load data
-=========
-
-.. note::
-
-    This example is well-explained on part :ref:`loading_data`.
-
-
-.. list-table:: studies.csv
-   :widths: 25 75 25 25 50
-   :header-rows: 1
-
-   * - name
-     - description
-     - samples
-     - conditions
-     - label
-   * - salt
-     - Change the Na concentration
-     - A6
-     - 0.15
-     - Na quantity [M]
-   * - salt
-     - Change the Na concentration
-     - B6
-     - 0.3
-     - Na quantity [M]
-   * - salt
-     - Change the Na concentration
-     - C6
-     - 0.6
-     - Na quantity [M]
-   * - salt
-     - Change the Na concentration
-     - D6
-     - 1
-     - Na quantity [M]
-   * - salt
-     - Change the Na concentration
-     - E6
-     - 1.2
-     - Na quantity [M]
-
-
-.. code-block:: yaml
-    :caption: config.yml
-
-    path_to_data: /Users/ymdt/src/data/Gabe
-    path_to_studies: /Users/ymdt/src/data/Gabe/studies.csv
-    min_cov_bases: 1000
-    filter_by: study
-    index: all
-    base_type: ['A', 'C']
-    base_paired: True
-    structure: structure_DMS
-
-.. code-block:: python
-    :caption: Example code
-
-    from dreem_nap.study import Study
-
-    with open('config.yml', 'r') as ymlfile:
-        cfg = yaml.safe_load(ymlfile)
-
-    salt = Study.load_studies(cfg['path_to_studies'])['salt']
-
-    salt.load_df_from_local_files(path_to_data= '/path/to/data/',
-                                  min_cov_bases= cfg['min_cov_bases'],
-                                  filter_by = cfg['filter_by'],
-                                  index = cfg['index'],
-                                  base_type = cfg['base_type'],
-                                  base_paired = cfg['base_paired'],
-                                  structure = cfg['structure'])
-    # Show the dataframe
-    salt.get_df().head()
-
-Plot data
-=========
-
-A single plot
-*************
-
-.. code-block:: python
-
-    salt.plot.mut_histogram(samp='B6',
-                            construct='3114',
-                            cluster=0,
-                            index=list(range(19,80)),
-                            base_paired=True,
-                            structure='structure')
-
-.. image:: img/mut_histogram.png
-    :align: center
-
-Multiple plots
-**************
-
-.. code-block:: python
-
-    from dreem_nap import util
-    sub_lib = 'MS2' # say that you only want to plot this sub-library
-    mpl.use('agg')  # use this to avoid display issues
-    df = salt.get_df()
-    for samp in salt.samples:
-        for construct in salt.constructs:
-            for cluster in df[(df['samp']==samp)&(df['construct']==construct)]['cluster'].unique():
-                if df[(df['samp']==samp)&(df['construct']==construct)&(df['cluster']==cluster)]['sub-library'].iloc[0] == sub_lib:
-                    salt.plot.mut_histogram(samp=samp,construct=construct, cluster=cluster)
-                    # save the figure and closes it
-                    util.save_fig(path_to_figs+'/'+salt.name+'/'+samp+'_'+construct+'_mut_histogram.png') 
-
-
-.. note::
-
-    Find all plotting functions in :ref:`plots`.            
-
-Download data
-=============
-
-This part shows how to filter data from dataframes and to turn it into a csv file. 
-
+This part will show functions and examples to filter data and download it into csv files.
 
 Download several columns of a single sample-construct-cluster
-*****************************************************************
+=============================================================
+
+Let's say that you want to download columns of a single row of your dataset, like below, into a csv file.
+
+.. figure:: img/get_scc.png
+
+
+.. figure::
+
+    ===== ======================= ======= ============ ========= 
+    .     mut_rates               base    cov_bases    paired   
+    ===== ======================= ======= ============ ========= 
+    41    0.008445106805762544    C       1991.0       False    
+    43    0.06855439642324888     C       1988.0       False    
+    45    0.007948335817188276    C       1955.0       True     
+    47    0.007451564828614009    A       1897.0       True     
+    ===== ======================= ======= ============ ========= 
+
+    label
+
+Then run the following code:    
 
 .. code-block:: python
 
@@ -136,20 +37,19 @@ Download several columns of a single sample-construct-cluster
                            cols=['mut_rates','sequence','structure','cov_bases'],
                            base_type=['A','C'], 
                            index=list(range(40,50))) 
-    df.to_csv('example.csv')
+    df.to_csv('C6_9572.csv')
 
-===== ======================= ======= ============ ========= 
- .    mut_rates               base    cov_bases    paired   
-===== ======================= ======= ============ ========= 
-41    0.008445106805762544    C       1991.0       False    
-43    0.06855439642324888     C       1988.0       False    
-45    0.007948335817188276    C       1955.0       True     
-47    0.007451564828614009    A       1897.0       True     
-===== ======================= ======= ============ ========= 
+More about this function:
+
+.. autofunction:: dreem_nap.manipulator.Manipulator.get_SCC
+
 
 
 Download a single column of several sample-construct-clusters
-**************************************************************
+=============================================================
+
+.. figure:: img/get_col.png
+
 
 .. code-block:: python
     :caption: Using a list of indexes
@@ -157,7 +57,7 @@ Download a single column of several sample-construct-clusters
     df = study.mani.get_col_across_constructs(samp=470, 
                                               col='mut_rates',
                                               index=list(range(40,50))) 
-    df.to_csv('example.csv')
+    df.to_csv('470_mut_rates_40_50.csv')
 
 
 
@@ -177,7 +77,7 @@ Download a single column of several sample-construct-clusters
     df = study.mani.get_col_across_constructs(samp=470, 
                                               col='mut_rates',
                                               index='CACAGTCGAAAGACTGTG') 
-    df.to_csv('example.csv')
+    df.to_csv('470_mut_rates_CACAGTCGAAAGACTGTG.csv')
 
 
 ====== ======================= ======================= ======================= ======================= ======================= ======================== ======================= ======================= ====================== ====================== ====================== ======================= ======================= ======================== ======================== ======================= ======================== ======================== 
@@ -189,9 +89,5 @@ Download a single column of several sample-construct-clusters
 834    0.004973221117061974    0.009563886763580718    0.0019127773527161439   0.008416220351951033    0.0034429992348890587   0.0                      0.0034429992348890587   0.00306044376434583     0.06809487375669472    0.06847742922723794    0.058530986993114      0.0011476664116296864   0.011476664116296864    0.005355776587605203     0.0                      0.004209720627631076    0.0003827018752391887    0.003444316877152698                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 ====== ======================= ======================= ======================= ======================= ======================= ======================== ======================= ======================= ====================== ====================== ====================== ======================= ======================= ======================== ======================== ======================= ======================== ======================== 
 
-
-.. note::
-
-    Learn more about these functions at :ref:`to_csv`
 
 

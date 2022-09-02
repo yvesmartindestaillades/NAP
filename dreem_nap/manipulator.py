@@ -171,7 +171,7 @@ class Manipulator():
         return stack
 
 
-    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None,can_be_empty=False):
+    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None,can_be_empty=False)->pd.DataFrame:
         """Returns a dataframe containing the content of a cluster of a sample-construct.
 
         Args:
@@ -186,7 +186,7 @@ class Manipulator():
             can_be_empty (bool, optional): If True, returns an empty dataframe if no row is found. Defaults to False.
 
         Returns:
-            _type_: dataframe containing the content of a cluster of a sample-construct.
+            pd.Dataframe: dataframe containing the content of a cluster of a sample-construct.
         """
 
         self.assert_SCC_exists( samp, construct, cluster)
@@ -294,29 +294,19 @@ class Manipulator():
         stack = clean_stack(stack, max_mutation)
         return stack
 
-    def columns_to_csv(self, columns:List[str], title:str, path:str)->None:
-        """Save a subset of a Dataframe to a csv file.
+    def columns_to_csv(self, columns:List[str], file:str)->None:
+        """Save a set of columns of a Dataframe into a csv file.
 
         Args:
             columns: columns to save.
-            title: how to name your file.
-            path: where to store your file.
+            file: path+name of your csv.
         
         Returns:
             The csv file content under the dataframe format.    
         """
-        samples = self.samples
-        df = self._df.copy()
-        np.seterr(invalid='ignore')
-        full_path = util.make_path(path)
-        df_print = df[df.samp.isin(samples)]
-        df_print = df_print[columns] 
-        np.set_printoptions(suppress=True)
-        if 'mut_rate' in columns:
-            df_print['mut_rate'] = df_print.apply(lambda row: np.float32(np.array(row['mut_bases'])/np.array(row['info_bases'])), axis=1)
-        df_print = df_print.drop(columns='index')
-        df_print.to_csv(f"{full_path}/{title}")
-        return df_print
+        df = self._df.copy()[columns] 
+        df.to_csv(file)
+        return df
 
     def rand_sample_construct(self, n_samples:int=1, n_constructs:int=1)->Tuple[List[str], List[int]]:
         """Pick randomly n_samples samples and n_constructs constructs.

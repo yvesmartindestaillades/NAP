@@ -20,8 +20,9 @@ Index
    installation
    examples
    plots
+   to_csv
    loading_data
-   selecting_data
+   filtering_data
    terminology
    reference
    api

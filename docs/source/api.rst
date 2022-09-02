@@ -45,10 +45,27 @@ Manipulator module
 
 Just a few fonctions to navigate through your dataframes with ease, and to save data to csv files. 
 
-.. automodule:: dreem_nap.manipulator
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autofunction:: dreem_nap.manipulator.Manipulator.get_SCC
+
+   .. code-block:: python
+
+      df = salt.mani.get_SCC(samp='C6',
+                              construct='9572', 
+                              cols=['mut_rates','sequence','structure','cov_bases'],
+                              base_type=['A','C'], 
+                              index=list(range(40,50))) 
+      df.to_csv('example.csv')
+
+   ===== ======================= ======= ============ ========= 
+   .    mut_rates               base    cov_bases    paired   
+   ===== ======================= ======= ============ ========= 
+   41    0.008445106805762544    C       1991.0       False    
+   43    0.06855439642324888     C       1988.0       False    
+   45    0.007948335817188276    C       1955.0       True     
+   47    0.007451564828614009    A       1897.0       True     
+   ===== ======================= ======= ============ ========= 
+
+
 
 .. _loader_module:
 

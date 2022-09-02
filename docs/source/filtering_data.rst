@@ -1,19 +1,19 @@
 
-.. _selecting_data:
+.. _filtering_data:
 
 ==================
-How to select data
+How to filter data
 ==================
 
-This part shows how to select specific bases in a sequence. 
-This is typically useful to print selected data to a csv file, or to plot only the data that you need.
+This part shows how to filter specific bases in a sequence. 
+This is typically useful to print filtered data to a csv file, or to plot only the data that you need.
 
 **Examples**:
 
 .. code-block:: python
 
-    df = study.mani.get_SCC(samp='C6', construct='9572', cluster=0,    # select sample-construct
-                            base_type=['C'], index=list(range(40,50)), # select bases
+    df = study.mani.get_SCC(samp='C6', construct='9572', cluster=0,    # filter sample-construct
+                            base_type=['C'], index=list(range(40,50)), # filter bases
                             cols=['mut_rates','sequence'])
     df.to_csv('example.csv')
     df.head()
@@ -22,25 +22,25 @@ This is typically useful to print selected data to a csv file, or to plot only t
     :align: center
     :width: 200
 
-    Save selected data to csv.
+    Save filtered data to csv.
 
 
 .. code-block:: python
 
-    study.plot.mut_histogram(samp='C6', construct='9572', cluster=0,   # select sample-construct
-                            base_type=['C'], index=list(range(40,50)), # select bases
+    study.plot.mut_histogram(samp='C6', construct='9572', cluster=0,   # filter sample-construct
+                            base_type=['C'], index=list(range(40,50)), # filter bases
                             figsize=(10,2)) 
 
 .. figure:: img/intro_plot_data.png
     :align: center
     
-    Plot selected data.
+    Plot filtered data.
 
 
-All selection criterias
+All criterias
 =======================
 
-The following selection criterias can be applied:
+The following filtering criterias can be applied:
 
 :index (str):
     
@@ -86,11 +86,11 @@ The following selection criterias can be applied:
     * ``structure_ROI_DMS``: structure prediction of the ROI sub-sequence using the DMS signal
 
 
-Select a list of indexes
-========================
+Filter by a list of indexes
+===========================
 
 Let's plot a basic mutation histogram. 
-This is a good example of how to use the ``plot`` module with selected data.
+This is a good example of how to use the ``plot`` module with filtered data.
 
 A mutation histogram shows the frequency of mutations of a construct in a sample. 
 So we need to indicate the construct and the sample.
@@ -111,7 +111,7 @@ You can use the ``index`` argument to give a list of 0-indexed positions to plot
     :align: center
 
 
-Select the Region of Interest (ROI)
+Filter by Region of Interest (ROI)
 ===================================
 
 The ROI is defined in the library. 
@@ -128,8 +128,8 @@ You can pass ``roi`` to the ``index`` argument to plot the ROI only.
 .. image:: img/roi.png
     :align: center
 
-Select a unique sub-sequence 
-============================
+Filter by a unique sub-sequence 
+===============================
 
 You can pass a unique sub-sequence to the ``index`` argument to plot it.
 
@@ -149,8 +149,8 @@ You can pass a unique sub-sequence to the ``index`` argument to plot it.
     :align: center
 
 
-Select by base type
-===================
+Filter by base type (A, C, G, T)
+===================================
 
 You can keep only certain types of bases by giving the ``base_type`` argument, here, As and Cs.
 
@@ -166,8 +166,8 @@ You can keep only certain types of bases by giving the ``base_type`` argument, h
 
    
 
-Select at the same time specific indexes and base types
-=======================================================
+Filter at the same time by specific indexes and by base types
+====================================================================
 
 You can cumulate constrains on the same plotting function. Here, plot only As and Cs in a list of 0-indexed positions to plot, [19, 20, .., 40, 41].
 
@@ -184,10 +184,10 @@ You can cumulate constrains on the same plotting function. Here, plot only As an
 
 
 
-Select only paired bases based on RNAstructure prediction
+Filter only paired bases using on RNAstructure prediction
 =========================================================
 
-You can use the RNAstructure prediction to select only paired or unpaired bases.
+You can use the RNAstructure prediction to filter only paired or unpaired bases.
 
 ``base_paired`` is True to keep paired bases and False to keep unpaired bases.
 

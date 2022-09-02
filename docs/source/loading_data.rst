@@ -109,7 +109,7 @@ Advanced filtering
 ******************
 
 You can use more advanced filtering by specifying which bases you want to reach the minimum coverage.
-See :ref:`selecting_data` for more details.
+See :ref:`filtering_data` for more details.
 
 .. code-block:: python
 
