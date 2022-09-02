@@ -57,7 +57,7 @@ Just a few fonctions to navigate through your dataframes with ease, and to save 
       df.to_csv('example.csv')
 
    ===== ======================= ======= ============ ========= 
-   .    mut_rates               base    cov_bases    paired   
+   .     mut_rates               base    cov_bases    paired   
    ===== ======================= ======= ============ ========= 
    41    0.008445106805762544    C       1991.0       False    
    43    0.06855439642324888     C       1988.0       False    

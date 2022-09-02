@@ -7,26 +7,24 @@ To CSV
 
 This part will show functions and examples to filter data and download it into csv files.
 
-Download several columns of a single sample-construct-cluster
-=============================================================
+Save several columns of a single row
+====================================
 
 Let's say that you want to download columns of a single row of your dataset, like below, into a csv file.
 
 .. figure:: img/get_scc.png
 
 
-.. figure::
 
-    ===== ======================= ======= ============ ========= 
-    .     mut_rates               base    cov_bases    paired   
-    ===== ======================= ======= ============ ========= 
-    41    0.008445106805762544    C       1991.0       False    
-    43    0.06855439642324888     C       1988.0       False    
-    45    0.007948335817188276    C       1955.0       True     
-    47    0.007451564828614009    A       1897.0       True     
-    ===== ======================= ======= ============ ========= 
+===== ======================= ======= ============ ========= 
+.     mut_rates               base    cov_bases    paired   
+===== ======================= ======= ============ ========= 
+41    0.008445106805762544    C       1991.0       False    
+43    0.06855439642324888     C       1988.0       False    
+45    0.007948335817188276    C       1955.0       True     
+47    0.007451564828614009    A       1897.0       True     
+===== ======================= ======= ============ ========= 
 
-    label
 
 Then run the following code:    
 
@@ -45,14 +43,15 @@ More about this function:
 
 
 
-Download a single column of several sample-construct-clusters
-=============================================================
+Save a single column of several rows
+====================================
+
+Using a list of indexes
+***********************
 
 .. figure:: img/get_col.png
 
-
 .. code-block:: python
-    :caption: Using a list of indexes
 
     df = study.mani.get_col_across_constructs(samp=470, 
                                               col='mut_rates',
@@ -70,9 +69,10 @@ Download a single column of several sample-construct-clusters
 834    0.0007651109410864575   0.008416220351951033    0.0007651109410864575   0.06006120887528692    0.14957918898240244      0.010328997704667177    0.061208875286916604    0.011859219586840091    0.020275439938791124    0.0971690895179801     
 ====== ======================= ======================= ======================= ====================== ======================== ======================= ======================= ======================= ======================= ======================= 
 
+Using a unique sub-sequence 
+***************************
 
 .. code-block:: python
-    :caption: Using a unique sub-sequence 
 
     df = study.mani.get_col_across_constructs(samp=470, 
                                               col='mut_rates',
@@ -89,5 +89,18 @@ Download a single column of several sample-construct-clusters
 834    0.004973221117061974    0.009563886763580718    0.0019127773527161439   0.008416220351951033    0.0034429992348890587   0.0                      0.0034429992348890587   0.00306044376434583     0.06809487375669472    0.06847742922723794    0.058530986993114      0.0011476664116296864   0.011476664116296864    0.005355776587605203     0.0                      0.004209720627631076    0.0003827018752391887    0.003444316877152698                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 ====== ======================= ======================= ======================= ======================= ======================= ======================== ======================= ======================= ====================== ====================== ====================== ======================= ======================= ======================== ======================== ======================= ======================== ======================== 
 
+.. autofunction:: dreem_nap.manipulator.Manipulator.get_col_across_constructs
 
 
+Save multiple columns of several rows
+=====================================
+
+.. figure:: img/get_cols.png
+
+.. code-block:: python
+
+    salt.columns_to_csv(columns=['samp','construct','sequence','mut_rates','num_reads'],  
+                        file='ex.csv', 
+                        samples='all')
+
+.. autofunction:: dreem_nap.manipulator.Manipulator.columns_to_csv

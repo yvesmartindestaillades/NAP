@@ -128,7 +128,7 @@ class Manipulator():
 
 
     def get_col_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None )->pd.DataFrame:
-        """_summary_
+        """Returns a dataframe containing the column col for provided constructs in a sample
 
         Args:
             samp (str): The sample name.
@@ -252,7 +252,7 @@ class Manipulator():
             attribute: the dataframe's column values that you want to look at.
 
         Returns:
-            A dataframe with the constructs as index and the column as data.
+            pd.Dataframe: A dataframe with the constructs as index and the column as data.
         """   
         if not self._df.empty:
             df = self._df.copy()
@@ -294,17 +294,20 @@ class Manipulator():
         stack = clean_stack(stack, max_mutation)
         return stack
 
-    def columns_to_csv(self, columns:List[str], file:str)->None:
+    def columns_to_csv(self, columns:List[str],  file:str, samples='all')->pd.DataFrame:
         """Save a set of columns of a Dataframe into a csv file.
 
         Args:
             columns: columns to save.
             file: path+name of your csv.
+            samples: list of samples to include. If 'all', all samples are included.
         
         Returns:
-            The csv file content under the dataframe format.    
+            pd.Dataframe: The csv file content under the dataframe format.    
         """
         df = self._df.copy()[columns] 
+        if samples != 'all':
+            df = df[df['samp'].isin(samples)]
         df.to_csv(file)
         return df
 
