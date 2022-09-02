@@ -21,7 +21,7 @@ class Study(object):
         >>> study.to_dict()
         {'name': 'example', 'description': 'Just an example study', 'samples': ['A1', 'B2', 'B3'], 'label': 'Example values [no unit]', 'conditions': [10, 20, 30]}
         >>> di = {'name':'temperature','samples':['A1','B1','C3']}
-        >>> study = Study().from_dict(di)
+        >>> study = Study.from_dict(di)
         >>> print(study.name, study.samples, study.description)
         temperature ['A1', 'B1', 'C3'] None
     """
