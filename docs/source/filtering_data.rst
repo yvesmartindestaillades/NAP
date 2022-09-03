@@ -1,9 +1,9 @@
 
 .. _filtering_data:
 
-==================
-How to filter data
-==================
+====================
+Data filtering guide
+====================
 
 This part shows how to filter specific bases in a sequence. 
 This is typically useful to print filtered data to a csv file, or to plot only the data that you need.

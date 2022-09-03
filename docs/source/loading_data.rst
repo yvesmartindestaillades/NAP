@@ -1,8 +1,8 @@
 .. _loading_data:
 
-================
-How to load data
-================
+=========
+Load data
+=========
 
 Create a study
 ==============
