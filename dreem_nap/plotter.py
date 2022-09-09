@@ -8,6 +8,9 @@ sys.path.append(os.path.abspath(""))
 from dreem_nap import manipulator
 from itertools import cycle
 
+from scipy.cluster import hierarchy
+from sklearn.cluster import AgglomerativeClustering
+
 
 class OutputPlot(object):
     def __init__(self, fig, ax, data) -> None:
@@ -157,3 +160,116 @@ class Plotter():
         return OutputPlot(fig, ax, data)
 
 
+
+    def dendrogram(self, samp:str, constructs:str='all', p:int=None, cluster:int=0, plot_type:str='index', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(35,7), **kwargs)->OutputPlot:
+        """Plot the mutation rates as histograms.
+
+        Args:
+            samp (str): Sample of your sample-construct-cluster.
+            constructs (str): Constructs to plot. Defaults to ``'all'``.
+            cluster (int, optional): Cluster of your sample-construct-clusters. Defaults to 0. 
+            p (int, optional):
+                The ``p`` parameter for ``truncate_mode``.
+            truncate_mode (str, optional): 
+                The dendrogram can be hard to read when the original
+                observation matrix from which the linkage is derived is
+                large. Truncation is used to condense the dendrogram. There
+                are several modes:
+
+                ``None``
+                No truncation is performed (default).
+                Note: ``'none'`` is an alias for ``None`` that's kept for
+                backward compatibility.
+
+                ``'lastp'``
+                The last ``p`` non-singleton clusters formed in the linkage are the
+                only non-leaf nodes in the linkage; they correspond to rows
+                ``Z[n-p-2:end]`` in ``Z``. All other non-singleton clusters are
+                contracted into leaf nodes.
+
+                ``'level'``
+                No more than ``p`` levels of the dendrogram tree are displayed.
+                A "level" includes all nodes with ``p`` merges from the final merge.
+
+                Note: ``'mtica'`` is an alias for ``'level'`` that's kept for
+                backward compatibility.
+
+            color_threshold (double, optional): 
+                For brevity, let :math:`t` be the ``color_threshold``.
+                Colors all the descendent links below a cluster node
+                :math:`k` the same color if :math:`k` is the first node below
+                the cut threshold :math:`t`. All links connecting nodes with
+                distances greater than or equal to the threshold are colored
+                with de default matplotlib color ``'C0'``. If :math:`t` is less
+                than or equal to zero, all nodes are colored ``'C0'``.
+                If ``color_threshold`` is None or 'default',
+                corresponding with MATLAB(TM) behavior, the threshold is set to
+                ``0.7*max(Z[:,2])``.
+
+            orientation (str, optional): 
+                The direction to plot the dendrogram, which can be any
+                of the following strings:
+
+                ``'top'``
+                Plots the root at the top, and plot descendent links going downwards.
+                (default).
+
+                ``'bottom'``
+                Plots the root at the bottom, and plot descendent links going
+                upwards.
+
+                ``'left'``
+                Plots the root at the left, and plot descendent links going right.
+
+                ``'right'``
+                Plots the root at the right, and plot descendent links going left.
+            index (optional): Indexes to plot. Defaults to ``'all'``.
+            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
+            base_paired (bool, optional): Base-pairing predicition to plot. Defaults to None.
+            structure (str, optio`nal): Structure to use for base_paired filtering. Defaults to None.
+            flank (str or list, optional): Flank or list of flanks to filter constructs by. Defaults to None.
+            sub_lib (str or list, optional): Sub-library or list of sub-libraries to filter constructs by. Defaults to None.
+            figsize (Tuple[int], optional): Figure size. Defaults to (35,7).
+            **kwargs: Other arguments to pass to matplotlib.pyplot.
+
+        Returns:
+            OutputPlot: The plot object.
+        """
+        args = locals()
+        del args['self']
+        data = self.__man.get_col_across_constructs(col='mut_rates',\
+                            **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
+            
+        def plot_dendrogram(model, **kwargs):
+            # Create linkage matrix and then plot the dendrogram
+
+            # create the counts of samples under each node
+            counts = np.zeros(model.children_.shape[0])
+            n_samples = len(model.labels_)
+            for i, merge in enumerate(model.children_):
+                current_count = 0
+                for child_idx in merge:
+                    if child_idx < n_samples:
+                        current_count += 1  # leaf node
+                    else:
+                        current_count += counts[child_idx - n_samples]
+                counts[i] = current_count
+
+            linkage_matrix = np.column_stack(
+                [model.children_, model.distances_, counts]
+            ).astype(float)
+            # Plot the corresponding dendrogram
+            hierarchy.dendrogram(linkage_matrix, labels=model.labels_,**kwargs)
+
+        # setting distance_threshold=0 ensures we compute the full tree.
+        model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
+        model = model.fit(data)
+        plt.figure(figsize=(10,50))
+        model.labels_ = [data.index[int(i)] for i in model.labels_]
+
+        plt.title("Hierarchical Clustering Dendrogram")
+        # plot the top three levels of the dendrogram
+        plot_dendrogram(model, truncate_mode="level", orientation='left')
+
+        plt.ylabel("Number of points in node (or index of point if no parenthesis).")
+        plt.show()
