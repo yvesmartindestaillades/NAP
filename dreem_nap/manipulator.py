@@ -132,8 +132,8 @@ class Manipulator():
 
         Args:
             samp (str): The sample name.
-            construct (str): The construct name.
             col (list): The column to be returned.
+            constructs (str): The constructs name. Defaults to 'all'.
             cluster (int, optional): The cluster number. Defaults to 0.
             structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
             base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
