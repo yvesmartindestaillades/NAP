@@ -131,7 +131,7 @@ class Manipulator():
         """Returns a dataframe containing the column col for provided constructs in a sample
 
         Args:
-            samp (str): The sample name.
+            samp (str): Sample(s) of your sample-construct-cluster. A single sample or a list of samples.
             col (list): The column to be returned.
             constructs (str): The constructs name. Defaults to 'all'.
             cluster (int, optional): The cluster number. Defaults to 0.
@@ -147,6 +147,8 @@ class Manipulator():
         """
         
         args = locals()
+        del args['samp']
+        del args['self']
         df_dont_touch = self._df
         df = self.filter_flank(df_dont_touch, flank)
         df = self.filter_sub_lib(df, sub_lib)
@@ -160,13 +162,16 @@ class Manipulator():
         if constructs == 'all':
             constructs = list(df[df.samp == samp].construct.unique())
         
-        for c in constructs:
-            if is_seq:
-                temp = self.get_SCC(construct=c, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T
-                temp.columns = list(index)
-                stack = pd.concat((stack, temp))
-            else:
-                stack = pd.concat((stack, self.get_SCC(construct=c, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T))
+        if type(samp) == str:
+            samp = [samp]
+        for s in samp:
+            for c in constructs:
+                if is_seq:
+                    temp = self.get_SCC(construct=c,  samp = s,cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T
+                    temp.columns = list(index)
+                    stack = pd.concat((stack, temp))
+                else:
+                    stack = pd.concat((stack, self.get_SCC(construct=c, samp = s, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T))
         stack.index = constructs
         return stack
 

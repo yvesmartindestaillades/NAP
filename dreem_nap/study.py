@@ -34,7 +34,7 @@ class Study(object):
         Args:
             name (str, optional): Short description (<~20 char) of your study. Defaults to None.
             samples (List[str], optional): names of your study's samples. Defaults to None.
-            conditions (List[float], optional): values of the experimental condition that changes between the samples. Defaults to None.
+            conditions (List[float], optional): samples.csv column or values of the experimental condition that changes between the samples. Defaults to None.
             label (str, optional): Short description of the conditions. Defaults to None.
             description (str, optional): More information about your study. Defaults to None.
 
@@ -154,6 +154,6 @@ def load_studies(studies_file_path:str)->dict[str:Study]:
     for col in studies_data.groupby('name')[Study.attr_list]:
         solo_item = lambda x: x[0] if len(set(x)) == 1 else x  
         studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study.attr_list)} 
-    
+
     return {k:Study.from_dict(v) for k,v in studies_dict.items()}
 

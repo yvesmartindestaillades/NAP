@@ -1,3 +1,4 @@
+from binascii import a2b_hex
 from typing import Tuple, List
 import pandas as pd
 import numpy as np
@@ -161,11 +162,11 @@ class Plotter():
 
 
 
-    def dendrogram(self, samp:str, constructs:str='all', p:int=None, cluster:int=0, plot_type:str='index', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(35,7), **kwargs)->OutputPlot:
+    def dendrogram(self, samp:str, constructs:str='all', cluster:int=0, plot_type:str='index', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,50), **kwargs)->OutputPlot:
         """Plot the mutation rates as histograms.
 
         Args:
-            samp (str): Sample of your sample-construct-cluster.
+            samp (str): Sample(s) of your sample-construct-cluster. A single sample or a list of samples.
             constructs (str): Constructs to plot. Defaults to ``'all'``.
             cluster (int, optional): Cluster of your sample-construct-clusters. Defaults to 0. 
             p (int, optional):
@@ -259,17 +260,21 @@ class Plotter():
                 [model.children_, model.distances_, counts]
             ).astype(float)
             # Plot the corresponding dendrogram
-            hierarchy.dendrogram(linkage_matrix, labels=model.labels_,**kwargs)
+            hierarchy.dendrogram(linkage_matrix, labels=model.labels_, **kwargs)
 
         # setting distance_threshold=0 ensures we compute the full tree.
         model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
         model = model.fit(data)
-        plt.figure(figsize=(10,50))
+        fig = plt.figure(figsize=figsize)
+        ax = plt.axes()
         model.labels_ = [data.index[int(i)] for i in model.labels_]
 
         plt.title("Hierarchical Clustering Dendrogram")
         # plot the top three levels of the dendrogram
-        plot_dendrogram(model, truncate_mode="level", orientation='left')
+        plot_dendrogram(model, truncate_mode="level", orientation='left', **kwargs)
 
-        plt.ylabel("Number of points in node (or index of point if no parenthesis).")
+        plt.ylabel("Constructs")
+        plt.xlabel("Distance")
         plt.show()
+
+        return OutputPlot(fig, ax, data)
