@@ -162,7 +162,7 @@ class Plotter():
 
 
 
-    def dendrogram(self, samp:str, constructs:str='all', cluster:int=0, plot_type:str='index', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,50), **kwargs)->OutputPlot:
+    def dendrogram(self, samp:str, constructs:str='all', cluster:int=0, plot_type:str='index', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,50), dpi = 600, **kwargs)->OutputPlot:
         """Plot the mutation rates as histograms.
 
         Args:
@@ -240,9 +240,9 @@ class Plotter():
         del args['self']
         data = self.__man.get_col_across_constructs(col='mut_rates',\
                             **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
-            
+
         def plot_dendrogram(model, **kwargs):
-            # Create linkage matrix and then plot the dendrogram
+            """ Create linkage matrix and then plot the dendrogram """
 
             # create the counts of samples under each node
             counts = np.zeros(model.children_.shape[0])
@@ -265,10 +265,10 @@ class Plotter():
         # setting distance_threshold=0 ensures we compute the full tree.
         model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
         model = model.fit(data)
-        fig = plt.figure(figsize=figsize)
+        fig = plt.figure(figsize=figsize, dpi=dpi)
         ax = plt.axes()
+        if type(samp) in [str, int]: samp = [str(samp)]
         model.labels_ = [data.index[int(i)] for i in model.labels_]
-
         plt.title("Hierarchical Clustering Dendrogram")
         # plot the top three levels of the dendrogram
         plot_dendrogram(model, truncate_mode="level", orientation='left', **kwargs)
@@ -277,4 +277,7 @@ class Plotter():
         plt.xlabel("Distance")
         plt.show()
 
-        return OutputPlot(fig, ax, data)
+        out = OutputPlot(fig, ax, data)
+        out.labels = model.labels_
+        return out
+
