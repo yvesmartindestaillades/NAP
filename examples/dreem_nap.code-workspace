@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"name": "dreem_nap",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"makefile.extensionOutputFolder": "./.vscode",
+		"githubPullRequests.ignoredPullRequestBranches": [
+			"main"
+		]
+	}
+}

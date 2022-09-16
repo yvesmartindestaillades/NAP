@@ -55,7 +55,7 @@ def gini(x:np.array)->float:
     g = 0.5 * rmad
     return g
 
-def save_fig(file:str, facecolor='white', close=True)->None:
+def savefig(file:str, facecolor='white', close=True)->None:
     """Save a matplotlib figure and create the directory if it doesn't exists.
 
     Args:

@@ -11,6 +11,9 @@ from itertools import cycle
 
 from scipy.cluster import hierarchy
 from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import r2_score
+from scipy.stats import spearmanr
+from tqdm.auto import tqdm
 
 
 class OutputPlot(object):
@@ -162,13 +165,14 @@ class Plotter():
 
 
 
-    def dendrogram(self, samp:str, constructs:str='all', cluster:int=0, plot_type:str='index', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,50), dpi = 600, **kwargs)->OutputPlot:
+    def dendrogram(self, samp:str, constructs:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,50), dpi = 600, **kwargs)->OutputPlot:
         """Plot the mutation rates as histograms.
 
         Args:
             samp (str): Sample(s) of your sample-construct-cluster. A single sample or a list of samples.
             constructs (str): Constructs to plot. Defaults to ``'all'``.
             cluster (int, optional): Cluster of your sample-construct-clusters. Defaults to 0. 
+            metric (str, optional): Metric to use for the clustering. Defaults to ``'euclidean'``.
             p (int, optional):
                 The ``p`` parameter for ``truncate_mode``.
             truncate_mode (str, optional): 
@@ -240,6 +244,20 @@ class Plotter():
         del args['self']
         data = self.__man.get_col_across_constructs(col='mut_rates',\
                             **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
+        assert metric in ['r2','euclidean','spearman'], f'{metric} is not a valid value for metric'
+        affinity = 'euclidean' if metric == 'euclidean' else 'precomputed'
+        if affinity == 'precomputed':
+            dist_matrix = np.zeros((len(data.index),len(data.index)))
+            index = data.index
+            data = data.reset_index().drop(columns=['index'])
+            for i, u in tqdm(data.iterrows(), total= len(data.index), unit=f' {metric} distance computed', colour='blue'):
+                for j, v in data.iterrows():
+                    u, v = np.array(u), np.array(v)
+                    if metric == 'r2':
+                        dist_matrix[i,j] = 1-r2_score(u,v)
+                    elif metric == 'spearman':
+                        dist_matrix[i,j] = 1-spearmanr(u,v)[0]
+            data = pd.DataFrame(dist_matrix, index=index, columns=index)
 
         def plot_dendrogram(model, **kwargs):
             """ Create linkage matrix and then plot the dendrogram """
@@ -260,10 +278,11 @@ class Plotter():
                 [model.children_, model.distances_, counts]
             ).astype(float)
             # Plot the corresponding dendrogram
-            hierarchy.dendrogram(linkage_matrix, labels=model.labels_, **kwargs)
+            R = hierarchy.dendrogram(linkage_matrix, labels=model.labels_, **kwargs)
+            return R['ivl']
 
         # setting distance_threshold=0 ensures we compute the full tree.
-        model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
+        model = AgglomerativeClustering(distance_threshold=0, n_clusters=None, affinity=affinity, linkage='ward' if affinity == 'euclidean' else 'complete')
         model = model.fit(data)
         fig = plt.figure(figsize=figsize, dpi=dpi)
         ax = plt.axes()
@@ -271,13 +290,14 @@ class Plotter():
         model.labels_ = [data.index[int(i)] for i in model.labels_]
         plt.title("Hierarchical Clustering Dendrogram")
         # plot the top three levels of the dendrogram
-        plot_dendrogram(model, truncate_mode="level", orientation='left', **kwargs)
-
+        out = OutputPlot(fig, ax, data)
+        out.labels = plot_dendrogram(model, truncate_mode="level", orientation='left', **kwargs)
+        out.labels.reverse()
         plt.ylabel("Constructs")
         plt.xlabel("Distance")
+        [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
+
         plt.show()
 
-        out = OutputPlot(fig, ax, data)
-        out.labels = model.labels_
         return out
 

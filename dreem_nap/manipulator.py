@@ -159,20 +159,26 @@ class Manipulator():
             is_seq = False        
 
         stack = pd.DataFrame()
-        if constructs == 'all':
-            constructs = list(df[df.samp == samp].construct.unique())
-        
-        if type(samp) == str:
+
+        several_samples = type(samp) in [list, tuple]
+        if not several_samples:
             samp = [samp]
+
+        stack_index = []
         for s in samp:
-            for c in constructs:
+            if constructs == 'all':
+                constructs_list = list(df[df.samp == s].construct.unique())
+                stack_index += [str(s)+ ' - ' + c for c in constructs_list] 
+            else:
+                constructs_list = constructs
+            for c in constructs_list:
                 if is_seq:
                     temp = self.get_SCC(construct=c,  samp = s,cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T
-                    temp.columns = list(index)
+                    temp.columns = [i for i in index if i in base_type]
                     stack = pd.concat((stack, temp))
                 else:
                     stack = pd.concat((stack, self.get_SCC(construct=c, samp = s, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T))
-        stack.index = constructs
+        stack.index = stack_index
         return stack
 
 
