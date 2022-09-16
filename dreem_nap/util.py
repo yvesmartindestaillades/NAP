@@ -55,7 +55,7 @@ def gini(x:np.array)->float:
     g = 0.5 * rmad
     return g
 
-def savefig(file:str, facecolor='white', close=True)->None:
+def savefig(file:str, close=True)->None:
     """Save a matplotlib figure and create the directory if it doesn't exists.
 
     Args:
@@ -64,7 +64,7 @@ def savefig(file:str, facecolor='white', close=True)->None:
     """
 
     path = make_path('/'.join(file.split('/')[:-1]))
-    plt.savefig(path+file.split('/')[-1], facecolor=facecolor )
+    plt.savefig(path+file.split('/')[-1])
     if close:
         # Clear the current axes.
         plt.cla() 

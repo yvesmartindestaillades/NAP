@@ -288,7 +288,8 @@ class Plotter():
         # setting distance_threshold=0 ensures we compute the full tree.
         model = AgglomerativeClustering(distance_threshold=0, n_clusters=None, affinity=affinity, linkage='ward' if affinity == 'euclidean' else 'complete')
         model = model.fit(data)
-        if type(samp) in [str, int]: samp = [str(samp)]
+        if type(samp) in [str, int]: 
+            samp = [str(samp)]
         model.labels_ = [data.index[int(i)] for i in model.labels_]
         plt.title("Hierarchical Clustering Dendrogram")
         # plot the top three levels of the dendrogram
