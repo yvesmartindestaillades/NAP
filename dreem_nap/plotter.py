@@ -17,9 +17,10 @@ from tqdm.auto import tqdm
 
 
 class OutputPlot(object):
-    def __init__(self, fig, ax, data) -> None:
-        self.fig = fig
-        self.ax = ax
+    def __init__(self,data, figsize=None, dpi=None) -> None:
+        self.fig = plt.figure(figsize=figsize, dpi=dpi)
+        self.fig.patch.set_facecolor('white')
+        self.ax = plt.axes()
         self.data = data
 
 class Plotter():
@@ -135,11 +136,11 @@ class Plotter():
         args = locals()
         for attr in ['self','kwargs']:
             del args[attr]
-        fit = manipulator.Fit()        
-        fig = plt.figure(figsize=figsize)
-        ax = plt.axes()
+        fit = manipulator.Fit() 
         assert deltaG in self.__man._df.columns, f"deltaG arg {deltaG} isn't in df columns"
         data = self.__man.collect_x_y_paired_unpaired(cols=[deltaG,'mut_rates'], **{k:v for k,v in args.items() if ((k in self.__man.collect_x_y_paired_unpaired.__code__.co_varnames) and (k != 'cols'))})
+
+        out = OutputPlot(data=data, figsize=figsize)       
 
         for is_paired, color in zip([True,False],['g','r']):
             plt.plot(data[is_paired]['x'],data[is_paired]['y'], color+'.')
@@ -161,7 +162,7 @@ class Plotter():
 
         [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
 
-        return OutputPlot(fig, ax, data)
+        return out
 
 
 
@@ -240,24 +241,6 @@ class Plotter():
         Returns:
             OutputPlot: The plot object.
         """
-        args = locals()
-        del args['self']
-        data = self.__man.get_col_across_constructs(col='mut_rates',\
-                            **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
-        assert metric in ['r2','euclidean','spearman'], f'{metric} is not a valid value for metric'
-        affinity = 'euclidean' if metric == 'euclidean' else 'precomputed'
-        if affinity == 'precomputed':
-            dist_matrix = np.zeros((len(data.index),len(data.index)))
-            index = data.index
-            data = data.reset_index().drop(columns=['index'])
-            for i, u in tqdm(data.iterrows(), total= len(data.index), unit=f' {metric} distance computed', colour='blue'):
-                for j, v in data.iterrows():
-                    u, v = np.array(u), np.array(v)
-                    if metric == 'r2':
-                        dist_matrix[i,j] = 1-r2_score(u,v)
-                    elif metric == 'spearman':
-                        dist_matrix[i,j] = 1-spearmanr(u,v)[0]
-            data = pd.DataFrame(dist_matrix, index=index, columns=index)
 
         def plot_dendrogram(model, **kwargs):
             """ Create linkage matrix and then plot the dendrogram """
@@ -281,23 +264,39 @@ class Plotter():
             R = hierarchy.dendrogram(linkage_matrix, labels=model.labels_, **kwargs)
             return R['ivl']
 
+
+        args = locals()
+        del args['self']
+        data = self.__man.get_col_across_constructs(col='mut_rates',\
+                            **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
+        assert metric in ['r2','euclidean','spearman'], f'{metric} is not a valid value for metric'
+        affinity = 'euclidean' if metric == 'euclidean' else 'precomputed'
+        if affinity == 'precomputed':
+            dist_matrix = np.zeros((len(data.index),len(data.index)))
+            index = data.index
+            data = data.reset_index().drop(columns=['index'])
+            for i, u in tqdm(data.iterrows(), total= len(data.index), unit=f' {metric} distance computed', colour='blue'):
+                for j, v in data.iterrows():
+                    u, v = np.array(u), np.array(v)
+                    if metric == 'r2':
+                        dist_matrix[i,j] = 1-r2_score(u,v)
+                    elif metric == 'spearman':
+                        dist_matrix[i,j] = 1-spearmanr(u,v)[0]
+            data = pd.DataFrame(dist_matrix, index=index, columns=index)
+
+        out = OutputPlot(data, figsize=figsize)
         # setting distance_threshold=0 ensures we compute the full tree.
         model = AgglomerativeClustering(distance_threshold=0, n_clusters=None, affinity=affinity, linkage='ward' if affinity == 'euclidean' else 'complete')
         model = model.fit(data)
-        fig = plt.figure(figsize=figsize, dpi=dpi)
-        ax = plt.axes()
         if type(samp) in [str, int]: samp = [str(samp)]
         model.labels_ = [data.index[int(i)] for i in model.labels_]
         plt.title("Hierarchical Clustering Dendrogram")
         # plot the top three levels of the dendrogram
-        out = OutputPlot(fig, ax, data)
         out.labels = plot_dendrogram(model, truncate_mode="level", orientation='left', **kwargs)
         out.labels.reverse()
         plt.ylabel("Constructs")
         plt.xlabel("Distance")
         [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
-
         plt.show()
-
         return out
 
