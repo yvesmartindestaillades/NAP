@@ -8,6 +8,12 @@ from typing import Tuple, List
 import dreem_nap as nap
 import yaml
 
+class OutputPlot(object):
+    def __init__(self,data, figsize=None, dpi=None) -> None:
+        self.fig = plt.figure(figsize=figsize, dpi=dpi)
+        self.fig.patch.set_facecolor('white')
+        self.ax = plt.axes()
+        self.data = data
 
 def make_path(path:str)->str:
     """Create directories until path exists on your computer. Turns the keyword 'date' into today's date.

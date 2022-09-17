@@ -37,6 +37,7 @@ setup(
        'dreem_nap/wrapper',
        'dreem_nap/study',
        'dreem_nap/data',
+       'dreem_nap/clustering',
    ],
    include_package_data=True,
    install_requires=requirements, #external packages as dependencies

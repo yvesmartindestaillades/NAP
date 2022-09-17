@@ -9,19 +9,8 @@ sys.path.append(os.path.abspath(""))
 from dreem_nap import manipulator
 from itertools import cycle
 
-from scipy.cluster import hierarchy
-from sklearn.cluster import AgglomerativeClustering
-from sklearn.metrics import r2_score
-from scipy.stats import spearmanr
-from tqdm.auto import tqdm
-
-
-class OutputPlot(object):
-    def __init__(self,data, figsize=None, dpi=None) -> None:
-        self.fig = plt.figure(figsize=figsize, dpi=dpi)
-        self.fig.patch.set_facecolor('white')
-        self.ax = plt.axes()
-        self.data = data
+from dreem_nap.clustering import Clustering
+from dreem_nap.util import *
 
 class Plotter():
     def __init__(self, df):
@@ -62,9 +51,6 @@ class Plotter():
         colors = {'A':'r','C':'b','G':'y','T':'g'}
         colors_base = [colors[b] for b in base_type]
 
-        fig = plt.figure(figsize=figsize)
-        ax = plt.axes()
-
         if not plot_type in ['index','partition']:
             raise Exception(f"{plot_type} must be 'index' or 'partition', please check this argument")
 
@@ -72,7 +58,7 @@ class Plotter():
         
         df = self.__man.get_SCC(cols = ['sequence','mut_rates','poisson_low','poisson_high'],\
                         **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
-
+        out = OutputPlot(df, figsize)
         mut_per_base = df[['base','mut_rates']].reset_index().set_index(['base', 'index'])
         df_err_low = df[['base','poisson_low']].reset_index().set_index(['base', 'index'])
         df_err_high = df[['base','poisson_high']].reset_index().set_index(['base', 'index'])
@@ -90,9 +76,9 @@ class Plotter():
         for b in base_type:
             yerr = np.array(df_hist[[b+'_min',b+'_max']]).T
             if show_ci:
-                ax = df_hist.plot.bar(y = b, stacked=True, yerr = yerr, legend=b, color=colors[b], ax=ax)
+                out.ax = df_hist.plot.bar(y = b, stacked=True, yerr = yerr, legend=b, color=colors[b], ax=out.ax)
             else:
-                ax = df_hist.plot.bar(y = b, stacked=True, legend=b, color=colors[b], ax=ax)
+                out.ax = df_hist.plot.bar(y = b, stacked=True, legend=b, color=colors[b], ax=out.ax)
 
         if plot_type == 'partition': # Plot the partition of mutations for each base along the sequence
             df = self.__man.get_SCC(cols = ['sequence','info_bases']+[f"mod_bases_{base}" for base in base_type],\
@@ -101,7 +87,7 @@ class Plotter():
             for base in base_type:
                 df_hist[base]  = np.array(df[f"mod_bases_{base}"]/df['info_bases']).astype(float)
 
-            ax = df_hist.plot.bar(stacked=True, color=colors_base, figsize=figsize)
+            out.ax = df_hist.plot.bar(stacked=True, color=colors_base, figsize=figsize)
 
         if len(str(args['index'])) >50:
             args['index'] = str(args['index'])[:50]+'... ]'
@@ -111,7 +97,7 @@ class Plotter():
 
         [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
         
-        return OutputPlot(fig, ax, df)
+        return out
 
     def deltaG_sample(self, samp:str, deltaG:str, structure:str, index='all', base_type:List[str]=['A','C','G','T'], flank:str=None, sub_lib:str=None, max_mutation:float= 0.15, models:List[str]=[], figsize:Tuple[int]=(20,5), **kwargs)->OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
@@ -166,15 +152,20 @@ class Plotter():
 
 
 
-    def dendrogram(self, samp:str, constructs:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,50), dpi = 600, **kwargs)->OutputPlot:
+    def cluster_dendrogram(self, samp:str, constructs:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,50), dpi = 600, distance_threshold=0, n_clusters=None, **kwargs)->OutputPlot:
         """Plot the mutation rates as histograms.
 
         Args:
             samp (str): Sample(s) of your sample-construct-cluster. A single sample or a list of samples.
             constructs (str): Constructs to plot. Defaults to ``'all'``.
             cluster (int, optional): Cluster of your sample-construct-clusters. Defaults to 0. 
-            metric (str, optional): Metric to use for the clustering. Defaults to ``'euclidean'``.
-            p (int, optional):
+            metric (str, optional): can be  'braycurtis', 'canberra', 'chebyshev', 'cityblock',
+        'correlation', 'cosine', 'dice', 'euclidean', 'hamming',
+        'jaccard', 'jensenshannon', 'kulsinski', 'kulczynski1',
+        'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto',
+        'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath',
+        'spearman', 'sqeuclidean', 'yule' . Defaults to 'euclidean'.
+                p (int, optional):
                 The ``p`` parameter for ``truncate_mode``.
             truncate_mode (str, optional): 
                 The dendrogram can be hard to read when the original
@@ -241,7 +232,73 @@ class Plotter():
         Returns:
             OutputPlot: The plot object.
         """
+    
+        return Clustering(self.__man._df).dendrogram(samp=samp, constructs=constructs, cluster=cluster, metric=metric, index=index, base_type=base_type, base_paired=base_paired, structure=structure, figsize=figsize, dpi = dpi, distance_threshold=distance_threshold, n_clusters=n_clusters, **kwargs)
 
+    def cluster_distance_matrix_heatmap(self, samp:str, constructs:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,10), dpi = 600, distance_threshold=0, n_clusters=None, **kwargs)->OutputPlot:
+        """Plot the distance matrix heatmap.
+
+        Args:
+            samp (str): samples to use
+            constructs (str, optional): constructs to use. Defaults to 'all'.
+            cluster (int, optional): clusters to use. Defaults to 0.
+            metric (str, optional): can be  'braycurtis', 'canberra', 'chebyshev', 'cityblock',
+        'correlation', 'cosine', 'dice', 'euclidean', 'hamming',
+        'jaccard', 'jensenshannon', 'kulsinski', 'kulczynski1',
+        'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto',
+        'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath',
+        'spearman', 'sqeuclidean', 'yule' . Defaults to 'euclidean'.
+            index (str, optional): Defaults to 'all'.
+            base_type (List[str], optional): Defaults to ['A','C','G','T'].
+            base_paired (bool, optional): Defaults to None.
+            structure (str, optional): Defaults to None.
+            figsize (Tuple[int], optional): Defaults to (15,15).
+            dpi (int, optional): Defaults to 300.
+            distance_threshold (int, optional): float, default=None
+        The linkage distance threshold above which, clusters will not be
+        merged. If not ``None``, ``n_clusters`` must be ``None`` and
+        ``compute_full_tree`` must be ``True``. Defaults to 0.
+            n_clusters (int, optional): Number of clusters to find. Defaults to None.
+
+        Returns:
+            OutputPlot: _description_
+        """
+
+        return Clustering(self.__man._df).distance_matrix_heatmap(samp=samp, constructs=constructs, cluster=cluster, metric=metric, index=index, base_type=base_type, base_paired=base_paired, structure=structure, figsize=figsize, dpi = dpi, distance_threshold=distance_threshold, n_clusters=n_clusters, **kwargs)
+
+    def cluster_mut_rates_heatmap(self, samp:str, constructs:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,10), dpi = 600, distance_threshold=0, n_clusters=None, **kwargs)->OutputPlot:
+        """Plot the mutation rate heatmap ordered by a hierarchical cluster.
+
+        Args:
+            samp (str): samples to use
+            constructs (str, optional): constructs to use. Defaults to 'all'.
+            cluster (int, optional): clusters to use. Defaults to 0.
+            metric (str, optional): can be  'braycurtis', 'canberra', 'chebyshev', 'cityblock',
+        'correlation', 'cosine', 'dice', 'euclidean', 'hamming',
+        'jaccard', 'jensenshannon', 'kulsinski', 'kulczynski1',
+        'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto',
+        'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath',
+        'spearman', 'sqeuclidean', 'yule' . Defaults to 'euclidean'.
+            index (str, optional): Defaults to 'all'.
+            base_type (List[str], optional): Defaults to ['A','C','G','T'].
+            base_paired (bool, optional): Defaults to None.
+            structure (str, optional): Defaults to None.
+            figsize (Tuple[int], optional): Defaults to (15,15).
+            dpi (int, optional): Defaults to 300.
+            distance_threshold (int, optional): float, default=None
+        The linkage distance threshold above which, clusters will not be
+        merged. If not ``None``, ``n_clusters`` must be ``None`` and
+        ``compute_full_tree`` must be ``True``. Defaults to 0.
+            n_clusters (int, optional): Number of clusters to find. Defaults to None.
+
+        Returns:
+            OutputPlot: _description_
+        """
+
+        return Clustering(self.__man._df).mut_rates_heatmap(samp=samp, constructs=constructs, cluster=cluster, metric=metric, index=index, base_type=base_type, base_paired=base_paired, structure=structure, figsize=figsize, dpi = dpi, distance_threshold=distance_threshold, n_clusters=n_clusters, **kwargs)
+
+
+    def fake_fun(**kwargs):
         def plot_dendrogram(model, **kwargs):
             """ Create linkage matrix and then plot the dendrogram """
 
