@@ -1,3 +1,4 @@
+import struct
 import pandas as pd
 import numpy as np
 import datetime
@@ -5,7 +6,7 @@ from os.path import exists
 import os
 import matplotlib.pyplot as plt
 from typing import Tuple, List
-from dreem_nap import util
+from dreem_nap.util import *
 
 MAX_MUTATION = 0.3
 
@@ -51,17 +52,18 @@ class Manipulator():
     def assert_structure(self, df, structure):
         assert structure in df.columns, f"Structure {structure} not found"
 
-    def define_index(self, df, samp, construct, cluster, index):
+    def define_index(self, df, sub_df):
+        samp, construct, cluster, index = sub_df.samp, sub_df.construct, sub_df.cluster, sub_df.index 
         if index in ['all','full'] :
             return df.index
         if index == 'roi':
             assert [roi in df.columns for roi in ['ROI_start','ROI_stop']], 'ROI_start and ROI_stop not found'
-            return list(range(int(self.get_series(self._df, samp, construct, cluster)['ROI_start']), int(self.get_series(self._df, samp, construct, cluster)['ROI_stop'])))
+            return list(range(int(self.get_series(self._df, sub_df)['ROI_start']), int(self.get_series(self._df, sub_df)['ROI_stop'])))
         if type(index) in [list,tuple]:
-            assert [i in list(range(len(self.get_series(self._df, samp, construct, cluster)['sequence']))) for i in index], 'Index out of range'
+            assert [i in list(range(len(self.get_series(self._df, sub_df)['sequence']))) for i in index], 'Index out of range'
             return index
         if type(index) == str and not sum([int(a not in ['A','C','G','T']) for a in index]):
-            return self.find_sequence_index(samp, construct, index)
+            return self.find_sequence_index(sub_df)
         raise ValueError(f"Index {index} not recognized")
 
     def filter_base_paired(self, df_loc, base_paired):
@@ -76,7 +78,8 @@ class Manipulator():
         df_loc = pd.concat([df_loc[df_loc['base'] == base] for base in base_type], axis=0)
         return df_loc
 
-    def filter_bases(self, df_loc, base_type, index, base_paired):
+    def filter_bases(self, df_loc, sub_df, index):
+        base_type, base_paired = sub_df.base_type,  sub_df.base_paired
         df_loc = self.filter_index(df_loc, index)
         if base_paired != None:
             assert 'paired' in df_loc.columns, 'Give structure to filter on'
@@ -106,7 +109,8 @@ class Manipulator():
             return df_out
         raise ValueError(f"Sub-library {sub_lib} not recognized")
 
-    def assert_SCC_exists(self, samp, construct, cluster):
+    def assert_SCC_exists(self,sub_df):
+        samp, construct, cluster =  sub_df.samp, sub_df.construct, sub_df.cluster
         if samp != None:
             assert samp in list(self._df['samp']), f"Sample {samp} not found"
             assert construct in list(self._df[self._df['samp']==samp].construct.unique()), f"Construct {construct} not found"
@@ -127,7 +131,7 @@ class Manipulator():
         return list(range(ind, ind+len(sequence)))
 
 
-    def get_col_across_constructs(self, samp:str, col:str, constructs='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None )->pd.DataFrame:
+    def get_col_across_constructs(self, sub_df:SubDF, col:str, flank=None, sub_lib=None )->pd.DataFrame:
         """Returns a dataframe containing the column col for provided constructs in a sample
 
         Args:
@@ -146,67 +150,66 @@ class Manipulator():
             pd.Dataframe: content of the column col across constructs. Columns names are the indexes provided by index and index names (y axis) are the constructs.
         """
         
-        args = locals()
-        del args['samp']
-        del args['self']
         df_dont_touch = self._df
         df = self.filter_flank(df_dont_touch, flank)
         df = self.filter_sub_lib(df, sub_lib)
 
-        if (type(index) == str and not sum([int(a not in ['A','C','G','T']) for a in index])):
+        if (type(sub_df.index) == str and not sum([int(a not in ['A','C','G','T']) for a in sub_df.index])):
             is_seq = True
         else:
             is_seq = False        
 
         stack = pd.DataFrame()
 
-        several_samples = type(samp) in [list, tuple]
+        samples = sub_df.samp
+        several_samples = type(samples) in [list, tuple]
         if not several_samples:
-            samp = [samp]
+            samples = [samples]
 
+        all_constructs = sub_df.construct == 'all'
+        list_construct = sub_df.construct 
+        sub_df_model = sub_df
         stack_index = []
-        for s in samp:
-            if constructs == 'all':
+        for s in samples:
+            if all_constructs:
                 constructs_list = list(df[df.samp == s].construct.unique())
-                stack_index += [str(s)+ ' - ' + c for c in constructs_list] 
             else:
-                constructs_list = constructs
+                constructs_list = list_construct
+            stack_index += [str(s)+ ' - ' + c for c in constructs_list] 
+
             for c in constructs_list:
+                sub_df=sub_df_model 
+                sub_df.samp= s
+                sub_df.construct=c
                 if is_seq:
-                    temp = self.get_SCC(construct=c,  samp = s,cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T
-                    temp.columns = [i for i in index if i in base_type]
+                    temp = self.get_SCC(cols=[col], sub_df=sub_df).T
+                    temp.columns = [i for i in sub_df.index if i in sub_df.base_type]
                     stack = pd.concat((stack, temp))
                 else:
-                    stack = pd.concat((stack, self.get_SCC(construct=c, samp = s, cols=[col], **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and k not in ['self','col']}).T))
+                    stack = pd.concat((stack, self.get_SCC(cols=[col], sub_df=sub_df).T))
         stack.index = stack_index
         return stack
 
 
-    def get_SCC(self, samp, construct, cols, cluster=0, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None,can_be_empty=False)->pd.DataFrame:
+    
+
+    def get_SCC(self, cols, sub_df,can_be_empty=False)->pd.DataFrame:
         """Returns a dataframe containing the content of a cluster of a sample-construct.
 
         Args:
-            samp (str): The sample name.
-            construct (str): The construct name.
-            cols (list): The columns to be returned.
-            cluster (int, optional): The cluster number. Defaults to 0.
-            structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
-            base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
-            index (str, optional): Index to include. Defaults to 'all'. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
-            base_paired (bool, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
-            can_be_empty (bool, optional): If True, returns an empty dataframe if no row is found. Defaults to False.
+            sub_df
 
         Returns:
             pd.Dataframe: dataframe containing the content of a cluster of a sample-construct.
         """
-
-        self.assert_SCC_exists( samp, construct, cluster)
+        
+        self.assert_SCC_exists(sub_df)
         df = self._df
 
-        if structure != None:
-            self.assert_structure(df, structure)
-            assert len([c for c in cols if c.startswith('structure')])==0, f"{structure} should be entered as a structure= argument, not as a col. Cols can't contain structure."
-            cols += [structure]
+        if sub_df.structure != None:
+            self.assert_structure(df, sub_df.structure)
+            assert len([c for c in cols if c.startswith('structure')])==0, f"{sub_df.structure} should be entered as a structure= argument, not as a col. Cols can't contain structure."
+            cols += [sub_df.structure]
 
         remove_bases_flag = False
         if 'sequence' not in cols:
@@ -216,7 +219,7 @@ class Manipulator():
         for col in cols:
             assert col in df.columns, f"Column {col} not found"
 
-        df_loc = self.get_series(df, samp, construct, cluster, can_be_empty)
+        df_loc = self.get_series(df, sub_df, can_be_empty)
         for col in [c for c in cols if type(df_loc[c]) in [str]]:
             df_loc[col] = list(df_loc[col])
 
@@ -226,13 +229,14 @@ class Manipulator():
             df_loc = df_loc.drop(columns=st)
         
         df_loc = df_loc.rename(columns={'sequence':'base'})
-        index = self.define_index(df_loc, samp, construct, cluster, index)
-        df_loc = self.filter_bases(df_loc, base_type, index, base_paired)
+        index = self.define_index(df_loc,sub_df)
+        df_loc = self.filter_bases(df_loc,sub_df, index)
         if remove_bases_flag:
             df_loc = df_loc.drop(columns='base')
         return df_loc.sort_index()
 
-    def get_series(self, df, samp, construct, cluster, can_be_empty=False):
+    def get_series(self, df, sub_df, can_be_empty=False):
+        samp, construct, cluster = sub_df.samp, sub_df.construct, sub_df.cluster
         if samp == None:
             if cluster == None:
                 df_out = df[df['construct'] == construct]
@@ -270,7 +274,7 @@ class Manipulator():
             return df.set_index('construct').sort_values(column)[column].groupby('construct').apply(lambda x:np.array(x)[0]).sort_values()
       
 
-    def collect_x_y_paired_unpaired(self, cols:Tuple, samp, structure, cluster=None, max_mutation=MAX_MUTATION, base_type=['A','C','G','T'], index='all'):
+    def collect_x_y_paired_unpaired(self, cols:Tuple, sub_df:SubDF, max_mutation=MAX_MUTATION):
 
         args = locals()
         args.pop('self')
@@ -281,29 +285,42 @@ class Manipulator():
             if len(x) != 0:
                 stack[is_paired]['x'] += list(x)
                 stack[is_paired]['y'] += list(y)
-
-        def clean_stack(stack, max_mutation):
-            for is_paired in [True,False]:
-                for ax in ['x','y']:
-                    stack[is_paired][ax] = np.array(stack[is_paired][ax]).reshape(1,-1)[0]
-                if max_mutation:
-                    assert 'mut_rates' in cols, 'max_mutation requires mut_rates'
-                    stack[is_paired]['y'][stack[is_paired]['y'] >= max_mutation] = np.nan
-
-            for is_paired in [True,False]:
-                for ax in ['x','y']:
-                    v = stack[is_paired]['x']
-                    stack[is_paired]['x'] = stack[is_paired]['x'][~np.isnan(stack[is_paired][ax])]
-                    stack[is_paired]['y'] = stack[is_paired]['y'][~np.isnan(stack[is_paired][ax])]
             return stack
 
-        for construct in df[df['samp']==samp]['construct'].unique():
-            for cluster in df[df['construct'] == construct].cluster.unique() if cluster is None else [cluster]:
-                df_SCC = self.get_SCC(cols=cols.copy(),construct=construct,can_be_empty=True, **{k:v for k,v in args.items() if k in self.get_SCC.__code__.co_varnames and (k not in ['cols','df'])})
+        for construct in df[df['samp']==sub_df.samp]['construct'].unique():
+            for cluster in df[df['construct'] == construct].cluster.unique() if sub_df.cluster is None else [sub_df.cluster]:
+                sub_df.construct, sub_df.cluster = construct, cluster
+                df_SCC = self.get_SCC(cols=cols.copy(),sub_df=sub_df,can_be_empty=True)
                 for is_paired in [True,False]:
-                    stack_up(df_SCC[df_SCC.paired == is_paired][cols[0]], df_SCC[df_SCC.paired == is_paired][cols[1]], stack, is_paired)
-        stack = clean_stack(stack, max_mutation)
+                    stack = stack_up(df_SCC[df_SCC.paired == is_paired][cols[0]], df_SCC[df_SCC.paired == is_paired][cols[1]], stack, is_paired)
+        stack = self.__clean_stack(stack, cols, max_mutation)
         return stack
+
+
+    def col_across_samples(self, study, sub_df, models):
+        args = locals()
+        args.pop('self')
+        stack = {True:{'x':[],'y':[]},False:{'x':[],'y':[]}}
+        df = self._df.copy()
+        # TODO
+    
+
+
+    def __clean_stack(self, stack, cols, max_mutation):
+        for is_paired in [True,False]:
+            for ax in ['x','y']:
+                stack[is_paired][ax] = np.array(stack[is_paired][ax]).reshape(1,-1)[0]
+            if max_mutation:
+                assert 'mut_rates' in cols, 'max_mutation requires mut_rates'
+                stack[is_paired]['y'][stack[is_paired]['y'] >= max_mutation] = np.nan
+
+        for is_paired in [True,False]:
+            for ax in ['x','y']:
+                v = stack[is_paired]['x']
+                stack[is_paired]['x'] = stack[is_paired]['x'][~np.isnan(stack[is_paired][ax])]
+                stack[is_paired]['y'] = stack[is_paired]['y'][~np.isnan(stack[is_paired][ax])]
+        return stack
+
 
     def columns_to_csv(self, columns:List[str],  file:str, samples='all')->pd.DataFrame:
         """Save a set of columns of a Dataframe into a csv file.
