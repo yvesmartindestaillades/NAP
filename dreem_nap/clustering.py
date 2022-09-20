@@ -13,17 +13,19 @@ import scipy
 import seaborn as sns
 
 class Clustering:
-    def __init__(self, df) -> None:
-        self.__man = Manipulator(df)
+    def __init__(self, man) -> None:
+        self.__man = man
 
-    def mut_rates_heatmap(self, samp:str, constructs:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None,  figsize:Tuple[int]=(15,15), dpi = 300, distance_threshold=0, n_clusters=None, linkage='complete', **kwargs)->OutputPlot:
+    def mut_rates_heatmap(self,  sub_df:SubDF, mpl_attr:MplAttr, metric:str='euclidean', distance_threshold=0, n_clusters=None, linkage='complete', **kwargs)->OutputPlot:
         args = locals()
-        del args['self']    
-        data = self.__man.get_col_across_constructs(col='mut_rates',\
-                    **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
+        del args['self']
+    
+        data = self.__man.get_col_across_constructs(col='mut_rates',sub_df=sub_df)
         model = self.__build_model(data, metric, distance_threshold, n_clusters, linkage, **kwargs)
-        out = OutputPlot(data,figsize=figsize, dpi=dpi)
-        out.labels = self.__get_labels(model)
+
+        labels = self.__get_labels(model)
+        out = OutputPlot(data,mpl_attr=mpl_attr)
+        out.labels = labels
         out.data = data.reindex(out.labels)
         plt.title("Mutation rates sorted with hierarchical clustering by distance ".format(metric))
         plt.xlabel("Bases")
@@ -33,18 +35,19 @@ class Clustering:
         plt.tight_layout()
         return out
 
-    def distance_matrix_heatmap(self, samp:str, constructs:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None,  figsize:Tuple[int]=(15,15), dpi = 300, distance_threshold=0, n_clusters=None, linkage='complete', **kwargs)->OutputPlot:
+    def distance_matrix_heatmap(self, sub_df:SubDF, mpl_attr:MplAttr, metric:str='euclidean', distance_threshold=0, n_clusters=None, linkage='complete', **kwargs)->OutputPlot:
         args = locals()
         del args['self']    
-        data = self.__man.get_col_across_constructs(col='mut_rates',\
-                    **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
+        data = self.__man.get_col_across_constructs(col='mut_rates',sub_df=sub_df)
         dist_matrix = self.__compute_matrix(data, metric=metric)
         model = self.__build_model(data, metric, distance_threshold, n_clusters, linkage, **kwargs)
-        out = OutputPlot(data,figsize=figsize, dpi=dpi)
-        out.labels = self.__get_labels(model)
+        labels = self.__get_labels(model)
+
+        out = OutputPlot(data,mpl_attr=mpl_attr)
+        out.labels = labels
         for axis in [0,1]:
             dist_matrix = dist_matrix.reindex(out.labels, axis=axis)
-        out.data = data.reindex(out.labels, axis=axis)
+        out.data = data.reindex(out.labels)
         plt.title("Distance Matrix {}".format(metric))
         plt.xlabel("Constructs")
         plt.ylabel("Constructs")
@@ -53,14 +56,12 @@ class Clustering:
         plt.tight_layout()
         return out
 
-    def dendrogram(self, samp:str, constructs:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None,  figsize:Tuple[int]=(10,50), dpi = 600, distance_threshold=0, n_clusters=None, linkage='complete', **kwargs)->OutputPlot:
+    def dendrogram(self, sub_df:SubDF, mpl_attr:MplAttr, metric:str='euclidean', distance_threshold=0, n_clusters=None, linkage='complete', **kwargs)->OutputPlot:
         args = locals()
         del args['self']
-        data = self.__man.get_col_across_constructs(col='mut_rates',\
-                            **{k:v for k,v in args.items() if k in self.__man.get_SCC.__code__.co_varnames})
+        data = self.__man.get_col_across_constructs(col='mut_rates', sub_df=sub_df)
         model = self.__build_model(data, metric, distance_threshold, n_clusters, linkage, **kwargs)
-        out = OutputPlot(data,figsize=figsize, dpi=dpi)
-        out.labels = self.__plot_dendrogram(model, truncate_mode="level", orientation='left', **kwargs)
+        out = self.__plot_dendrogram(model, data, mpl_attr=mpl_attr,**kwargs)
         out.data = out.data.reindex(out.labels)
         plt.title("Hierarchical Clustering Dendrogram")
         plt.ylabel("Constructs")
@@ -69,10 +70,10 @@ class Clustering:
         plt.tight_layout()
         return out
 
-    def __plot_dendrogram(self, model,close=False, **kwargs):
+    def __plot_dendrogram(self, model, data=None, mpl_attr=None, close_plot=False, **kwargs):
         """ Create linkage matrix and then plot the dendrogram """
-
         # create the counts of samples under each node
+        out = OutputPlot(data=data,mpl_attr=mpl_attr)
         counts = np.zeros(model.children_.shape[0])
         n_samples = len(model.labels_)
         for i, merge in enumerate(model.children_):
@@ -88,10 +89,12 @@ class Clustering:
             [model.children_, model.distances_, counts]
         ).astype(float)
         # Plot the corresponding dendrogram
-        dend = hierarchy.dendrogram(linkage_matrix, labels=model.labels_, **{k:v for k,v in kwargs.items() if k in hierarchy.dendrogram.__code__.co_varnames})
-        plt.close(close)
+        dend = hierarchy.dendrogram(linkage_matrix, labels=model.labels_, truncate_mode="level", orientation='left',**{k:v for k,v in kwargs.items() if k in hierarchy.dendrogram.__code__.co_varnames})
+        if close_plot: 
+            plt.close()
         dend['ivl'].reverse()
-        return dend['ivl']
+        out.labels = dend['ivl']
+        return out
 
     def __compute_matrix(self, data, metric):
         """Compute the distance matrix between the data.
@@ -107,9 +110,10 @@ class Clustering:
             dist_matrix = scipy.spatial.distance.squareform(hierarchy.distance.pdist(data, metric=metric))
         else:
             dist_matrix = np.zeros((len(data.index),len(data.index)))
-            for i, u in tqdm(data.iterrows(), total= len(data.index), unit=f' {metric} distance computed', colour='blue'):
-                for j, v in data.iterrows():
-                    dist_matrix[i,j] = 1-spearmanr(np.array(u), np.array(v))[0]
+            data_iter = data.reset_index().drop(columns='index')
+            for i, u in tqdm(data_iter.iterrows(), total= len(data.index), unit=f' {metric} distance computed', colour='blue'):
+                for j, v in data_iter.iterrows():
+                    dist_matrix[i,j] = 1 - spearmanr(np.array(u), np.array(v))[0]
 
         return pd.DataFrame(dist_matrix, index=data.index, columns=data.index)
 
@@ -126,8 +130,8 @@ class Clustering:
         """
         model = AgglomerativeClustering(distance_threshold=distance_threshold, 
                                         n_clusters=n_clusters, 
-                                         affinity='precomputed',
-                                            linkage=linkage,
+                                        affinity='precomputed',
+                                        linkage=linkage,
                                         **{k:v for k,v in kwargs.items() if k in AgglomerativeClustering.__init__.__code__.co_varnames})
         model = model.fit(self.__compute_matrix(data, metric=metric))
         model.labels_ = [model.feature_names_in_[i] for i in model.labels_]
@@ -143,4 +147,5 @@ class Clustering:
         Returns:
             np.array: the sorted labels
         """
-        return self.__plot_dendrogram(model, close=True, figsize=(2,2))
+        out = self.__plot_dendrogram(model, close_plot=True, figsize=(2,2))
+        return out.labels

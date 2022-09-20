@@ -1,3 +1,5 @@
+from genericpath import exists
+from random import sample
 from typing import List
 from dreem_nap import plotter, manipulator, util
 from dreem_nap.loader import df_from_local_files
@@ -60,15 +62,76 @@ class Study(object):
         if conditions != None and len(conditions) != len(samples):
             raise f"Number of samples ({len(samples)})and number of conditions ({len(conditions)}) don't match"
 
-    def get_df(self):
-        return self._df
+    def get_df(self, samp=None, construct=None, cluster=None, cols='all',structure=None,base_type=['A','C','G','T'],index='all',base_paired=None,sub_lib=None,flank=None,can_be_empty=False):
+        """_summary_
+
+        Returns:
+            samp (str): The sample name.
+            construct (str): The construct name.
+            cols (list): The columns to be returned. Default is 'all'
+            cluster (int, optional): The cluster number. Defaults to 0.
+            structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
+            base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
+            index (str, optional): Index to include. Defaults to 'all'. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
+            base_paired (bool, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
+            sub_lib (str, optional): Sub-library
+            flank (str, optional): Flank
+            can_be_empty (bool, optional): If True, returns an empty dataframe if no row is found. Defaults to False.
+        """
+        df = self._df.copy()
+        sub_df = util.SubDF.from_locals(locals())
+        df = self.mani.filter_flank(df, flank)
+        df = self.mani.filter_sub_lib(df, sub_lib)
+        stack_index = False
+        if samp == None:
+            samp = df.samp.unique()
+        if type(samp) in [str,int]:
+            samp = [samp]
+            stack_index = []
+        if construct == None:
+            construct = df.construct.unique()
+        if type(construct) in [str, int]:
+            construct = [construct]
+        filter_by_cluster = cluster != None
+        stack = pd.DataFrame()
+        if cols=='all':
+            cols = df.columns
+
+        def stack_up(stack, sub_df, stack_index, cols):
+            if stack_index:
+                stack_index += [s+' - '+c]
+            temp = self.mani.get_SCC(cols=cols,sub_df=sub_df,can_be_empty=True)
+            if not temp.empty:
+                stack = pd.concat((stack, pd.DataFrame({k:list(temp[k]) for k in cols})))
+            return stack
+
+        for s in list(set(samp)&set(df.samp.unique())) :
+            for c in list(set(construct)&set(df.construct.unique())):
+                sub_df.samp = s
+                sub_df.construct = c
+                if filter_by_cluster:
+                    for cl in list(set(cluster)&set(df[(df.samp==s) & (df.construct==c)]['cluster'].unique())):
+                        sub_df_temp = sub_df
+                        sub_df_temp.cluster = cl
+                        stack = stack_up(stack, sub_df_temp, stack_index, cols)
+                else:
+                    stack = stack_up(stack, sub_df, stack_index, cols)
+        if stack_index:
+            stack.index = stack_index
+        return stack
 
     def set_df(self, df):
         self._df = df
         self.plot = plotter.Plotter(df)
         self.mani = manipulator.Manipulator(df)
         return df
+    
+    def get_constructs(self, samp:str):
+        return self._df[self._df['samp'] == samp]['construct'].unique()
 
+    def get_clusters(self, samp:str, construct:str):
+        return self._df[(self._df['samp'] == samp) & (self._df['construct'] == construct)]['cluster'].unique()
+        
     @classmethod
     def from_dict(cls, di:dict):
         """Set attributes of this Study object from a dictionary.
@@ -91,19 +154,38 @@ class Study(object):
             except: 
                 di[attr]=None
         return cls(di['name'], di['samples'], di['conditions'], di['label'], di['description'])
-         
 
        
     def load_studies(studies_file_path:str):
         return load_studies(studies_file_path)
 
+
     def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int, filter_by='study', index='all', base_type = ['A','C','G','T'], base_paired=None, structure=None)->pd.DataFrame:
-        args = locals()
-        del args['self']
-        df = self.set_df(df_from_local_files(path_to_data, min_cov_bases, self.samples, self.name, filter_by, **{k:v for k,v in args.items() if k in manipulator.Manipulator(pd.DataFrame()).get_SCC.__code__.co_varnames}))
+        sub_df = util.SubDF.from_locals(locals())
+        df = self.set_df(df_from_local_files(path_to_data, min_cov_bases, self.samples, self.name, filter_by, sub_df))
         self.constructs = df['construct'].unique()
         return df
 
+    def get_col_across_constructs(self, samp:str, col:str, construct='all', cluster=None, structure=None, base_type = ['A','C','G','T'], index='all', base_paired=None, flank=None, sub_lib=None )->pd.DataFrame:
+        """Returns a dataframe containing the column col for provided constructs in a sample
+
+        Args:
+            samp (str): Sample(s) of your sample-construct-cluster. A single sample or a list of samples.
+            col (list): The column to be returned.
+            constructs (str): The constructs name. Defaults to 'all'.
+            cluster (int, optional): The cluster number. Defaults to 0.
+            structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
+            base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
+            index (str, optional): Index to include. Defaults to 'all'. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
+            base_paired (bool, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
+            flank (str or list, optional): Flank or list of flanks to filter constructs by. Defaults to None.
+            sub_lib (str or list, optional): Sub-library or list of sub-libraries to filter constructs by. Defaults to None.
+
+        Returns:
+            pd.Dataframe: content of the column col across constructs. Columns names are the indexes provided by index and index names (y axis) are the constructs.
+        """
+        sub_df = util.SubDF.from_locals(locals)
+        return self.__mani.get_col_across_constructs(sub_df, col, flank, sub_lib )
 
 
 def load_studies(studies_file_path:str)->dict[str:Study]:
