@@ -1,35 +1,32 @@
-import pandas as pd
 import numpy as np
 import datetime
 from os.path import exists
 import os
 import matplotlib.pyplot as plt
 from typing import Tuple, List
-import dreem_nap as nap
-import yaml
+
+from plotly.validators.scatter.marker import SymbolValidator
+import plotly.offline as pyo
+vals = SymbolValidator().values
+
+def Setshape(x):
+        vals = SymbolValidator().values
+        return vals[3*x]
 
 class OutputPlot(object):
-    def __init__(self,data, mpl_attr) -> None:
-        if not hasattr(mpl_attr,'figsize'):
-            setattr(mpl_attr, 'figsize',None)
-        if not hasattr(mpl_attr,'dpi'):
-            setattr(mpl_attr, 'dpi',None)
-        self.fig = plt.figure(figsize=mpl_attr.figsize, dpi=mpl_attr.dpi)
-        self.fig.patch.set_facecolor('white')
-        self.ax = plt.axes()
-        if hasattr(mpl_attr,'title_fontsize'):
-            self.ax.set_title('', fontsize = mpl_attr.title_fontsize)
-        if hasattr(mpl_attr,'xticks_fontsize'):
-            self.ax.set_xlabel('', fontsize = mpl_attr.xticks_fontsize)
-        if hasattr(mpl_attr,'yticks_fontsize'):
-            self.ax.set_ylabel('', fontsize = mpl_attr.yticks_fontsize)
+    def __init__(self,data, fig) -> None:
         self.data = data
+        self.fig = fig
 
 class SubDF(object):
     def __init__(self, samp=None,construct=None, cluster=0, structure='structure', base_paired=None, index='all', base_type=['A','C']) -> None:
         for k,v in locals().items():
             setattr(self, k, v)
-    
+
+    def update(self, **kwargs):
+        for k,v in kwargs.items():
+            setattr(self, k, v)
+            
     @classmethod
     def from_locals(cls, loc):
         return cls(**{k:v for k,v in loc.items() if (k in SubDF.__init__.__code__.co_varnames and k !='self')})

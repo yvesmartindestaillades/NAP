@@ -4,7 +4,7 @@ from typing import List
 from dreem_nap import plotter, manipulator, util
 from dreem_nap.loader import df_from_local_files
 import pandas as pd
-
+from dreem_nap import deltaG
 
 class Study(object):
     """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
@@ -62,7 +62,7 @@ class Study(object):
         if conditions != None and len(conditions) != len(samples):
             raise f"Number of samples ({len(samples)})and number of conditions ({len(conditions)}) don't match"
 
-    def get_df(self, samp=None, construct=None, cluster=None, cols='all',structure=None,base_type=['A','C','G','T'],index='all',base_paired=None,sub_lib=None,flank=None,can_be_empty=False):
+    def get_df(self, **kwargs):
         """_summary_
 
         Returns:
@@ -78,47 +78,7 @@ class Study(object):
             flank (str, optional): Flank
             can_be_empty (bool, optional): If True, returns an empty dataframe if no row is found. Defaults to False.
         """
-        df = self._df.copy()
-        sub_df = util.SubDF.from_locals(locals())
-        df = self.mani.filter_flank(df, flank)
-        df = self.mani.filter_sub_lib(df, sub_lib)
-        stack_index = False
-        if samp == None:
-            samp = df.samp.unique()
-        if type(samp) in [str,int]:
-            samp = [samp]
-            stack_index = []
-        if construct == None:
-            construct = df.construct.unique()
-        if type(construct) in [str, int]:
-            construct = [construct]
-        filter_by_cluster = cluster != None
-        stack = pd.DataFrame()
-        if cols=='all':
-            cols = df.columns
-
-        def stack_up(stack, sub_df, stack_index, cols):
-            if stack_index:
-                stack_index += [s+' - '+c]
-            temp = self.mani.get_SCC(cols=cols,sub_df=sub_df,can_be_empty=True)
-            if not temp.empty:
-                stack = pd.concat((stack, pd.DataFrame({k:list(temp[k]) for k in cols})))
-            return stack
-
-        for s in list(set(samp)&set(df.samp.unique())) :
-            for c in list(set(construct)&set(df.construct.unique())):
-                sub_df.samp = s
-                sub_df.construct = c
-                if filter_by_cluster:
-                    for cl in list(set(cluster)&set(df[(df.samp==s) & (df.construct==c)]['cluster'].unique())):
-                        sub_df_temp = sub_df
-                        sub_df_temp.cluster = cl
-                        stack = stack_up(stack, sub_df_temp, stack_index, cols)
-                else:
-                    stack = stack_up(stack, sub_df, stack_index, cols)
-        if stack_index:
-            stack.index = stack_index
-        return stack
+        return manipulator.get_df(self._df, **kwargs)
 
     def set_df(self, df):
         self._df = df
@@ -186,6 +146,76 @@ class Study(object):
         """
         sub_df = util.SubDF.from_locals(locals)
         return self.__mani.get_col_across_constructs(sub_df, col, flank, sub_lib )
+    
+    # Plots
+
+    def deltaG_per_sample(self, **kwargs)->util.OutputPlot:
+        """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
+
+        Args:
+            samp (str): Sample of your sample-construct-cluster.
+            deltaG (str): DeltaG to use as x axis.
+            structure (str, optional): Structure to use for base-paired filtering.
+            index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
+            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
+            flank (str, optional): Flank or list of flanks to filter by. Defaults to None.
+            sub_lib (str, optional): Sub-library or list of sub-libraries to filter by. Defaults to None.
+            max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
+            models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
+            figsize (Tuple[int], optional): Figure size. Defaults to (20,5).
+            title_fontsize (int, optional): Title font size. Defaults to 40.
+            xyticks_fontsize (int, optional): X and Y ticks font size. Defaults to 30.
+            **kwargs: Other arguments to pass to matplotlib.pyplot.
+
+        Returns:
+            OutputPlot: Figure and data of the output plot.
+        """
+        return deltaG.per_sample(self._df, **kwargs)
+
+    
+    def deltaG_per_base(self, **kwargs)->util.OutputPlot:
+        """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
+
+        Args:
+            construct (str): Construct of your sample-construct-cluster.
+            experimental_variable (str): x axis column value, must be a per-sample attribute.
+            cluster (str): Cluster of your sample-construct-cluster.
+            structure (str, optional): Structure to use for base-paired filtering.
+            index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
+            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
+            max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
+            models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
+            **kwargs: Other arguments to pass to matplotlib.pyplot.
+
+        Returns:
+            OutputPlot: Figure, axis and data of the output plot.
+        """
+        return deltaG.per_base(self._df, **kwargs)
+
+    def mutation_histogram(self, **kwargs):
+        """Plot the mutation rates as histograms.
+
+        Args:
+        samp (str): Sample of your sample-construct-cluster.
+        construct (str): Construct of your sample-construct-cluster.
+        cluster (int, optional): Cluster of your sample-construct-cluster. Defaults to 0. 
+        index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
+        base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
+        base_paired (bool, optional): Base-pairing predicition to plot. Defaults to None.
+        structure (str, optional): Structure to use for base_paired filtering. Defaults to None.
+        show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
+        figsize (Tuple[int], optional): Figure size. Defaults to (35,7).
+        title_fontsize (int, optional): Title font size. Defaults to 40.
+        yticks_fontsize (int, optional): Ytick font size. Defaults to 30.
+        **kwargs: Other arguments to pass to matplotlib.pyplot.
+
+        Raises:
+        Exception: plot_type is not ``index`` or ``partition``.
+
+        Returns:
+        OutputPlot: Figure, axis and data of the output plot.
+        """
+        return plotter.mut_histogram(self._df, **kwargs)
 
 
 def load_studies(studies_file_path:str)->dict[str:Study]:

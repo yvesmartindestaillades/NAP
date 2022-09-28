@@ -7,28 +7,36 @@ import os
 import matplotlib.pyplot as plt
 from typing import Tuple, List
 from dreem_nap.util import *
+import scipy.stats
 
 MAX_MUTATION = 0.3
 
 from typing import Tuple
 from scipy.optimize import curve_fit
 from itertools import cycle
+from dreem_nap import util
 
 class Fit(object):
     def __init__(self) -> None:
-        self.legend = []
+        self.legend = ''
     
-    def clean_legend(self):
-        self.legend = []
+    def get_legend(self):
+        return self.legend
 
     def predict(self, x, y, model, prefix='', suffix=''):
-        fit = self.fit(x,y,model, prefix, suffix)
+        fit = self.fit(x,y,model)
         m = eval(model)
+        try:
+            linreg  = scipy.stats.linregress(y,m(x,*fit))
+            self.rvalue = round(linreg.rvalue,5)
+        except:
+            self.rvalue = 'error'
+
+        self._generate_legend(fit, model, prefix, suffix)
         return np.sort(x), m(np.sort(x),*fit)
 
-    def fit(self, x,y, model, prefix, suffix):
+    def fit(self, x,y, model):
         fit = curve_fit(eval(model), x, y)[0]
-        self._generate_legend(fit, model, prefix, suffix)
         return fit
 
     def _generate_legend(self, fit, m, prefix, suffix):
@@ -39,7 +47,51 @@ class Fit(object):
         fun_args[-1] = fun_args[-1][0]
         for a,b in zip(fun_args,fit):
             second_slice = second_slice.replace(a.strip(),str(round(b,5)))
-        self.legend += [prefix+ str(m) + 5*' ' + second_slice + suffix]
+        self.legend = prefix+ second_slice + suffix +f'\n R2={self.rvalue}'
+
+def get_df(df: pd.DataFrame, samp=None, construct=None, cluster=None, cols='all',structure=None,base_type=['A','C','G','T'],index='all',base_paired=None,sub_lib=None,flank=None,can_be_empty=False):
+
+    sub_df = util.SubDF.from_locals(locals())
+    mani = Manipulator(df)
+    df = mani.filter_flank(df, flank)
+    df = mani.filter_sub_lib(df, sub_lib)
+    stack_index = False
+    if samp == None:
+        samp = df.samp.unique()
+    if type(samp) in [str,int]:
+        samp = [samp]
+        stack_index = []
+    if construct == None:
+        construct = df.construct.unique()
+    if type(construct) in [str, int]:
+        construct = [construct]
+    filter_by_cluster = cluster != None
+    stack = pd.DataFrame()
+    if cols=='all':
+        cols = df.columns
+
+    def stack_up(stack, sub_df, stack_index, cols):
+        if stack_index:
+            stack_index += [s+' - '+c]
+        temp = mani.get_SCC(cols=cols,sub_df=sub_df,can_be_empty=True)
+        if not temp.empty:
+            stack = pd.concat((stack, pd.DataFrame({k:list(temp[k]) for k in cols})))
+        return stack
+
+    for s in list(set(samp)&set(df.samp.unique())) :
+        for c in list(set(construct)&set(df.construct.unique())):
+            sub_df.samp = s
+            sub_df.construct = c
+            if filter_by_cluster:
+                for cl in list(set(cluster)&set(df[(df.samp==s) & (df.construct==c)]['cluster'].unique())):
+                    sub_df_temp = sub_df
+                    sub_df_temp.cluster = cl
+                    stack = stack_up(stack, sub_df_temp, stack_index, cols)
+            else:
+                stack = stack_up(stack, sub_df, stack_index, cols)
+    if stack_index:
+        stack.index = stack_index
+    return stack
 
 
 class Manipulator():
@@ -208,10 +260,14 @@ class Manipulator():
 
         if sub_df.structure != None:
             self.assert_structure(df, sub_df.structure)
+
             assert len([c for c in cols if c.startswith('structure')])==0, f"{sub_df.structure} should be entered as a structure= argument, not as a col. Cols can't contain structure."
             cols += [sub_df.structure]
 
         remove_bases_flag = False
+        if 'base' in cols:
+            cols.remove('base')
+            cols = cols+['sequence']
         if 'sequence' not in cols:
             cols += ['sequence']
             remove_bases_flag = True
@@ -220,9 +276,8 @@ class Manipulator():
             assert col in df.columns, f"Column {col} not found"
 
         df_loc = self.get_series(df, sub_df, can_be_empty)
-        for col in [c for c in cols if type(df_loc[c]) in [str]]:
+        for col in [c for c in cols if (type(df_loc[c]) in [str] and c not in ['construct', 'samp', 'cluster'])]:
             df_loc[col] = list(df_loc[col])
-
         df_loc = pd.DataFrame({col: df_loc[col] for col in cols})
         for st in [col for col in cols if col.startswith('structure')]:
             df_loc['paired'] = [{'.':False,'(':True,')':True}[x] for x in df_loc[st]]
@@ -287,13 +342,18 @@ class Manipulator():
                 stack[is_paired]['y'] += list(y)
             return stack
 
-        for construct in df[df['samp']==sub_df.samp]['construct'].unique():
-            for cluster in df[df['construct'] == construct].cluster.unique() if sub_df.cluster is None else [sub_df.cluster]:
-                sub_df.construct, sub_df.cluster = construct, cluster
+        df_paired, df_unpaired = pd.DataFrame(), pd.DataFrame()
+
+        for row in df[df.samp==sub_df.samp].itertuples():
+                sub_df.construct, sub_df.cluster = row.construct, row.cluster
                 df_SCC = self.get_SCC(cols=cols.copy(),sub_df=sub_df,can_be_empty=True)
-                for is_paired in [True,False]:
-                    stack = stack_up(df_SCC[df_SCC.paired == is_paired][cols[0]], df_SCC[df_SCC.paired == is_paired][cols[1]], stack, is_paired)
-        stack = self.__clean_stack(stack, cols, max_mutation)
+                temp = {True:pd.DataFrame(),False:pd.DataFrame()}
+                for col in cols:
+                    for paired in [True,False]:
+                        temp[paired][col] = df_SCC[df_SCC.paired==paired][col]
+                df_paired = pd.concat((df_paired,temp[True]))
+                df_unpaired = pd.concat((df_unpaired,temp[False]))
+       # stack = self.__clean_stack(stack, cols, max_mutation)
         return stack
 
 

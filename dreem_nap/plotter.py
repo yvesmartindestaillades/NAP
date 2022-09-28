@@ -6,15 +6,103 @@ import matplotlib.pyplot as plt
 import os, sys
 
 sys.path.append(os.path.abspath(""))
-from dreem_nap import manipulator
+from dreem_nap.manipulator import Manipulator
 
 from dreem_nap.clustering import Clustering
 from dreem_nap.util import *
-from dreem_nap.deltaG import DeltaG
+from dreem_nap import deltaG
+import plotly
+
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+from dreem_nap.manipulator import Fit, Manipulator
+
+
+def mut_histogram(df, samp:str, construct:str, cluster:int=0, structure:str=None, show_ci:bool=True)->OutputPlot:
+
+    mh = Manipulator(df).get_series(df, SubDF.from_locals(locals()))
+    xaxis_coordinates = [i for i in range(len(mh.sequence) -1)]
+
+    mut_y = []
+    for pos in range(len(mh.sequence)):
+        try:
+            mut_frac = mh.mut_bases[pos] / mh.info_bases[pos]
+        except:
+            mut_frac = 0.0
+        mut_y.append(mut_frac)
+        mut_frac = round(mut_frac, 5)
+
+    cmap = {"A": "red", "T": "green", "G": "orange", "C": "blue"}  # Color map
+    colors = []
+    ref_bases = []
+    hover_attr = pd.DataFrame({'mut_rate':mut_y,
+                                'base':list(mh.sequence), 
+                                'index':list(range(len(mh.sequence))),
+                                'paired':[{'.':True, '(':False,')':False}[s] for s in mh.structure]})
+    for i in range(len(mh.sequence)):
+        if i >= len(mh.sequence)-1:
+            continue
+        colors.append(cmap[mh.sequence[i - 1]])
+        ref_bases.append(mh.sequence[i - 1])
+    mut_trace = go.Bar(
+            x=xaxis_coordinates,
+            y=mut_y,
+            text=hover_attr,
+            marker=dict(color=colors),
+            showlegend=False,
+            hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)]),
+        )   
+    
+    if show_ci:
+        mut_trace.update(
+           error_y=dict(
+                type='data',
+                symmetric=False,
+                array=mh.poisson_high,
+                arrayminus=mh.poisson_low
+                )
+        )
+
+    mut_fig_layout = go.Layout(
+            title=f"{mh.samp} - {mh.construct} - {mh.cluster}",
+            xaxis=dict(title="Bases"),
+            yaxis=dict(title="Mutation rate", range=[0, 0.1]),
+            plot_bgcolor="white"
+
+    )
+    mut_fig = go.Figure(data=mut_trace, layout=mut_fig_layout)
+    seqs = list(mh.sequence)
+    if mh.structure is not None:
+        db = list(mh.structure)
+    else:
+        db = " " * len(seqs)
+    mut_fig.update_yaxes(
+            gridcolor='lightgray',
+            linewidth=1,
+            linecolor='black',
+            mirror=True
+    )
+    mut_fig.update_xaxes(
+            linewidth=1,
+            linecolor='black',
+            mirror=True
+    )
+    mut_fig.update_xaxes(
+            tickvals=xaxis_coordinates,
+            ticktext=["%s<br>%s" % (x, y) for (x, y) in zip(seqs, db)],
+            tickangle=0
+    )
+
+    plotly.offline.plot(
+            mut_fig, filename= "pop_avg.html", auto_open=True,
+    )
+    return OutputPlot(mh, mut_fig)
+
 
 class Plotter():
     def __init__(self, df):
-        self.__man = manipulator.Manipulator(df)
+        self.__df = df
 
     def mut_histogram(self, samp:str, construct:str, cluster:int=0, plot_type:str='index', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(35,7), title_fontsize=40, xticks_fontsize=10, yticks_fontsize=30, **kwargs)->OutputPlot:
         """Plot the mutation rates as histograms.
@@ -43,118 +131,9 @@ class Plotter():
         Returns:
             OutputPlot: Figure, axis and data of the output plot.
         """
-        sub_df = SubDF.from_locals(locals())
-        mpl_attr = MplAttr.from_locals(locals())
-        
-        if 'facecolor' not in kwargs:
-            kwargs['facecolor'] = 'w'
+        return 0
 
-        colors = {'A':'r','C':'b','G':'y','T':'g'}
-        colors_base = [colors[b] for b in base_type]
 
-        if not plot_type in ['index','partition']:
-            raise Exception(f"{plot_type} must be 'index' or 'partition', please check this argument")
-
-        df_hist = pd.DataFrame()
-        
-        df = self.__man.get_SCC(cols = ['sequence','mut_rates','poisson_low','poisson_high'],sub_df=sub_df)
-        out = OutputPlot(df, mpl_attr)
-        mut_per_base = df[['base','mut_rates']].reset_index().set_index(['base', 'index'])
-        df_err_low = df[['base','poisson_low']].reset_index().set_index(['base', 'index'])
-        df_err_high = df[['base','poisson_high']].reset_index().set_index(['base', 'index'])
-        df_hist.index = df.index
-
-        for base in base_type:
-            df_hist[base], df_hist[base+'_min'], df_hist[base+'_max'] = pd.Series(dtype=float), pd.Series(dtype=float), pd.Series(dtype=float)
-            try:
-                df_hist[base] = mut_per_base.loc[base]
-                df_hist[base+'_min'] =  df_err_low.loc[base] #+ mut_per_base.loc[base] 
-                df_hist[base+'_max'] =  df_err_high.loc[base] #- mut_per_base.loc[base]
-            except:
-                f"No mutations for base {base}"
-        df_hist.dropna(inplace=True, how='all')
-        for b in base_type:
-            yerr = np.array(df_hist[[b+'_min',b+'_max']]).T
-            if show_ci:
-                out.ax = df_hist.plot.bar(y = b, stacked=True, yerr = yerr, legend=b, color=colors[b], ax=out.ax)
-            else:
-                out.ax = df_hist.plot.bar(y = b, stacked=True, legend=b, color=colors[b], ax=out.ax)
-
-        if plot_type == 'partition': # Plot the partition of mutations for each base along the sequence
-            df = self.__man.get_SCC(cols = ['sequence','info_bases']+[f"mod_bases_{base}" for base in base_type],\
-                        sub_df=sub_df)
-
-            for base in base_type:
-                df_hist[base]  = np.array(df[f"mod_bases_{base}"]/df['info_bases']).astype(float)
-
-            out.ax = df_hist.plot.bar(stacked=True, color=colors_base, figsize=figsize, ax=out.ax)
-        
-
-        if len(str(index)) >50:
-            index = str(index)[:50]+'... ]'
-        plt.title('  '.join([f"{k}: {v}" for k,v in sub_df.__dict__.items() if \
-            k not in ['base_type','self'] and not hasattr(plt,k) \
-                and v is not None]),
-                fontsize=title_fontsize)
-        plt.xticks(fontsize=xticks_fontsize)
-        plt.yticks(fontsize=yticks_fontsize)
-        [getattr(plt, arg)(kwargs[arg]) for arg in kwargs if hasattr(plt, arg)] 
-        
-        return out
-
-    def deltaG_sample(self, samp:str, deltaG:str, structure:str, index='all', base_type:List[str]=['A','C','G','T'], flank:str=None, sub_lib:str=None, max_mutation:float= 0.15, models:List[str]=[], figsize:Tuple[int]=(20,5), title_fontsize=40, xticks_fontsize=30, yticks_fontsize=30, **kwargs)->OutputPlot:
-        """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
-
-        Args:
-            samp (str): Sample of your sample-construct-cluster.
-            deltaG (str): DeltaG to use as x axis.
-            structure (str, optional): Structure to use for base-paired filtering.
-            index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
-            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
-            flank (str, optional): Flank or list of flanks to filter by. Defaults to None.
-            sub_lib (str, optional): Sub-library or list of sub-libraries to filter by. Defaults to None.
-            max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
-            models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
-            figsize (Tuple[int], optional): Figure size. Defaults to (20,5).
-            title_fontsize (int, optional): Title font size. Defaults to 40.
-            xyticks_fontsize (int, optional): X and Y ticks font size. Defaults to 30.
-            **kwargs: Other arguments to pass to matplotlib.pyplot.
-
-        Returns:
-            OutputPlot: Figure, axis and data of the output plot.
-        """
-        sub_df = SubDF.from_locals(locals())
-        mpl_attr = MplAttr.from_locals(locals())
-
-        return DeltaG(self.__man).per_sample(sub_df, mpl_attr, deltaG, flank, sub_lib, max_mutation, models, **kwargs)
-
-    def deltaG_basewise(self, samp:str, construct:str, cluster:str, deltaG:str, structure:str, index='all', base_type:List[str]=['A','C','G','T'], max_mutation:float= 0.15, models:List[str]=[], figsize:Tuple[int]=(20,5), title_fontsize=40, xticks_fontsize=30, yticks_fontsize=30, **kwargs)->OutputPlot:
-        """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
-
-        Args:
-            samp (str): Sample of your sample-construct-cluster.
-            construct (str): Construct of your sample-construct-cluster.
-            cluster (str): Cluster of your sample-construct-cluster.
-            deltaG (str): DeltaG to use as x axis.
-            structure (str, optional): Structure to use for base-paired filtering.
-            index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
-            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
-            flank (str, optional): Flank or list of flanks to filter by. Defaults to None.
-            sub_lib (str, optional): Sub-library or list of sub-libraries to filter by. Defaults to None.
-            max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
-            models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
-            figsize (Tuple[int], optional): Figure size. Defaults to (20,5).
-            title_fontsize (int, optional): Title font size. Defaults to 40.
-            xyticks_fontsize (int, optional): X and Y ticks font size. Defaults to 30.
-            **kwargs: Other arguments to pass to matplotlib.pyplot.
-
-        Returns:
-            OutputPlot: Figure, axis and data of the output plot.
-        """
-        sub_df = SubDF.from_locals(locals())
-        mpl_attr = MplAttr.from_locals(locals())
-
-        return DeltaG(self.__man).per_base(sub_df, mpl_attr, deltaG, max_mutation, models, **kwargs)
 
 
 
@@ -239,10 +218,7 @@ class Plotter():
             OutputPlot: The plot object.
         """
 
-        sub_df = SubDF.from_locals(locals())
-        mpl_attr = MplAttr.from_locals(locals())
-    
-        return Clustering(self.__man).dendrogram(sub_df, mpl_attr, metric=metric, distance_threshold=distance_threshold, n_clusters=n_clusters, **kwargs)
+        return 0
 
     def cluster_distance_matrix_heatmap(self, samp:str, construct:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,10), dpi = 600, distance_threshold=0, n_clusters=None, **kwargs)->OutputPlot:
         """Plot the distance matrix heatmap.
@@ -273,10 +249,8 @@ class Plotter():
             OutputPlot: _description_
         """
 
-        sub_df = SubDF.from_locals(locals())
-        mpl_attr = MplAttr.from_locals(locals())
-        
-        return Clustering(self.__man).distance_matrix_heatmap( sub_df, mpl_attr, metric=metric, distance_threshold=distance_threshold, n_clusters=n_clusters,**kwargs)
+        return 0
+
 
     def cluster_mut_rates_heatmap(self, samp:str, construct:str='all', cluster:int=0, metric:str='euclidean', index='all', base_type:List[str]=['A','C','G','T'], base_paired:bool=None, structure:str=None, show_ci:bool=True, figsize:Tuple[int]=(10,10), dpi = 600, distance_threshold=0, n_clusters=None, **kwargs)->OutputPlot:
         """Plot the mutation rate heatmap ordered by a hierarchical cluster.
@@ -306,8 +280,6 @@ class Plotter():
         Returns:
             OutputPlot: _description_
         """
-        sub_df = SubDF.from_locals(locals())
-        mpl_attr = MplAttr.from_locals(locals())
 
-        return Clustering(self.__man).mut_rates_heatmap( sub_df, mpl_attr,metric=metric, distance_threshold=distance_threshold, n_clusters=n_clusters, **kwargs)
+        return 0
 

@@ -1,66 +1,54 @@
-#! usr/bin/env python3
 
-import struct
-from zlib import DEF_BUF_SIZE
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from matplotlib.colors import LogNorm
-from os.path import exists, dirname
 import os, sys
 import numpy as np
-import seaborn as sns
-import json
+from tqdm.auto import tqdm
 
-path = '/Users/ymdt/src/dreem_nap/'
-
-sys.path.append(path)
-
+sys.path.append('/Users/ymdt/src/dreem_nap/')
+from dreem_nap import manipulator 
 from dreem_nap.study import Study, util
-import yaml
-import pickle
+from dreem_nap.util import *
+from itertools import cycle
+import plotly.express as px
+from scipy.optimize import curve_fit
+from plotly.subplots import make_subplots
+import plotly.graph_objects as go
+from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+from dreem_nap.manipulator import Fit
+
+# Create a study
+samples_csv = pd.read_csv('~/src/data/Jordan/samples.csv')
+
+dms = Study.from_dict({'name': 'dms',
+                         'description': 'Change the DMS concentration', 
+                         'samples': list(samples_csv['sample']), 
+                         'label': 'Na quantity [M]', 
+                         'conditions': list(samples_csv['DMS_conc_mM'])})
+
+# Load data
+dms.load_df_from_local_files(path_to_data='/Users/ymdt/src/data/Jordan', 
+                              min_cov_bases= 1000, 
+                              filter_by='sample')
 
 
-with open(path+'config.yml', 'r') as ymlfile:
-    cfg = yaml.safe_load(ymlfile)
-
-mpl.rcParams['figure.dpi'] = cfg['mpl_rcParams_figure_dpi'] # the highest the resolution, the slowest the plotting
-
-####
-# SET HYPER PARAMETERS HERE
-####
-
-studies = Study.load_studies(cfg['path_to_studies'])
-study = Study().from_dict(studies['temperature'].__dict__)
-
-with open(path+'data/temperature_df.p','rb') as f:
-    study.set_df(pickle.load(f))
-    f.close()
+    
+dms._df.head(3)
 
 
-samp, construct = 'B8','12419'
+def per_base(df:pd.DataFrame, construct:str, experimental_variable:str, structure:str='structure', index='all', base_type=['A','C','G','T'], flank:str=None, sub_lib:str=None, max_mutation:float= 0.15, models:List[str]=[], figsize:Tuple[int]=(20,5), title_fontsize=40, xticks_fontsize=30, yticks_fontsize=30, **kwargs)->OutputPlot:
+
+    fit = manipulator.Fit()
+    man = manipulator.Manipulator(df)
+    data = pd.DataFrame()
+    sub_df= SubDF.from_locals(locals())
+    assert experimental_variable in df.columns, f"{experimental_variable=} isn't in the study columns"
+    hover_attr = ['sequence','mut_rates','samp',experimental_variable,]
+    for row in df[df.construct==construct].itertuples():
+        sub_df.update(construct = row.construct, cluster=row.cluster)
+        data = pd.concat((data,man.get_SCC(cols=hover_attr.copy(),sub_df=sub_df,can_be_empty=True).reset_index()))
+    return data
 
 
-study._df['cluster'] = 0
-study.constructs = study._df['construct'].unique()
-
-# base_type = ['A','C','G','T']
-# base_index = 'roi', 'all', [93,95,96]
-# base_paired = True, False or None (=both) # default is None 
-# figsize = (25, 7) # custom by plot type
-
-# structure = "structure_ROI"
-
-# deltaG = "deltaG_ens_DMS"
-
-# cluster = 0, 1, 2
-
-
-# possible indexes
-# roi, all, [93,95,96]
-
-#print(dir(study.plot))
-study.plot.mut_histogram(samp=samp, construct=construct, \
-    plot_type='index',\
-    base_type=['A','G','C','T'], index='all', base_paired=None,\
-    structure = 'structure', figsize=(25, 7))
+print(per_base(dms._df, '410-O-flank_1=hp14', 'DMS_conc_mM'))
