@@ -195,7 +195,9 @@ class Study(object):
         return plotter.mutation_histogram(self._df, **kwargs)
 
     def base_coverage(self, **kwargs):
-        """
+        """Plot the base coverage of several constructs in a sample.
+        
+        Args:
             samp (str): Sample of your rows.
             constructs (List[str]): Constructs of your rows.
             region (str): Region of your row.
@@ -206,6 +208,9 @@ class Study(object):
             structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
             show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
             savefile (str, optional): Path to save the plot. Defaults to None.
+    
+        Returns:
+            OutputPlot: Figure, axis and data of the output plot.
 
         """
         return plotter.base_coverage(self._df, **kwargs)
