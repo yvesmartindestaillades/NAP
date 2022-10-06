@@ -6,6 +6,7 @@ from dreem_nap.loader import df_from_local_files
 import pandas as pd
 from dreem_nap import deltaG
 
+
 class Study(object):
     """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
 
@@ -134,68 +135,80 @@ class Study(object):
         Args:
             samp (str): Sample of your sample-construct-cluster.
             deltaG (str): DeltaG to use as x axis.
-            structure (str, optional): Structure to use for base-paired filtering.
+            structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
             index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
             base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
             flank (str, optional): Flank or list of flanks to filter by. Defaults to None.
             sub_lib (str, optional): Sub-library or list of sub-libraries to filter by. Defaults to None.
             max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
             models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
-            figsize (Tuple[int], optional): Figure size. Defaults to (20,5).
-            title_fontsize (int, optional): Title font size. Defaults to 40.
-            xyticks_fontsize (int, optional): X and Y ticks font size. Defaults to 30.
-            **kwargs: Other arguments to pass to matplotlib.pyplot.
+            savefile (str, optional): Path to save the plot. Defaults to None.
 
         Returns:
             OutputPlot: Figure and data of the output plot.
         """
-        return deltaG.per_sample(self._df, **kwargs)
+        return plotter.deltaG_per_sample(self._df, **kwargs)
 
     
     def deltaG_per_base(self, **kwargs)->util.OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
 
         Args:
-            construct (str): Construct of your sample-construct-cluster.
+            construct (str): Construct of your row.
             experimental_variable (str): x axis column value, must be a per-sample attribute.
-            cluster (str): Cluster of your sample-construct-cluster.
-            structure (str, optional): Structure to use for base-paired filtering.
+            region (str): Region of your row.
+            cluster (str): Cluster of your row.
+            structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
             index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
             base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
             max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
             models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
-            **kwargs: Other arguments to pass to matplotlib.pyplot.
+            savefile (str, optional): Path to save the plot. Defaults to None.
 
         Returns:
             OutputPlot: Figure, axis and data of the output plot.
         """
-        return deltaG.per_base(self._df, **kwargs)
+        return plotter.deltaG_per_base(self._df, **kwargs)
         
 
     def mutation_histogram(self, **kwargs):
         """Plot the mutation rates as histograms.
 
         Args:
-        samp (str): Sample of your sample-construct-cluster.
-        construct (str): Construct of your sample-construct-cluster.
-        cluster (int, optional): Cluster of your sample-construct-cluster. Defaults to 0. 
-        index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
-        base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
-        base_paired (bool, optional): Base-pairing predicition to plot. Defaults to None.
-        structure (str, optional): Structure to use for base_paired filtering. Defaults to None.
-        show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
-        figsize (Tuple[int], optional): Figure size. Defaults to (35,7).
-        title_fontsize (int, optional): Title font size. Defaults to 40.
-        yticks_fontsize (int, optional): Ytick font size. Defaults to 30.
-        **kwargs: Other arguments to pass to matplotlib.pyplot.
+            samp (str): Sample of your row.
+            construct (str): Construct of your row.
+            region (str): Region of your row.
+            cluster (int, optional): Cluster of your row. Defaults to 0. 
+            index (_type_, optional): Indexes to plot. Defaults to ``'all'``. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
+            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
+            base_paired (bool, optional): Base-pairing predicition to plot. Defaults to None.
+            structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
+            show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
+            savefile (str, optional): Path to save the plot. Defaults to None.
 
         Raises:
-        Exception: plot_type is not ``index`` or ``partition``.
+            Exception: plot_type is not ``index`` or ``partition``.
 
         Returns:
-        OutputPlot: Figure, axis and data of the output plot.
+            OutputPlot: Figure, axis and data of the output plot.
         """
-        return plotter.mut_histogram(self._df, **kwargs)
+        return plotter.mutation_histogram(self._df, **kwargs)
+
+    def base_coverage(self, **kwargs):
+        """
+            samp (str): Sample of your rows.
+            constructs (List[str]): Constructs of your rows.
+            region (str): Region of your row.
+            cluster (int, optional): Cluster of your row. Defaults to 0. 
+            index (_type_, optional): Indexes to plot. Defaults to ``'all'``. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
+            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
+            base_paired (bool, optional): Base-pairing predicition to plot. Defaults to None.
+            structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
+            show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
+            savefile (str, optional): Path to save the plot. Defaults to None.
+
+        """
+        return plotter.base_coverage(self._df, **kwargs)
 
 
 def load_studies(studies_file_path:str)->dict[str:Study]:
