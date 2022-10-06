@@ -8,7 +8,7 @@ Plots
 Mutation histogram
 ==================
 
-.. figure:: img/mut_histogram.png
+.. figure:: img/mutation_histogram.png
     :align: center
 
 

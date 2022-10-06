@@ -179,10 +179,6 @@ class Study(object):
             construct (str): Construct of your row.
             region (str): Region of your row.
             cluster (int, optional): Cluster of your row. Defaults to 0. 
-            index (_type_, optional): Indexes to plot. Defaults to ``'all'``. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
-            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
-            base_paired (bool, optional): Base-pairing predicition to plot. Defaults to None.
-            structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
             show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
             savefile (str, optional): Path to save the plot. Defaults to None.
 
@@ -196,7 +192,7 @@ class Study(object):
 
     def base_coverage(self, **kwargs):
         """Plot the base coverage of several constructs in a sample.
-        
+
         Args:
             samp (str): Sample of your rows.
             constructs (List[str]): Constructs of your rows.

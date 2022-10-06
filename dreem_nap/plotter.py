@@ -30,7 +30,7 @@ from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 from dreem_nap.manipulator import Fit
 
 
-def mutation_histogram(df, sample:str, construct:str, region:str=None, cluster:int=None, structure:str=None, show_ci:bool=True, savefile=None)->OutputPlot:
+def mutation_histogram(df, samp:str, construct:str, region:str=None, cluster:int=None, structure:str=None, show_ci:bool=True, savefile=None)->OutputPlot:
 
     mh = Manipulator(df).get_series(df, SubDF.from_locals(locals()))
     xaxis_coordinates = [i for i in range(len(mh.sequence) -1)]
@@ -104,6 +104,7 @@ def mutation_histogram(df, sample:str, construct:str, region:str=None, cluster:i
             ticktext=["%s<br>%s" % (x, y) for (x, y) in zip(seqs, db)],
             tickangle=0
     )
+    iplot(mut_fig)
 
     if savefile != None:
         plot(mut_fig, filename = savefile, auto_open=False)
@@ -153,7 +154,7 @@ def deltaG_per_sample(df:pd.DataFrame, samp:str, deltaG:str='deltaG_min', struct
         plot(fig, filename = savefile, auto_open=False)
     return OutputPlot(data, fig)
     
-def deltaG_per_base(df:pd.DataFrame, construct:str, experimental_variable:str, structure:str='structure', index='all', base_type=['A','C','G','T'], max_mutation:float= 0.15, models:List[str]=[], savefile=None)->OutputPlot:
+def deltaG_per_base(df:pd.DataFrame, construct:str, region:str, cluster:int, experimental_variable:str, structure:str='structure', index='all', base_type=['A','C','G','T'], max_mutation:float= 0.15, models:List[str]=[], savefile=None)->OutputPlot:
 
     fit = manipulator.Fit()
     man = manipulator.Manipulator(df)
