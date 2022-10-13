@@ -130,6 +130,7 @@ dmypy.json
 
 
 # IGNORE 
+data
 data/DREEM
 data/figs
 data/output
@@ -141,3 +142,5 @@ venv-nap
 data/MULTIPLEXED
 data/DEMULTIPLEXED
 data/saved_db
+
+examples
