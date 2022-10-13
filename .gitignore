@@ -142,5 +142,4 @@ venv-nap
 data/MULTIPLEXED
 data/DEMULTIPLEXED
 data/saved_db
-
-examples
+ex
