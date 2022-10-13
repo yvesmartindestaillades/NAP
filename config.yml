@@ -1,9 +1,0 @@
-# Data paths
-path_to_data: /Users/ymdt/src/data/Lauren
-path_to_studies: /Users/ymdt/src/data/Lauren/studies.csv
-
-# Data manip 
-min_cov_bases: 1000
-
-# Plot settings
-mpl_rcParams_figure_dpi: 100 # the highest the resolution, the slowest the plotting
