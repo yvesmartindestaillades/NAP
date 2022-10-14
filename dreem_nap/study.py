@@ -1,11 +1,12 @@
 from genericpath import exists
 from random import sample
 from typing import List
-from dreem_nap import plotter, manipulator, util
+from dreem_nap import manipulator, util, plotter
 from dreem_nap.loader import df_from_local_files
 import pandas as pd
 from dreem_nap import deltaG
 
+NOT_IN_GET_DF = ['show_ci','savefile','deltaG','models','experimental_variable','auto_open']
 
 class Study(object):
     """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
@@ -20,58 +21,30 @@ class Study(object):
 
     attr_list = ['name','samples']
 
-    def __init__(self, name:str=None, samples:List[str]=None) -> None:
+    def __init__(self, path_to_data, samples=None, min_cov_bases=0, filter_by='sample') -> None:
         """Creates a Study object.
 
         Args:
-            name (str, optional): Short description (<~20 char) of your study. Defaults to None.
-            samples (List[str], optional): names of your study's samples. Defaults to None.
-
-        Raises:
-            f: if conditions don't match the samples, or if the unit is missing.
+            samples (List[str], optional): List of samples to load. Defaults to None.
+            min_cov_bases (int, optional): Minimum number of base coverage for a row to be filtered-in. Defaults to 0.
+            filter_by (str, optional): Filter rows by sample or study. When filtered by study, if a row passes the filter, rows with the same 'construct', 'section' and 'cluster' fields for all other samples have a sufficient base coverage. Defaults to 'sample'.            
 
         Example:
-        >>> study = Study('example',['A1', 'B2', 'B3'], [10, 20, 30], 'arbitrary unit', 'Just an example study')
-        >>> study.description
-        'Just an example study'
+            >>> study = Study(path_to_data='data/my_study.csv', 
+                              samples=['A1', 'B2', 'B3'], 
+                              min_cov_bases=1000, 
+                              filter_by='study')
         """
 
-        self.name = name
         self.samples = samples
-        self.constructs = None
-        self._df = None
-
-    def get_df(self, **kwargs):
-        """_summary_
-
-        Returns:
-            samp (str): The sample name.
-            construct (str): The construct name.
-            cols (list): The columns to be returned. Default is 'all'
-            cluster (int, optional): The cluster number. Defaults to 0.
-            structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
-            base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
-            index (str, optional): Index to include. Defaults to 'all'. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
-            base_paired (bool, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
-            sub_lib (str, optional): Sub-library
-            flank (str, optional): Flank
-            can_be_empty (bool, optional): If True, returns an empty dataframe if no row is found. Defaults to False.
-        """
-        return self._df
-
-    def set_df(self, df):
-        self._df = df
-        return df
-    
-    def get_constructs(self, samp:str):
-        return self._df[self._df['samp'] == samp]['construct'].unique()
-
-    def get_genes(self, samp:str, construct:str):
-        return self._df[(self._df['samp'] == samp) & (self._df['construct'] == construct)]['gene'].unique()
-
-    def get_clusters(self, samp:str, construct:str, gene:str):
-        return self._df[(self._df['samp'] == samp) & (self._df['construct'] == construct)& (self._df['gene'] == gene)]['cluster'].unique()
-    
+        self.df = pd.read_csv(path_to_data)
+        self.df = self.df[self.df['worst_cov_bases'] >= min_cov_bases]
+        for col in [ 'mut_bases', 'info_bases','del_bases','ins_bases','cov_bases','mut_rates'] + \
+            [c for c in self.df.columns.tolist() if (c.startswith('mod_bases') or c.startswith('poisson'))]:
+            self.df[col] = self.df[col].apply(lambda x: [float(b) for b in x[1:-1].split(' ') if b != '' and b != '\n'])
+        self.df = manipulator.get_df(df=self.df, sample=samples, min_cov_bases=min_cov_bases)
+        if filter_by == 'study':
+            self.df = manipulator.filter_by_study(self.df)
 
     @classmethod
     def from_dict(cls, di:dict):
@@ -96,99 +69,94 @@ class Study(object):
                 di[attr]=None
         return cls(di['name'], di['samples'])
 
+    def get_df(self, **kwargs):
+        return manipulator.get_df(self.df, **kwargs)
+
+    def get_samples(self):
+        return self.df.sample.unique()
+
+    def get_constructs(self, sample:str):
+        return self.df[self.df['sample'] == sample]['construct'].unique()
+
+    def get_genes(self, sample:str, construct:str):
+        return self.df[(self.df['sample'] == sample) & (self._df['construct'] == construct)]['section'].unique()
+
+    def get_clusters(self, sample:str, construct:str, section:str):
+        return self.df[(self.df['sample'] == sample) & (self._df['construct'] == construct)& (self._df['section'] == section)]['cluster'].unique()
        
     def load_studies(studies_file_path:str):
         return load_studies(studies_file_path)
 
 
-    def load_df_from_local_files(self, path_to_data:str, min_cov_bases:int, filter_by='study', index='all', base_type = ['A','C','G','T'], base_paired=None, structure=None)->pd.DataFrame:
-        sub_df = util.SubDF.from_locals(locals())
-        df = self.set_df(df_from_local_files(path_to_data, min_cov_bases, self.samples, self.name, filter_by, sub_df))
-        self.constructs = df['construct'].unique()
-        return df
-
-    def get_col_across_constructs(self, **kwargs )->pd.DataFrame:
-        """Returns a dataframe containing the column col for provided constructs in a sample
-
+    def mutation_histogram(self, **kwargs):
+        """Plot the mutation rates as histograms.
         Args:
-            samp (str): Sample(s) of your sample-construct-cluster. A single sample or a list of samples.
-            col (list): The column to be returned.
-            constructs (str): The constructs name. Defaults to 'all'.
-            cluster (int, optional): The cluster number. Defaults to 0.
-            structure (str, optional): Structure to use for the 'paired' column, such as 'structure_ROI_DMS'. Defaults to 'structure'.
-            base_type (list, optional): Bases to include. Defaults to ['A','C','G','T'].
-            index (str, optional): Index to include. Defaults to 'all'. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
-            base_paired (bool, optional): Base pairing to include. None is paired + unpaired, True is paired, False is unpaired. Defaults to None.
-            flank (str or list, optional): Flank or list of flanks to filter constructs by. Defaults to None.
-            sub_lib (str or list, optional): Sub-library or list of sub-libraries to filter constructs by. Defaults to None.
+            sample (list, int, str, optional): Filter rows by sample (list of samples or just a sample). Defaults to None.
+            construct (list, int, str, optional): Filter rows by construct (list of constructs or just a construct). Defaults to None.
+            section (list, int, str, optional): Filter rows by section (list of sections or just a section). Defaults to None.
+            cluster (list, int, str, optional): Filter rows by cluster (list of clusters or just a cluster). Defaults to None.
+            base_index (list, int, str, optional): Filter per-base attributes (mut_rates, sequence, etc) by base index. Can be a unique sequence in the row's sequence, a list of indexes or a single index. Defaults to None.
+            base_type (list, str, optional): Filter per-base attributes (mut_rates, sequence, etc) by base type. Defaults to ['A','C','G','T'].
+            base_pairing (bool, optional): Filter per-base attributes (mut_rates, sequence, etc) by predicted base pairing. See RNAstructure_use_XXX arguments. Defaults to None.
+            RNAstructure_use_DMS (bool, optional): Use DMS for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
+            RNAstructure_use_temp (bool, optional): Use temperature for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
+            show_ci(bool, optional): Show confidence intervals. Defaults to True.
+            savefile(str, optional): Path to save the plot. Defaults to None.
 
         Returns:
-            pd.Dataframe: content of the column col across constructs. Columns names are the indexes provided by index and index names (y axis) are the constructs.
+            OutputPlot: Figure, axis and data of the output plot.
         """
-        return manipulator.Manipulator(self._df).get_col_across_constructs(**kwargs)
-    
-    # Plots
+
+        return plotter.mutation_histogram(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k not in NOT_IN_GET_DF}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_histogram.__code__.co_varnames})
 
     def deltaG_per_sample(self, **kwargs)->util.OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
 
         Args:
-            samp (str): Sample of your sample-construct-cluster.
-            deltaG (str): DeltaG to use as x axis.
-            structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
-            index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
-            base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
-            flank (str, optional): Flank or list of flanks to filter by. Defaults to None.
-            sub_lib (str, optional): Sub-library or list of sub-libraries to filter by. Defaults to None.
-            max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
+            sample (list, int, str, optional): Filter rows by sample (list of samples or just a sample). Defaults to None.
+            construct (list, int, str, optional): Filter rows by construct (list of constructs or just a construct). Defaults to None.
+            section (list, int, str, optional): Filter rows by section (list of sections or just a section). Defaults to None.
+            cluster (list, int, str, optional): Filter rows by cluster (list of clusters or just a cluster). Defaults to None.
+            min_cov_bases (int, optional): Filter rows by a minimum threshold for base coverage. Defaults to 0.
+            base_index (list, int, str, optional): Filter per-base attributes (mut_rates, sequence, etc) by base index. Can be a unique sequence in the row's sequence, a list of indexes or a single index. Defaults to None.
+            base_type (list, str, optional): Filter per-base attributes (mut_rates, sequence, etc) by base type. Defaults to ['A','C','G','T'].
+            base_pairing (bool, optional): Filter per-base attributes (mut_rates, sequence, etc) by predicted base pairing. See RNAstructure_use_XXX arguments. Defaults to None.
+            RNAstructure_use_DMS (bool, optional): Use DMS for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
+            RNAstructure_use_temp (bool, optional): Use temperature for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
+            show_ci(bool, optional): Show confidence intervals. Defaults to True.
+            savefile(str, optional): Path to save the plot. Defaults to None.
             models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
-            savefile (str, optional): Path to save the plot. Defaults to None.
+            **kwargs: Additional arguments to pass to filter rows by. Ex: flank='flank_1' will keep only rows with flank=flank_1. 
 
         Returns:
             OutputPlot: Figure and data of the output plot.
         """
-        return plotter.deltaG_per_sample(self._df, **kwargs)
+        return plotter.deltaG_per_sample(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k not in NOT_IN_GET_DF}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_per_sample.__code__.co_varnames})
 
     
-    def deltaG_per_base(self, **kwargs)->util.OutputPlot:
+    def variable_exp_across_samples(self, **kwargs)->util.OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
 
         Args:
             construct (str): Construct of your row.
             experimental_variable (str): x axis column value, must be a per-sample attribute.
-            region (str): Region of your row.
+            section (list, int, str, optional): Filter rows by section (list of sections or just a section). Defaults to None.
             cluster (str): Cluster of your row.
             structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
             index (_type_, optional): Indexes to plot. Defaults to ``'all'``.
             base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.
             max_mutation (float, optional): Maximum mutation rate to plot. Defaults to 0.15.
+            RNAstructure_use_DMS (bool, optional): Use DMS for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
+            RNAstructure_use_temp (bool, optional): Use temperature for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
             models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
             savefile (str, optional): Path to save the plot. Defaults to None.
 
         Returns:
             OutputPlot: Figure, axis and data of the output plot.
         """
-        return plotter.deltaG_per_base(self._df, **kwargs)
+        return plotter.variable_exp_across_samples(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k not in NOT_IN_GET_DF}), **{k:v for k,v in kwargs.items() if k in plotter.variable_exp_across_samples.__code__.co_varnames})
         
 
-    def mutation_histogram(self, **kwargs):
-        """Plot the mutation rates as histograms.
-
-        Args:
-            samp (str): Sample of your row.
-            construct (str): Construct of your row.
-            region (str): Region of your row.
-            cluster (int, optional): Cluster of your row. Defaults to 0. 
-            show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
-            savefile (str, optional): Path to save the plot. Defaults to None.
-
-        Raises:
-            Exception: plot_type is not ``index`` or ``partition``.
-
-        Returns:
-            OutputPlot: Figure, axis and data of the output plot.
-        """
-        return plotter.mutation_histogram(self._df, **kwargs)
 
     def base_coverage(self, **kwargs):
         """Plot the base coverage of several constructs in a sample.
@@ -209,7 +177,8 @@ class Study(object):
             OutputPlot: Figure, axis and data of the output plot.
 
         """
-        return plotter.base_coverage(self._df, **kwargs)
+        return 0# plotter.base_coverage(self._df, **kwargs)
+
 
 
 def load_studies(studies_file_path:str)->dict[str:Study]:
@@ -229,4 +198,3 @@ def load_studies(studies_file_path:str)->dict[str:Study]:
         studies_dict[col[0]] = {attr: solo_item(list(col[1][attr])) for attr in (Study.attr_list)} 
 
     return {k:Study.from_dict(v) for k,v in studies_dict.items()}
-

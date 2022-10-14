@@ -6,17 +6,13 @@ import matplotlib.pyplot as plt
 import os, sys
 
 sys.path.append(os.path.abspath(""))
-from dreem_nap.manipulator import Manipulator
 
-from dreem_nap.clustering import Clustering
 from dreem_nap.util import *
-from dreem_nap import deltaG
 import plotly
 
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
-from dreem_nap.manipulator import Fit, Manipulator
 
 from dreem_nap.util import OutputPlot, MplAttr, SubDF
 from dreem_nap import manipulator, util
@@ -27,122 +23,150 @@ import pandas as pd
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
-from dreem_nap.manipulator import Fit
+import scipy
+from scipy.optimize import curve_fit
 
 
-def mutation_histogram(df, samp:str, construct:str, region:str=None, cluster:int=None, structure:str=None, show_ci:bool=True, savefile=None)->OutputPlot:
 
-    mh = Manipulator(df).get_series(df, SubDF.from_locals(locals()))
-    xaxis_coordinates = [i for i in range(len(mh.sequence) -1)]
-
-    mut_y = []
-    for pos in range(len(mh.sequence)):
-        try:
-            mut_frac = mh.mut_bases[pos] / mh.info_bases[pos]
-        except:
-            mut_frac = 0.0
-        mut_y.append(mut_frac)
-        mut_frac = round(mut_frac, 5)
-
-    cmap = {"A": "red", "T": "green", "G": "orange", "C": "blue"}  # Color map
-    colors = []
-    ref_bases = []
-    hover_attr = pd.DataFrame({'mut_rate':mut_y,
-                                'base':list(mh.sequence), 
-                                'index':list(range(len(mh.sequence))),
-                                'paired':[{'.':True, '(':False,')':False}[s] for s in mh.structure]})
-    for i in range(len(mh.sequence)):
-        if i >= len(mh.sequence)-1:
-            continue
-        colors.append(cmap[mh.sequence[i - 1]])
-        ref_bases.append(mh.sequence[i - 1])
-    mut_trace = go.Bar(
-            x=xaxis_coordinates,
-            y=mut_y,
-            text=hover_attr,
-            marker=dict(color=colors),
-            showlegend=False,
-            hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)]),
-        )   
+class Fit(object):
+    def __init__(self) -> None:
+        self.legend = ''
     
-    if show_ci:
-        mut_trace.update(
-           error_y=dict(
-                type='data',
-                symmetric=False,
-                array=mh.poisson_high,
-                arrayminus=mh.poisson_low
-                )
+    def get_legend(self):
+        return self.legend
+
+    def predict(self, x, y, model, prefix='', suffix=''):
+        fit = self.fit(x,y,model)
+        m = eval(model)
+        try:
+            linreg  = scipy.stats.linregress(y,m(x,*fit))
+            self.rvalue = round(linreg.rvalue,5)
+        except:
+            self.rvalue = 'error'
+
+        self._generate_legend(fit, model, prefix, suffix)
+        return np.sort(x), m(np.sort(x),*fit)
+
+    def fit(self, x,y, model):
+        fit = curve_fit(eval(model), x, y)[0]
+        return fit
+
+    def _generate_legend(self, fit, m, prefix, suffix):
+        slice_m = lambda start, stop: ','.join(str(m).split(',')[start:stop])
+        first_slice = slice_m(0,len(fit))+','+slice_m(len(fit), len(fit)+1).split(':')[0]
+        second_slice = ','.join(m.split(',')[len(fit):])[2:]
+        fun_args = [a.strip() for a in str(m).split(',')[1:len(fit)+1]]
+        fun_args[-1] = fun_args[-1][0]
+        for a,b in zip(fun_args,fit):
+            second_slice = second_slice.replace(a.strip(),str(round(b,5)))
+        self.legend = prefix+ second_slice + suffix +f'\n R2={self.rvalue}'
+
+
+def mutation_histogram(df, show_ci:bool=True, savefile=None, auto_open=False)->OutputPlot:
+    assert len(df) == 1, "df must have only one row"
+    mh = df.iloc[0]
+    cmap = {"A": "red", "T": "green", "G": "orange", "C": "blue"}  # Color map
+    
+    traces, layouts = [], []
+    mh_unrolled = pd.DataFrame({'mut_rate':list(mh.mut_rates), 'base':list(mh.sequence), 'filtered_index':list(mh.filtered_index), 'poisson_high':list(mh.poisson_high), 'poisson_low':list(mh.poisson_low), 'paired':list(mh.structure_selected)})
+
+    for bt in set(mh['sequence']):
+        df_loc = mh_unrolled[mh_unrolled['base'] == bt]
+        if len(df_loc) == 0:
+            continue
+
+        hover_attr = pd.DataFrame({'mut_rate':list(df_loc.mut_rate),
+                                        'base':list(df_loc.base), 
+                                        'index':list(df_loc['filtered_index']),
+                                        'paired':[{'.':True, '(':False,')':False}[s] for s in df_loc.paired]})
+        traces.append(go.Bar(
+            x= np.array(df_loc['filtered_index']),
+            y= np.array(df_loc['mut_rate']),
+            name=bt,
+            marker_color=cmap[bt],
+            text = hover_attr,
+            hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)]),
+            ))
+        if show_ci:
+            traces[-1].update(
+                        error_y=dict(
+                        type='data',
+                        symmetric=False,
+                        array=df_loc['poisson_high'], 
+                        arrayminus=df_loc['poisson_low']
+                        ))
+
+    
+        mut_fig_layout = go.Layout(
+
         )
 
-    mut_fig_layout = go.Layout(
-            title=f"{mh.samp} - {mh.construct} - {mh.cluster}",
-            xaxis=dict(title="Bases"),
-            yaxis=dict(title="Mutation rate", range=[0, 0.1]),
-            plot_bgcolor="white"
+    fig = go.Figure(data=traces, layout=mut_fig_layout)
 
-    )
-    mut_fig = go.Figure(data=mut_trace, layout=mut_fig_layout)
-    seqs = list(mh.sequence)
-    if mh.structure is not None:
-        db = list(mh.structure)
-    else:
-        db = " " * len(seqs)
-    mut_fig.update_yaxes(
+    fig.update_layout(title=f"{mh['sample']} - {mh['construct']} - {mh['section']} - {mh['cluster']}",
+                        xaxis=dict(title="Sequence"),
+                        yaxis=dict(title="Mutation rate", range=[0, 0.1]))
+   
+    fig.update_yaxes(
             gridcolor='lightgray',
             linewidth=1,
             linecolor='black',
-            mirror=True
+            mirror=True,
+            autorange=True
     )
-    mut_fig.update_xaxes(
+    fig.update_xaxes(
             linewidth=1,
             linecolor='black',
-            mirror=True
+            mirror=True,
+            autorange=True
     )
-    mut_fig.update_xaxes(
-            tickvals=xaxis_coordinates,
-            ticktext=["%s<br>%s" % (x, y) for (x, y) in zip(seqs, db)],
-            tickangle=0
-    )
-    iplot(mut_fig)
 
+    fig.update_xaxes(
+            tickvals=mh_unrolled['filtered_index'],
+            ticktext=["%s %s" % ({'.':'(P)','(':'(U)',')':'(U)'}[x], str(y)) for (x,y) in zip(mh['structure_selected'],mh['filtered_index'])],
+            tickangle=90,
+            autorange=True
+    )
+
+    iplot(fig)
     if savefile != None:
-        plot(mut_fig, filename = savefile, auto_open=False)
+        plot(fig, filename = savefile, auto_open=auto_open)
 
-    return OutputPlot(mh, mut_fig)
+    return OutputPlot(mh, fig)
 
-def deltaG_per_sample(df:pd.DataFrame, samp:str, deltaG:str='deltaG_min', structure:str='structure', index='all', base_type=['A','C','G','T'], flank:str=None, sub_lib:str=None, max_mutation:float= 0.15, models:List[str]=[], savefile=None)->OutputPlot:
 
-    fit = manipulator.Fit()
-    man = manipulator.Manipulator(df)
-    assert deltaG in man._df.columns, f"deltaG arg {deltaG} isn't in df columns"
-    data = pd.DataFrame()
-    sub_df= SubDF.from_locals(locals())
-    for row in df[df.samp==samp].itertuples():
-        sub_df.update(construct = row.construct, cluster=row.cluster)
-        data = pd.concat((data,man.get_SCC(cols=[deltaG,'mut_rates','construct'],sub_df=sub_df,can_be_empty=True).reset_index()))
+def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[], savefile=None, auto_open=False)->OutputPlot:
 
-    hover_attr = ['construct','index','mut_rates',deltaG]
+    df_temp = pd.DataFrame()
+    for _, row in df.iterrows():
+        df_temp = pd.concat([df_temp, pd.DataFrame({'construct':row.construct, 'index':row.filtered_index, 'mut_rates':row.mut_rates, 'deltaG':row['deltaG_selected'], 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.filtered_index))))])
+    df = df_temp.reset_index()
+
+    hover_attr = ['construct','index','mut_rates','deltaG']
     tra = {}
     for is_paired, prefix in zip([True,False], ['Paired ','Unpaired ']):
+        x=np.array(df[df.paired == is_paired]['deltaG'])
+        y=np.array(df[df.paired == is_paired]['mut_rates'])
+
         tra[prefix] = go.Scatter(
-            x=data[data.paired == is_paired][deltaG], 
-            y=data['mut_rates'], 
-            text = data[hover_attr],
+            x=x,
+            y=y,
+            text = df[hover_attr],
             mode='markers',
             name=prefix,
-            hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)])
-        )         
+            hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)]),
+            line=dict(color='green' if is_paired else 'red'))
+            
+        
         for m in models:
-            x = data[(data.paired==is_paired)][deltaG]
-            y = data[(data.paired==is_paired)]['mut_rates']
-            fit = Fit()
-            x_sorted, pred_y_sorted = fit.predict(x,y,m, prefix)
-            tra[fit.get_legend()] = go.Scatter(
-                x=x_sorted,
-                y=pred_y_sorted,
-                mode='lines',
-                name=fit.get_legend())
+            if len(y) > 0:
+                fit = Fit()
+                x_sorted, pred_y_sorted = fit.predict(x,y,m, prefix)
+                tra[fit.get_legend()] = go.Scatter(
+                    x=x_sorted,
+                    y=pred_y_sorted,
+                    mode='lines',
+                    name=fit.get_legend())
 
     layout = dict(title = 'Mutation rates of paired / unpaired residues vs the predicted energy of the molecule',
             xaxis= dict(title= 'DeltaG',ticklen= 5,zeroline= False),
@@ -151,29 +175,24 @@ def deltaG_per_sample(df:pd.DataFrame, samp:str, deltaG:str='deltaG_min', struct
     fig = dict(data = list(tra.values()), layout = layout)
     iplot(fig)
     if savefile != None:
-        plot(fig, filename = savefile, auto_open=False)
-    return OutputPlot(data, fig)
+        plot(fig, filename = savefile, auto_open=auto_open)
+    return OutputPlot(df, fig)
     
-def deltaG_per_base(df:pd.DataFrame, construct:str, region:str, cluster:int, experimental_variable:str, structure:str='structure', index='all', base_type=['A','C','G','T'], max_mutation:float= 0.15, models:List[str]=[], savefile=None)->OutputPlot:
+def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, models:List[str]=[], savefile=None, auto_open=False)->OutputPlot:
 
-    fit = manipulator.Fit()
-    man = manipulator.Manipulator(df)
     data = pd.DataFrame()
-    sub_df= SubDF.from_locals(locals())
-    assert construct in list(df.construct), f"{construct=} isn't in the dataframe"
-    assert experimental_variable in df.columns, f"{experimental_variable=} isn't in the study columns"
-    hover_attr = ['base','mut_rates','samp',experimental_variable]
-    for row in df[df.construct==construct].itertuples():
-        sub_df.update(samp = row.samp, construct = row.construct, cluster=row.cluster)
-        data = pd.concat((data,man.get_SCC(cols=hover_attr.copy(),sub_df=sub_df,can_be_empty=True).reset_index()))
+    for _, row in df.iterrows():
+        data = pd.concat([data, pd.DataFrame({'sample':row['sample'],experimental_variable:getattr(row,experimental_variable), 'index':list(row.filtered_index), 'base':list(row.sequence), 'mut_rates':list(row.mut_rates), 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.filtered_index))))])
     data = data.reset_index().rename(columns={'level_0':'index_subsequence'})
-    hover_attr+=['paired']
+    data = data.sort_values(by='index')
     data['Marker'] = data['paired'].apply(lambda x: {True: 0, False:1}[x])
+    hover_attr = ['base','mut_rates','sample',experimental_variable]
+
     tra = {}
     for idx, row in data.groupby('index_subsequence'):
         name = f"({row['base'].iloc[0]},{row['index'].iloc[0]})"
-        tra[idx] = go.Scatter(
-            x= row['DMS_conc_mM'], 
+        tra[row['index'].iloc[0]] = go.Scatter(
+            x= row[experimental_variable], 
             y= row['mut_rates'], 
             text = data[hover_attr],
             mode='lines+markers',
@@ -182,7 +201,7 @@ def deltaG_per_base(df:pd.DataFrame, construct:str, region:str, cluster:int, exp
             hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)])
         )         
         for m in models:
-            x= row['DMS_conc_mM']
+            x= row[experimental_variable]
             y= row['mut_rates']
             fit = Fit()
             x_sorted, pred_y_sorted = fit.predict(x,y,m, name)
@@ -198,12 +217,13 @@ def deltaG_per_base(df:pd.DataFrame, construct:str, region:str, cluster:int, exp
             yaxis= dict(title= 'Mutation rate ',ticklen= 5,zeroline= False),
             )
 
+    #tra = {k:tra[k] for k in sorted(tra.keys())}
+
     fig = dict(data = list(tra.values()), layout = layout)
     iplot(fig)
     if savefile != None:
-        plot(fig, filename = savefile, auto_open=False)
+        plot(fig, filename = savefile, auto_open=auto_open)
     return OutputPlot(data, fig)
-
 
 
 def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int=None, savefile='base_coverage.html')->OutputPlot:

@@ -111,7 +111,7 @@ def df_from_local_files(path_to_data:str, min_cov_bases:int, samples, name, filt
         all_df[s] = __load_pickle_to_df(file='{}/{}.p'.format(path_to_data,s))
         all_df[s] = __set_indexes_to_0(all_df[s])
         all_df[s] = __add_cols_to_df(all_df[s])
-        all_df[s] = __filter_by_base_cov(all_df[s], min_cov_bases, s, sub_df)
+        #all_df[s] = __filter_by_base_cov(all_df[s], min_cov_bases, s, sub_df)
     df = pd.concat(all_df).reset_index().drop(columns='level_1').rename(columns={'level_0':'samp'})
     if filter_by == 'study':
         df = __filter_by_study(df, samples, name)

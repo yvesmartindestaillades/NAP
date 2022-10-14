@@ -21,9 +21,10 @@ def __filtered_index(row, base_index, base_type, base_pairing, RNAstructure_use_
     
     if base_pairing is not None:
         base_pairing_switch = lambda idx, base, pairing: idx if (base=='.' and pairing) or (base in ['(',')'] and not pairing) else None 
-        structure = [base_pairing_switch(i,base,base_pairing) for i, base in enumerate(row['structure'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')])]
+        structure = [base_pairing_switch(i,base,base_pairing) for i, base in enumerate(row['structure_selected'])]
         index = list(set(index) & set([i for i in structure if i is not None]))
     return index
+
 
 def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_bases=0, base_index=None, base_type=['A','C','G','T'], base_pairing=None, RNAstructure_use_DMS=False, RNAstructure_use_temp=False, **kwargs)->pd.DataFrame:
     """Get a dataframe with filtered data
@@ -40,13 +41,15 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
         base_pairing (bool, optional): Filter per-base attributes (mut_rates, sequence, etc) by predicted base pairing. See RNAstructure_use_XXX arguments. Defaults to None.
         RNAstructure_use_DMS (bool, optional): Use DMS for the RNAstructure prediction when filtering by base pairing. Defaults to False.
         RNAstructure_use_temp (bool, optional): Use temperature for the RNAstructure prediction when filtering by base pairing. Defaults to False.
+        **kwargs: Additional arguments to pass to filter rows by. Ex: flank='flank_1' will keep only rows with flank=flank_1.
 
     Returns:
         pd.Dataframe: a filtered dataframe according to the given parameters
     """
 
-
     df = df.copy()
+    assert df.shape[0] > 0, "Empty dataframe"
+
     # filter mutation profiles
     df = df[df.worst_cov_bases >= min_cov_bases]
     for key, value in kwargs.items():
@@ -54,6 +57,7 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
     mp_attr = ['sample', 'construct', 'section', 'cluster'] + list(kwargs.keys())
 
     for attr in mp_attr:
+        assert attr in df.columns, f"Attribute {attr} not found in dataframe"
         if eval(attr) is not None:
             if (isinstance(eval(attr), list) or isinstance(eval(attr), tuple)):
                 df = df[df[attr].isin(eval(attr))]
@@ -61,7 +65,10 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
                 df = df[df[attr] == eval(attr)]
 
     # filter base profiles
-    df['filtered_index'] = df.apply(lambda row: __filtered_index(row, base_index, base_type, base_pairing, RNAstructure_use_DMS, RNAstructure_use_temp), axis=1)
+    df['structure_selected'] = df['structure'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')] 
+    df['deltaG_selected'] = df['deltaG_min'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')] 
+    temp = df.apply(lambda row: __filtered_index(row, base_index, base_type, base_pairing, RNAstructure_use_DMS, RNAstructure_use_temp), axis=1)
+    df.loc[:,'filtered_index'] = temp
     df = df[df.filtered_index.apply(lambda x: len(x) > 0)]
 
     bp_attr = ['sequence', 'mut_bases', 'info_bases','del_bases','ins_bases','cov_bases','mut_rates'] + \
@@ -73,5 +80,15 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
                 df.at[idx, attr] = ''.join(filtered_cell)
             else:
                 df.at[idx, attr] = np.array(filtered_cell)
+    try:
+        df['unique_id'] = df.apply(lambda row: '_'.join([row[attr] for attr in mp_attr if type(eval(attr)) in [list, tuple]]), axis=1)
+    except:
+        if len(df) > 0:
+            "Could not create unique_id column, df: \n {}".format(df)
+        else:
+            pass
+
     return df
 
+def filter_by_study(df):
+    return df.groupby(['construct', 'section', 'cluster']).filter(lambda x: len(df['sample'].unique()) == len(x['sample'].unique()))
