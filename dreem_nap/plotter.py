@@ -25,6 +25,7 @@ import plotly.graph_objects as go
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import scipy
 from scipy.optimize import curve_fit
+from plotly.validators.scatter.marker import SymbolValidator
 
 
 
@@ -145,9 +146,9 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[], savefile=None, auto_
     hover_attr = ['construct','index','mut_rates','deltaG']
     tra = {}
     for is_paired, prefix in zip([True,False], ['Paired ','Unpaired ']):
+        markers = cycle(list(range(153)))
         x=np.array(df[df.paired == is_paired]['deltaG'])
         y=np.array(df[df.paired == is_paired]['mut_rates'])
-
         tra[prefix] = go.Scatter(
             x=x,
             y=y,
@@ -165,13 +166,16 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[], savefile=None, auto_
                 tra[fit.get_legend()] = go.Scatter(
                     x=x_sorted,
                     y=pred_y_sorted,
-                    mode='lines',
-                    name=fit.get_legend())
+                    mode='lines+markers',
+                    name=fit.get_legend(), 
+                    marker=dict(symbol=next(markers)),
+                    line=dict(color='darkseagreen' if is_paired else 'crimson', dash='dash'))
 
     layout = dict(title = 'Mutation rates of paired / unpaired residues vs the predicted energy of the molecule',
             xaxis= dict(title= 'DeltaG',ticklen= 5,zeroline= False),
             yaxis= dict(title= 'Mutation rate ',ticklen= 5,zeroline= False),
             )
+
     fig = dict(data = list(tra.values()), layout = layout)
     iplot(fig)
     if savefile != None:
@@ -180,16 +184,19 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[], savefile=None, auto_
     
 def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, models:List[str]=[], savefile=None, auto_open=False)->OutputPlot:
 
+    colors = cycle(['red','green','blue','orange','purple','black','yellow','pink','brown','grey','cyan','magenta'])
     data = pd.DataFrame()
     for _, row in df.iterrows():
         data = pd.concat([data, pd.DataFrame({'sample':row['sample'],experimental_variable:getattr(row,experimental_variable), 'index':list(row.filtered_index), 'base':list(row.sequence), 'mut_rates':list(row.mut_rates), 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.filtered_index))))])
     data = data.reset_index().rename(columns={'level_0':'index_subsequence'})
     data = data.sort_values(by='index')
     data['Marker'] = data['paired'].apply(lambda x: {True: 0, False:1}[x])
-    hover_attr = ['base','mut_rates','sample',experimental_variable]
+    hover_attr = ['base','mut_rates','sample',experimental_variable, 'paired']
 
     tra = {}
     for idx, row in data.groupby('index_subsequence'):
+        color = next(colors)
+        markers = cycle(list(range(153)))
         name = f"({row['base'].iloc[0]},{row['index'].iloc[0]})"
         tra[row['index'].iloc[0]] = go.Scatter(
             x= row[experimental_variable], 
@@ -198,18 +205,21 @@ def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, mode
             mode='lines+markers',
             marker = dict(symbol = list(map(util.Setshape, data['Marker']))),
             name= name,
-            hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)])
-        )         
+            hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)]),
+            line=dict(color=color))
+
+        my_dash = cycle(['solid', 'dot', 'dash', 'longdash', 'dashdot', 'longdashdot'])
         for m in models:
             x= row[experimental_variable]
             y= row['mut_rates']
             fit = Fit()
             x_sorted, pred_y_sorted = fit.predict(x,y,m, name)
-            
             tra[fit.get_legend()] = go.Scatter(
                 x=x_sorted,
                 y=pred_y_sorted,
                 mode='lines',
+                line=dict(dash= next(my_dash), color=color),
+               # line=dict(color=color),
                 name=fit.get_legend())
 
     layout = dict(title = 'Mutation rates of paired / unpaired residues vs '+experimental_variable,
@@ -217,7 +227,7 @@ def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, mode
             yaxis= dict(title= 'Mutation rate ',ticklen= 5,zeroline= False),
             )
 
-    #tra = {k:tra[k] for k in sorted(tra.keys())}
+    #tra = {arg:tra[list(tra.keys()[arg])] for arg in np.argsort(np.array([int(k[k.index('(')+3:k.index(')')]) for k in tra.keys()]))}
 
     fig = dict(data = list(tra.values()), layout = layout)
     iplot(fig)
@@ -244,7 +254,8 @@ def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int
             x=x,
             y=y, 
             name=construct,
-            mode='lines'))
+            mode='lines'
+            ))
 
     layout = go.Layout(
         title=f"{mh.samp} - {mh.construct} - {mh.cluster}",
