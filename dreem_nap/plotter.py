@@ -29,41 +29,9 @@ from plotly.validators.scatter.marker import SymbolValidator
 
 
 
-class Fit(object):
-    def __init__(self) -> None:
-        self.legend = ''
-    
-    def get_legend(self):
-        return self.legend
-
-    def predict(self, x, y, model, prefix='', suffix=''):
-        fit = self.fit(x,y,model)
-        m = eval(model)
-        try:
-            linreg  = scipy.stats.linregress(y,m(x,*fit))
-            self.rvalue = round(linreg.rvalue,5)
-        except:
-            self.rvalue = 'error'
-
-        self._generate_legend(fit, model, prefix, suffix)
-        return np.sort(x), m(np.sort(x),*fit)
-
-    def fit(self, x,y, model):
-        fit = curve_fit(eval(model), x, y)[0]
-        return fit
-
-    def _generate_legend(self, fit, m, prefix, suffix):
-        slice_m = lambda start, stop: ','.join(str(m).split(',')[start:stop])
-        first_slice = slice_m(0,len(fit))+','+slice_m(len(fit), len(fit)+1).split(':')[0]
-        second_slice = ','.join(m.split(',')[len(fit):])[2:]
-        fun_args = [a.strip() for a in str(m).split(',')[1:len(fit)+1]]
-        fun_args[-1] = fun_args[-1][0]
-        for a,b in zip(fun_args,fit):
-            second_slice = second_slice.replace(a.strip(),str(round(b,5)))
-        self.legend = prefix+ second_slice + suffix +f'\n R2={self.rvalue}'
 
 
-def mutation_histogram(df, show_ci:bool=True, savefile=None, auto_open=False)->OutputPlot:
+def mutation_histogram(df, show_ci:bool=True, savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
     assert len(df) == 1, "df must have only one row"
     mh = df.iloc[0]
     cmap = {"A": "red", "T": "green", "G": "orange", "C": "blue"}  # Color map
@@ -128,15 +96,15 @@ def mutation_histogram(df, show_ci:bool=True, savefile=None, auto_open=False)->O
             tickangle=90,
             autorange=True
     )
-
-    iplot(fig)
+    if use_iplot:
+        iplot(fig)
     if savefile != None:
         plot(fig, filename = savefile, auto_open=auto_open)
 
-    return OutputPlot(mh, fig)
+    return {'fig':fig, 'df':mh}
 
 
-def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[], savefile=None, auto_open=False)->OutputPlot:
+def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
 
     df_temp = pd.DataFrame()
     for _, row in df.iterrows():
@@ -161,7 +129,7 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[], savefile=None, auto_
         
         for m in models:
             if len(y) > 0:
-                fit = Fit()
+                fit = util.Fit()
                 x_sorted, pred_y_sorted = fit.predict(x,y,m, prefix)
                 tra[fit.get_legend()] = go.Scatter(
                     x=x_sorted,
@@ -177,12 +145,13 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[], savefile=None, auto_
             )
 
     fig = dict(data = list(tra.values()), layout = layout)
-    iplot(fig)
+    if use_iplot:
+        iplot(fig)
     if savefile != None:
         plot(fig, filename = savefile, auto_open=auto_open)
-    return OutputPlot(df, fig)
+    return {'fig':fig, 'df':df}
     
-def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, models:List[str]=[], savefile=None, auto_open=False)->OutputPlot:
+def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
 
     colors = cycle(['red','green','blue','orange','purple','black','yellow','pink','brown','grey','cyan','magenta'])
     data = pd.DataFrame()
@@ -212,7 +181,7 @@ def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, mode
         for m in models:
             x= row[experimental_variable]
             y= row['mut_rates']
-            fit = Fit()
+            fit = util.Fit()
             x_sorted, pred_y_sorted = fit.predict(x,y,m, name)
             tra[fit.get_legend()] = go.Scatter(
                 x=x_sorted,
@@ -233,10 +202,9 @@ def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, mode
     iplot(fig)
     if savefile != None:
         plot(fig, filename = savefile, auto_open=auto_open)
-    return OutputPlot(data, fig)
+    return {'fig':fig, 'df':data}
 
-
-def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int=None, savefile='base_coverage.html')->OutputPlot:
+def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int=None, savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
     if constructs == 'all':
         constructs = list(df[df.samp==samp]['construct'].unique())
     trace = [
@@ -265,10 +233,11 @@ def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int
         )
 
     fig = go.Figure(data=trace, layout=layout)
-    iplot(fig)
+    if use_iplot:
+        iplot(fig)
 
     if savefile != None:
         plot(fig, filename = savefile, auto_open=False)
 
-    return OutputPlot(data=pd.DataFrame({t['name']:{'x':t['x'], 'y':t['y']} for t in trace}).T, fig=fig)
+    return {'fig':fig, 'df':pd.DataFrame({t['name']:{'x':t['x'], 'y':t['y']} for t in trace}).T}
 

@@ -6,7 +6,6 @@ from dreem_nap.loader import df_from_local_files
 import pandas as pd
 from dreem_nap import deltaG
 
-NOT_IN_GET_DF = ['show_ci','savefile','deltaG','models','experimental_variable','auto_open']
 
 class Study(object):
     """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
@@ -38,13 +37,7 @@ class Study(object):
 
         self.samples = samples
         self.df = pd.read_csv(path_to_data)
-        self.df = self.df[self.df['worst_cov_bases'] >= min_cov_bases]
-        for col in [ 'mut_bases', 'info_bases','del_bases','ins_bases','cov_bases','mut_rates'] + \
-            [c for c in self.df.columns.tolist() if (c.startswith('mod_bases') or c.startswith('poisson'))]:
-            self.df[col] = self.df[col].apply(lambda x: [float(b) for b in x[1:-1].split(' ') if b != '' and b != '\n'])
-        self.df = manipulator.get_df(df=self.df, sample=samples, min_cov_bases=min_cov_bases)
-        if filter_by == 'study':
-            self.df = manipulator.filter_by_study(self.df)
+        self.set_df(self.df, min_cov_bases=min_cov_bases, filter_by=filter_by, samples=samples)
 
     @classmethod
     def from_dict(cls, di:dict):
@@ -68,6 +61,21 @@ class Study(object):
             except: 
                 di[attr]=None
         return cls(di['name'], di['samples'])
+
+    def set_df(self, df, min_cov_bases=0, filter_by='sample', samples=None):
+        self.df = df
+        self.df = self.df[self.df['worst_cov_bases'] >= min_cov_bases]
+        for col in [ 'mut_bases', 'info_bases','del_bases','ins_bases','cov_bases','mut_rates'] + \
+            [c for c in self.df.columns.tolist() if (c.startswith('mod_bases') or c.startswith('poisson'))]:
+            self.df[col] = self.df[col].apply(lambda x: [float(b) for b in x[1:-1].split(' ') if b != '' and b != '\n'])
+        self.df = manipulator.get_df(df=self.df, sample=samples, min_cov_bases=min_cov_bases)
+        if filter_by == 'study':
+            self.df = manipulator.filter_by_study(self.df)
+        
+        for attr in ['section','cluster']:
+            if attr not in self.df.columns:
+                self.df[attr] = 0
+
 
     def get_df(self, **kwargs):
         return manipulator.get_df(self.df, **kwargs)
@@ -107,7 +115,7 @@ class Study(object):
             OutputPlot: Figure, axis and data of the output plot.
         """
 
-        return plotter.mutation_histogram(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k not in NOT_IN_GET_DF}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_histogram.__code__.co_varnames})
+        return plotter.mutation_histogram(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in self.df.columns}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_histogram.__code__.co_varnames})
 
     def deltaG_per_sample(self, **kwargs)->util.OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
@@ -131,7 +139,7 @@ class Study(object):
         Returns:
             OutputPlot: Figure and data of the output plot.
         """
-        return plotter.deltaG_per_sample(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k not in NOT_IN_GET_DF}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_per_sample.__code__.co_varnames})
+        return plotter.deltaG_per_sample(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in self.df.columns}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_per_sample.__code__.co_varnames})
 
     
     def variable_exp_across_samples(self, **kwargs)->util.OutputPlot:
@@ -154,7 +162,7 @@ class Study(object):
         Returns:
             OutputPlot: Figure, axis and data of the output plot.
         """
-        return plotter.variable_exp_across_samples(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k not in NOT_IN_GET_DF}), **{k:v for k,v in kwargs.items() if k in plotter.variable_exp_across_samples.__code__.co_varnames})
+        return plotter.variable_exp_across_samples(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in self.df.columns}), **{k:v for k,v in kwargs.items() if k in plotter.variable_exp_across_samples.__code__.co_varnames})
         
 
 
@@ -164,7 +172,7 @@ class Study(object):
         Args:
             samp (str): Sample of your rows.
             constructs (List[str]): Constructs of your rows.
-            region (str): Region of your row.
+            section (str): Region of your row.
             cluster (int, optional): Cluster of your row. Defaults to 0. 
             index (_type_, optional): Indexes to plot. Defaults to ``'all'``. Can be a series of 0-indexes (ex: [43,44,45,48]), 'roi', 'all', or a unique sequence (ex: 'ATTAC')
             base_type (List[str], optional): Bases type to plot. Defaults to ``['A','C','G','T']``.

@@ -128,6 +128,41 @@ def define_figure(title:str, xlabel:str, ylabel:str, figsize:Tuple[float, float]
 
 import yaml, os, subprocess
 import pandas as pd
+
+
+class Fit(object):
+    def __init__(self) -> None:
+        self.legend = ''
+    
+    def get_legend(self):
+        return self.legend
+
+    def predict(self, x, y, model, prefix='', suffix=''):
+        fit = self.fit(x,y,model)
+        m = eval(model)
+        try:
+            linreg  = scipy.stats.linregress(y,m(x,*fit))
+            self.rvalue = round(linreg.rvalue,5)
+        except:
+            self.rvalue = 'error'
+
+        self._generate_legend(fit, model, prefix, suffix)
+        return np.sort(x), m(np.sort(x),*fit)
+
+    def fit(self, x,y, model):
+        fit = curve_fit(eval(model), x, y)[0]
+        return fit
+
+    def _generate_legend(self, fit, m, prefix, suffix):
+        slice_m = lambda start, stop: ','.join(str(m).split(',')[start:stop])
+        first_slice = slice_m(0,len(fit))+','+slice_m(len(fit), len(fit)+1).split(':')[0]
+        second_slice = ','.join(m.split(',')[len(fit):])[2:]
+        fun_args = [a.strip() for a in str(m).split(',')[1:len(fit)+1]]
+        fun_args[-1] = fun_args[-1][0]
+        for a,b in zip(fun_args,fit):
+            second_slice = second_slice.replace(a.strip(),str(round(b,5)))
+        self.legend = prefix+ second_slice + suffix +f'\n R2={self.rvalue}'
+
                 
 class RNAstructure(object): 
     """A class to run RNAstructure commands
