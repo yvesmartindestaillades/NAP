@@ -37,7 +37,7 @@ def mutation_histogram(df, show_ci:bool=True, savefile=None, auto_open=False, us
     cmap = {"A": "red", "T": "green", "G": "orange", "C": "blue"}  # Color map
     
     traces, layouts = [], []
-    mh_unrolled = pd.DataFrame({'mut_rate':list(mh.mut_rates), 'base':list(mh.sequence), 'filtered_index':list(mh.filtered_index), 'poisson_high':list(mh.poisson_high), 'poisson_low':list(mh.poisson_low), 'paired':list(mh.structure_selected)})
+    mh_unrolled = pd.DataFrame({'mut_rate':list(mh.mut_rates), 'base':list(mh.sequence), 'index_reset':list(range(len(mh.index_selected))),'index_selected':list(mh.index_selected), 'poisson_high':list(mh.poisson_high), 'poisson_low':list(mh.poisson_low), 'paired':list(mh.structure_selected)})
 
     for bt in set(mh['sequence']):
         df_loc = mh_unrolled[mh_unrolled['base'] == bt]
@@ -46,10 +46,10 @@ def mutation_histogram(df, show_ci:bool=True, savefile=None, auto_open=False, us
 
         hover_attr = pd.DataFrame({'mut_rate':list(df_loc.mut_rate),
                                         'base':list(df_loc.base), 
-                                        'index':list(df_loc['filtered_index']),
+                                        'index':list(df_loc['index_selected']),
                                         'paired':[{'.':True, '(':False,')':False}[s] for s in df_loc.paired]})
         traces.append(go.Bar(
-            x= np.array(df_loc['filtered_index']),
+            x= np.array(df_loc['index_reset']),
             y= np.array(df_loc['mut_rate']),
             name=bt,
             marker_color=cmap[bt],
@@ -91,8 +91,8 @@ def mutation_histogram(df, show_ci:bool=True, savefile=None, auto_open=False, us
     )
 
     fig.update_xaxes(
-            tickvals=mh_unrolled['filtered_index'],
-            ticktext=["%s %s" % ({'.':'(P)','(':'(U)',')':'(U)'}[x], str(y)) for (x,y) in zip(mh['structure_selected'],mh['filtered_index'])],
+            tickvals=mh_unrolled['index_reset'],
+            ticktext=["%s %s" % ({'.':'(P)','(':'(U)',')':'(U)'}[x], str(y)) for (x,y) in zip(mh['structure_selected'],mh['index_selected'])],
             tickangle=90,
             autorange=True
     )
@@ -108,10 +108,10 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto
 
     df_temp = pd.DataFrame()
     for _, row in df.iterrows():
-        df_temp = pd.concat([df_temp, pd.DataFrame({'construct':row.construct, 'index':row.filtered_index, 'mut_rates':row.mut_rates, 'deltaG':row['deltaG_selected'], 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.filtered_index))))])
+        df_temp = pd.concat([df_temp, pd.DataFrame({'construct':row.construct, 'index':row.index_selected, 'mut_rates':row.mut_rates, 'deltaG':row['deltaG_selected'],'base':list(row.sequence), 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.index_selected))))])
     df = df_temp.reset_index()
 
-    hover_attr = ['construct','index','mut_rates','deltaG']
+    hover_attr = ['mut_rates','base','index','construct','deltaG']
     tra = {}
     for is_paired, prefix in zip([True,False], ['Paired ','Unpaired ']):
         markers = cycle(list(range(153)))
@@ -120,7 +120,7 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto
         tra[prefix] = go.Scatter(
             x=x,
             y=y,
-            text = df[hover_attr],
+            text = df[df.paired == is_paired][hover_attr],
             mode='markers',
             name=prefix,
             hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)]),
@@ -156,7 +156,7 @@ def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, mode
     colors = cycle(['red','green','blue','orange','purple','black','yellow','pink','brown','grey','cyan','magenta'])
     data = pd.DataFrame()
     for _, row in df.iterrows():
-        data = pd.concat([data, pd.DataFrame({'sample':row['sample'],experimental_variable:getattr(row,experimental_variable), 'index':list(row.filtered_index), 'base':list(row.sequence), 'mut_rates':list(row.mut_rates), 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.filtered_index))))])
+        data = pd.concat([data, pd.DataFrame({'sample':row['sample'],experimental_variable:getattr(row,experimental_variable), 'index':list(row.index_selected), 'base':list(row.sequence), 'mut_rates':list(row.mut_rates), 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.index_selected))))])
     data = data.reset_index().rename(columns={'level_0':'index_subsequence'})
     data = data.sort_values(by='index')
     data['Marker'] = data['paired'].apply(lambda x: {True: 0, False:1}[x])

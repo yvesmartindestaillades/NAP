@@ -20,7 +20,7 @@ class Study(object):
 
     attr_list = ['name','samples']
 
-    def __init__(self, path_to_data, samples=None, min_cov_bases=0, filter_by='sample') -> None:
+    def __init__(self, path_to_data=None, samples=None, min_cov_bases=0, filter_by='sample') -> None:
         """Creates a Study object.
 
         Args:
@@ -36,8 +36,11 @@ class Study(object):
         """
 
         self.samples = samples
-        self.df = pd.read_csv(path_to_data)
-        self.set_df(self.df, min_cov_bases=min_cov_bases, filter_by=filter_by, samples=samples)
+        if path_to_data is not None:
+            self.df = pd.read_csv(path_to_data)
+            self.set_df(self.df, min_cov_bases=min_cov_bases, filter_by=filter_by, samples=samples)
+        else:
+            self.df = None
 
     @classmethod
     def from_dict(cls, di:dict):
@@ -70,12 +73,17 @@ class Study(object):
             self.df[col] = self.df[col].apply(lambda x: [float(b) for b in x[1:-1].split(' ') if b != '' and b != '\n'])
         self.df = manipulator.get_df(df=self.df, sample=samples, min_cov_bases=min_cov_bases)
         if filter_by == 'study':
-            self.df = manipulator.filter_by_study(self.df)
+            self.filter_by_study(self.df, inplace=True)
         
         for attr in ['section','cluster']:
             if attr not in self.df.columns:
                 self.df[attr] = 0
-
+    
+    def filter_by_study(self, inplace=False):
+        df = self.df.groupby(['construct', 'section', 'cluster']).filter(lambda x: len(self.df['sample'].unique()) == len(x['sample'].unique()))
+        if inplace:
+            self.df = df
+        return df.copy()
 
     def get_df(self, **kwargs):
         return manipulator.get_df(self.df, **kwargs)
@@ -115,7 +123,7 @@ class Study(object):
             OutputPlot: Figure, axis and data of the output plot.
         """
 
-        return plotter.mutation_histogram(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in self.df.columns}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_histogram.__code__.co_varnames})
+        return plotter.mutation_histogram(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_histogram.__code__.co_varnames})
 
     def deltaG_per_sample(self, **kwargs)->util.OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
@@ -139,7 +147,7 @@ class Study(object):
         Returns:
             OutputPlot: Figure and data of the output plot.
         """
-        return plotter.deltaG_per_sample(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in self.df.columns}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_per_sample.__code__.co_varnames})
+        return plotter.deltaG_per_sample(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_per_sample.__code__.co_varnames})
 
     
     def variable_exp_across_samples(self, **kwargs)->util.OutputPlot:
@@ -162,7 +170,7 @@ class Study(object):
         Returns:
             OutputPlot: Figure, axis and data of the output plot.
         """
-        return plotter.variable_exp_across_samples(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in self.df.columns}), **{k:v for k,v in kwargs.items() if k in plotter.variable_exp_across_samples.__code__.co_varnames})
+        return plotter.variable_exp_across_samples(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in  list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.variable_exp_across_samples.__code__.co_varnames})
         
 
 

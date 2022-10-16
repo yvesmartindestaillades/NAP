@@ -4,7 +4,7 @@ import numpy as np
 def __find_base_in_sequence(sequence, base_type):
     return [i for i, base in enumerate(sequence) if base in base_type]
 
-def __filtered_index(row, base_index, base_type, base_pairing, RNAstructure_use_DMS, RNAstructure_use_temp):
+def __index_selected(row, base_index, base_type, base_pairing, RNAstructure_use_DMS, RNAstructure_use_temp):
     index = list(range(len(row['sequence'])))
     if base_index is not None:
         if isinstance(base_index, int):
@@ -67,15 +67,15 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
     # filter base profiles
     df['structure_selected'] = df['structure'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')] 
     df['deltaG_selected'] = df['deltaG_min'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')] 
-    temp = df.apply(lambda row: __filtered_index(row, base_index, base_type, base_pairing, RNAstructure_use_DMS, RNAstructure_use_temp), axis=1)
-    df.loc[:,'filtered_index'] = temp
-    df = df[df.filtered_index.apply(lambda x: len(x) > 0)]
+    temp = df.apply(lambda row: __index_selected(row, base_index, base_type, base_pairing, RNAstructure_use_DMS, RNAstructure_use_temp), axis=1)
+    df.loc[:,'index_selected'] = temp
+    df = df[df.index_selected.apply(lambda x: len(x) > 0)]
 
     bp_attr = ['sequence', 'mut_bases', 'info_bases','del_bases','ins_bases','cov_bases','mut_rates'] + \
         [c for c in df.columns.tolist() if (c.startswith('structure') or c.startswith('mod_bases') or c.startswith('poisson'))]
     for idx, row in df.iterrows():
         for attr in bp_attr:
-            filtered_cell = [row[attr][i] for i in df.at[idx, 'filtered_index']]
+            filtered_cell = [row[attr][i] for i in df.at[idx, 'index_selected']]
             if type(row[attr]) == str:
                 df.at[idx, attr] = ''.join(filtered_cell)
             else:
@@ -89,6 +89,3 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
             pass
 
     return df
-
-def filter_by_study(df):
-    return df.groupby(['construct', 'section', 'cluster']).filter(lambda x: len(df['sample'].unique()) == len(x['sample'].unique()))
