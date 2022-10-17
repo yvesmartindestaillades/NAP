@@ -23,8 +23,6 @@ import pandas as pd
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
-import scipy
-from scipy.optimize import curve_fit
 from plotly.validators.scatter.marker import SymbolValidator
 
 

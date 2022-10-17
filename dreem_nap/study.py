@@ -2,9 +2,7 @@ from genericpath import exists
 from random import sample
 from typing import List
 from dreem_nap import manipulator, util, plotter
-from dreem_nap.loader import df_from_local_files
 import pandas as pd
-from dreem_nap import deltaG
 
 
 class Study(object):
@@ -73,7 +71,7 @@ class Study(object):
             self.df[col] = self.df[col].apply(lambda x: [float(b) for b in x[1:-1].split(' ') if b != '' and b != '\n'])
         self.df = manipulator.get_df(df=self.df, sample=samples, min_cov_bases=min_cov_bases)
         if filter_by == 'study':
-            self.filter_by_study(self.df, inplace=True)
+            self.filter_by_study(inplace=True)
         
         for attr in ['section','cluster']:
             if attr not in self.df.columns:

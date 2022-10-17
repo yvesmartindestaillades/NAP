@@ -9,6 +9,7 @@ from plotly.validators.scatter.marker import SymbolValidator
 import plotly.offline as pyo
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPM
+from scipy.optimize import curve_fit
 
 vals = SymbolValidator().values
 
