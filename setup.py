@@ -29,16 +29,10 @@ setup(
    packages=['dreem_nap'],  #same as name
    package_dir={'dreem_nap': 'dreem_nap'},
    py_modules=[
-       'dreem_nap/data_wrangler',
-       'dreem_nap/database',
-       'dreem_nap/plot',
+       'dreem_nap/plotter',
        'dreem_nap/util', 
-       'dreem_nap/data_manip',
-       'dreem_nap/wrapper',
+       'dreem_nap/manipulator',
        'dreem_nap/study',
-       'dreem_nap/data',
-       'dreem_nap/clustering',
-       'dreem_nap/deltaG',
    ],
    include_package_data=True,
    install_requires=requirements, #external packages as dependencies
