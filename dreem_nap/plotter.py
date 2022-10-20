@@ -1,30 +1,15 @@
-from binascii import a2b_hex
-from typing import Tuple, List
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import os, sys
-
-sys.path.append(os.path.abspath(""))
 
 from dreem_nap.util import *
-import plotly
 
-from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
+from plotly.offline import plot, iplot
 
 from dreem_nap.util import OutputPlot, MplAttr, SubDF
-from dreem_nap import manipulator, util
-import matplotlib.pyplot as plt
+from dreem_nap import  util
 from itertools import cycle
 from typing import Tuple, List
-import pandas as pd
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
-from plotly.validators.scatter.marker import SymbolValidator
-
 
 
 

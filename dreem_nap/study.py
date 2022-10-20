@@ -1,9 +1,6 @@
-from genericpath import exists
-from random import sample
-from typing import List
 from dreem_nap import manipulator, util, plotter
 import pandas as pd
-
+import re
 
 class Study(object):
     """A class to store information about a study, i.e a set of samples that are relevant to be studied together.
@@ -18,7 +15,7 @@ class Study(object):
 
     attr_list = ['name','samples']
 
-    def __init__(self, path_to_data=None, samples=None, min_cov_bases=0, filter_by='sample') -> None:
+    def __init__(self, df=None, samples=None, min_cov_bases=0, filter_by='sample') -> None:
         """Creates a Study object.
 
         Args:
@@ -27,15 +24,14 @@ class Study(object):
             filter_by (str, optional): Filter rows by sample or study. When filtered by study, if a row passes the filter, rows with the same 'construct', 'section' and 'cluster' fields for all other samples have a sufficient base coverage. Defaults to 'sample'.            
 
         Example:
-            >>> study = Study(path_to_data='data/my_study.csv', 
+            >>> study = Study(df=pd.from_csv('data/my_study.csv'), 
                               samples=['A1', 'B2', 'B3'], 
                               min_cov_bases=1000, 
                               filter_by='study')
         """
-
         self.samples = samples
-        if path_to_data is not None:
-            self.df = pd.read_csv(path_to_data)
+        if df is not None:
+            self.df = df
             self.set_df(self.df, min_cov_bases=min_cov_bases, filter_by=filter_by, samples=samples)
         else:
             self.df = None
@@ -65,10 +61,13 @@ class Study(object):
 
     def set_df(self, df, min_cov_bases=0, filter_by='sample', samples=None):
         self.df = df
-        self.df = self.df[self.df['worst_cov_bases'] >= min_cov_bases]
         for col in [ 'mut_bases', 'info_bases','del_bases','ins_bases','cov_bases','mut_rates'] + \
             [c for c in self.df.columns.tolist() if (c.startswith('mod_bases') or c.startswith('poisson'))]:
-            self.df[col] = self.df[col].apply(lambda x: [float(b) for b in x[1:-1].split(' ') if b != '' and b != '\n'])
+            self.df[col] = self.df[col].apply(lambda x: [float(b) for b in x[1:-1].replace('\n',' ').replace(',',' ').split(' ') if b != ''])
+
+        if not 'worst_cov_bases' in self.df.columns:
+            self.df['worst_cov_bases'] = self.df['cov_bases'].apply(lambda x: min(x))
+
         self.df = manipulator.get_df(df=self.df, sample=samples, min_cov_bases=min_cov_bases)
         if filter_by == 'study':
             self.filter_by_study(inplace=True)
@@ -92,11 +91,11 @@ class Study(object):
     def get_constructs(self, sample:str):
         return self.df[self.df['sample'] == sample]['construct'].unique()
 
-    def get_genes(self, sample:str, construct:str):
-        return self.df[(self.df['sample'] == sample) & (self._df['construct'] == construct)]['section'].unique()
+    def get_sections(self, sample:str, construct:str):
+        return self.df[(self.df['sample'] == sample) & (self.df['construct'] == construct)]['section'].unique()
 
     def get_clusters(self, sample:str, construct:str, section:str):
-        return self.df[(self.df['sample'] == sample) & (self._df['construct'] == construct)& (self._df['section'] == section)]['cluster'].unique()
+        return self.df[(self.df['sample'] == sample) & (self.df['construct'] == construct)& (self.df['section'] == section)]['cluster'].unique()
        
     def load_studies(studies_file_path:str):
         return load_studies(studies_file_path)

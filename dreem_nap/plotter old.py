@@ -5,7 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os, sys
 
-sys.path.append(os.path.abspath(""))
 from dreem_nap import manipulator
 
 from dreem_nap.clustering import Clustering
