@@ -210,12 +210,12 @@ class RNAstructure(object):
                     out["p"]+=[float(ls[2])]
         return self.__cast_pairing_prob(out)
 
-    def draw(self, savefig):
+    def draw(self, savefig, dpi=72):
         self.predict_construct_deltaG()
         self.__run_command(self.rnastructure_path+'draw '+self.ct_file + ' --svg '+self.svg_file+' -n -1')
         svg_code = self.__read_svg()
         drawing = svg2rlg(self.svg_file)
-        renderPM.drawToFile(drawing, self.png_file, fmt="PNG")
+        renderPM.drawToFile(drawing, self.png_file, fmt="PNG", dpi=dpi)
         shutil.copy(self.png_file, savefig)
 
     def __read_svg(self):
