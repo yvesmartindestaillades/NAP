@@ -8,13 +8,13 @@ Plots
 Mutation histogram
 ==================
 
-.. figure:: img/mutation_histogram.png
+.. figure:: img/mutation_fraction.png
     :align: center
 
 
 .. code-block:: python
 
-    study.mutation_histogram(samp=470,
+    study.mutation_fraction(samp=470,
                              construct='3114-O-flank_1=hp7-DB',
                              cluster=0,
                              index=list(range(19,80)),
@@ -24,7 +24,7 @@ Mutation histogram
 
 
 
-.. autofunction:: dreem_nap.study.Study.mutation_histogram
+.. autofunction:: dreem_nap.study.Study.mutation_fraction
     :noindex:
 
 

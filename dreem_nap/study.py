@@ -101,7 +101,7 @@ class Study(object):
         return load_studies(studies_file_path)
 
 
-    def mutation_histogram(self, **kwargs):
+    def mutation_fraction(self, **kwargs):
         """Plot the mutation rates as histograms.
         Args:
             sample (list, int, str, optional): Filter rows by sample (list of samples or just a sample). Defaults to None.
@@ -120,7 +120,7 @@ class Study(object):
             OutputPlot: Figure, axis and data of the output plot.
         """
 
-        return plotter.mutation_histogram(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_histogram.__code__.co_varnames})
+        return plotter.mutation_fraction(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_fraction.__code__.co_varnames})
 
     def deltaG_per_sample(self, **kwargs)->util.OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
@@ -147,7 +147,7 @@ class Study(object):
         return plotter.deltaG_per_sample(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_per_sample.__code__.co_varnames})
 
     
-    def variable_exp_across_samples(self, **kwargs)->util.OutputPlot:
+    def exp_variable_across_samples(self, **kwargs)->util.OutputPlot:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
 
         Args:
@@ -167,7 +167,7 @@ class Study(object):
         Returns:
             OutputPlot: Figure, axis and data of the output plot.
         """
-        return plotter.variable_exp_across_samples(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in  list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.variable_exp_across_samples.__code__.co_varnames})
+        return plotter.exp_variable_across_samples(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in  list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.exp_variable_across_samples.__code__.co_varnames})
         
 
 

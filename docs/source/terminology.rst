@@ -44,7 +44,7 @@ Let's define a few terms for a good understanding of this page.
 
 :Attributes:
 
-    **Attributes** are a set of experimental results and properties related to a **sample-construct**, read from dreem package's mutation_histogram.  
+    **Attributes** are a set of experimental results and properties related to a **sample-construct**, read from dreem package's mutation_fraction.  
     
     Examples: ``flank``, ``mut_bases``, ``user``. 
 

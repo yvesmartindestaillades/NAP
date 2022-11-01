@@ -14,7 +14,7 @@ from typing import Tuple, List
 
 
 
-def mutation_histogram(df, show_ci:bool=True, savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
+def mutation_fraction(df, show_ci:bool=True, savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
     assert len(df) == 1, "df must have only one row"
     mh = df.iloc[0]
     cmap = {"A": "red", "T": "green", "G": "orange", "C": "blue"}  # Color map
@@ -134,7 +134,7 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto
         plot(fig, filename = savefile, auto_open=auto_open)
     return {'fig':fig, 'df':df}
     
-def variable_exp_across_samples(df:pd.DataFrame, experimental_variable:str, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
+def exp_variable_across_samples(df:pd.DataFrame, experimental_variable:str, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
 
     colors = cycle(['red','green','blue','orange','purple','black','yellow','pink','brown','grey','cyan','magenta'])
     data = pd.DataFrame()

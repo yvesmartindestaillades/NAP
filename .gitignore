@@ -145,3 +145,4 @@ data/saved_db
 ex/**
 .vscode
 !ex/example.ipynb
+analysis
