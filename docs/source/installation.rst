@@ -13,4 +13,6 @@ Check that the installation worked
    >>> from dreem_nap.study import Study
    >>> print(Study.__doc__)
    
+You can also install the module from the source code:
+
 
