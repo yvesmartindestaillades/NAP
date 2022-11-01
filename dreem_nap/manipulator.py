@@ -81,11 +81,11 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
             else:
                 df.at[idx, attr] = np.array(filtered_cell)
     try:
-        df['unique_id'] = df.apply(lambda row: '_'.join([row[attr] for attr in mp_attr if type(eval(attr)) in [list, tuple]]), axis=1)
+        df['unique_id'] = df.apply(lambda row: '_'.join([str(row[attr]) for attr in mp_attr if len(set(df[attr])) > 1]), axis=1)
     except:
         if len(df) > 0:
             "Could not create unique_id column, df: \n {}".format(df)
         else:
             pass
 
-    return df
+    return df.copy()

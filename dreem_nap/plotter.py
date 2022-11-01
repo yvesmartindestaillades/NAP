@@ -10,11 +10,13 @@ from dreem_nap.util import OutputPlot, MplAttr, SubDF
 from dreem_nap import  util
 from itertools import cycle
 from typing import Tuple, List
+from sklearn import metrics
+from sklearn.linear_model import LogisticRegression
 
 
+LIST_COLORS = ['red','green','blue','orange','purple','black','yellow','pink','brown','grey','cyan','magenta']
 
-
-def mutation_fraction(df, show_ci:bool=True, savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
+def mutation_fraction(df, show_ci:bool=True, savefile=None, auto_open=False, use_iplot=True, title=None)->dict:
     assert len(df) == 1, "df must have only one row"
     mh = df.iloc[0]
     cmap = {"A": "red", "T": "green", "G": "orange", "C": "blue"}  # Color map
@@ -79,15 +81,13 @@ def mutation_fraction(df, show_ci:bool=True, savefile=None, auto_open=False, use
             tickangle=90,
             autorange=True
     )
-    if use_iplot:
-        iplot(fig)
-    if savefile != None:
-        plot(fig, filename = savefile, auto_open=auto_open)
+
+    fig = __layout_routine(fig, savefile, auto_open, use_iplot, title)
 
     return {'fig':fig, 'df':mh}
 
 
-def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
+def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True, title=None)->dict:
 
     df_temp = pd.DataFrame()
     for _, row in df.iterrows():
@@ -128,15 +128,15 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto
             )
 
     fig = dict(data = list(tra.values()), layout = layout)
-    if use_iplot:
-        iplot(fig)
-    if savefile != None:
-        plot(fig, filename = savefile, auto_open=auto_open)
+
+    fig = __layout_routine(fig, savefile, auto_open, use_iplot, title)
+
+
     return {'fig':fig, 'df':df}
     
-def exp_variable_across_samples(df:pd.DataFrame, experimental_variable:str, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
+def exp_variable_across_samples(df:pd.DataFrame, experimental_variable:str, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True, title=None)->dict:
 
-    colors = cycle(['red','green','blue','orange','purple','black','yellow','pink','brown','grey','cyan','magenta'])
+    colors = cycle(LIST_COLORS)
     data = pd.DataFrame()
     for _, row in df.iterrows():
         data = pd.concat([data, pd.DataFrame({'sample':row['sample'],experimental_variable:getattr(row,experimental_variable), 'index':list(row.index_selected), 'base':list(row.sequence), 'mut_rates':list(row.mut_rates), 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.index_selected))))])
@@ -182,12 +182,52 @@ def exp_variable_across_samples(df:pd.DataFrame, experimental_variable:str, mode
     #tra = {arg:tra[list(tra.keys()[arg])] for arg in np.argsort(np.array([int(k[k.index('(')+3:k.index(')')]) for k in tra.keys()]))}
 
     fig = dict(data = list(tra.values()), layout = layout)
-    iplot(fig)
-    if savefile != None:
-        plot(fig, filename = savefile, auto_open=auto_open)
+    fig = __layout_routine(fig, savefile, auto_open, use_iplot, title)
+
     return {'fig':fig, 'df':data}
 
-def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int=None, savefile=None, auto_open=False, use_iplot=True)->OutputPlot:
+
+
+def auc(df:pd.DataFrame,  savefile=None, auto_open=False, use_iplot=True)->dict:
+    def make_roc_curve(X, y, y_pred, fig, title):
+        fpr, tpr, thresholds = metrics.roc_curve(y, y_pred)
+        roc_auc = metrics.auc(fpr, tpr)
+        fig.add_trace(go.Scatter(x=fpr, y=tpr,
+                            mode='lines',
+                            name=title,
+                            line=dict(width=2)))
+        return fig
+
+
+    fig = go.Figure()
+    for row in df.iterrows():
+        X = row[1]['mut_rates'].reshape(-1, 1)
+        y = np.array([1 if c == '.' else 0 for c in row[1]['structure_selected']]).reshape(-1, 1)
+        y_pred = LogisticRegression().fit(X, y.ravel()).predict_proba(X)[:,1]
+        fig = make_roc_curve(X, y, y_pred, fig, row[1]['unique_id'])
+
+
+    fig.add_trace(
+        go.Scatter(x=[0, 1], y=[0, 1], line=dict(color='black', width=2, dash='dash'), showlegend=False)
+    )
+    fig.update_layout(
+        title='ROC Curve',
+        xaxis_title='False Positive Rate',
+        yaxis_title='True Positive Rate')
+
+    fig.update_yaxes(scaleanchor="x", scaleratio=1)
+    fig.update_xaxes(constrain='domain')
+
+    if use_iplot:
+        iplot(fig)
+
+    if savefile != None:
+        plot(fig, filename = savefile, auto_open=auto_open)
+
+    return {'fig':fig, 'df':df}
+ 
+
+def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int=None, savefile=None, auto_open=False, use_iplot=True, title=None)->OutputPlot:
     if constructs == 'all':
         constructs = list(df[df.samp==samp]['construct'].unique())
     trace = [
@@ -216,11 +256,16 @@ def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int
         )
 
     fig = go.Figure(data=trace, layout=layout)
-    if use_iplot:
-        iplot(fig)
-
-    if savefile != None:
-        plot(fig, filename = savefile, auto_open=False)
+    
+    fig = __layout_routine(fig, savefile, auto_open, use_iplot, title)
 
     return {'fig':fig, 'df':pd.DataFrame({t['name']:{'x':t['x'], 'y':t['y']} for t in trace}).T}
 
+def __layout_routine(fig, savefile, auto_open, use_iplot, title):
+    if title != None:
+        fig.update_layout(title=title)
+    if use_iplot:
+        iplot(fig)
+    if savefile != None:
+        plot(fig, filename = savefile, auto_open=auto_open)
+    return fig

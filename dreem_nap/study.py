@@ -101,7 +101,7 @@ class Study(object):
         return load_studies(studies_file_path)
 
 
-    def mutation_fraction(self, **kwargs):
+    def mutation_fraction(self, **kwargs)->dict:
         """Plot the mutation rates as histograms.
         Args:
             sample (list, int, str, optional): Filter rows by sample (list of samples or just a sample). Defaults to None.
@@ -115,14 +115,16 @@ class Study(object):
             RNAstructure_use_temp (bool, optional): Use temperature for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
             show_ci(bool, optional): Show confidence intervals. Defaults to True.
             savefile(str, optional): Path to save the plot. Defaults to None.
+            use_iplot(bool, optional): Use iplot instead of plot (for Jupyter notebooks). Defaults to True.
+            title(str, optional): Title of the plot. Defaults to None, in which case a standard name is given.
 
         Returns:
-            OutputPlot: Figure, axis and data of the output plot.
+            dict: Figure and data of the output plot.
         """
 
         return plotter.mutation_fraction(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_fraction.__code__.co_varnames})
 
-    def deltaG_per_sample(self, **kwargs)->util.OutputPlot:
+    def deltaG_per_sample(self, **kwargs)->dict:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
 
         Args:
@@ -136,18 +138,19 @@ class Study(object):
             base_pairing (bool, optional): Filter per-base attributes (mut_rates, sequence, etc) by predicted base pairing. See RNAstructure_use_XXX arguments. Defaults to None.
             RNAstructure_use_DMS (bool, optional): Use DMS for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
             RNAstructure_use_temp (bool, optional): Use temperature for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
-            show_ci(bool, optional): Show confidence intervals. Defaults to True.
             savefile(str, optional): Path to save the plot. Defaults to None.
+            use_iplot(bool, optional): Use iplot instead of plot (for Jupyter notebooks). Defaults to True.
+            title(str, optional): Title of the plot. Defaults to None, in which case a standard name is given.
             models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
             **kwargs: Additional arguments to pass to filter rows by. Ex: flank='flank_1' will keep only rows with flank=flank_1. 
 
         Returns:
-            OutputPlot: Figure and data of the output plot.
+            dict: Figure and data of the output plot.
         """
         return plotter.deltaG_per_sample(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_per_sample.__code__.co_varnames})
 
     
-    def exp_variable_across_samples(self, **kwargs)->util.OutputPlot:
+    def exp_variable_across_samples(self, **kwargs)->dict:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
 
         Args:
@@ -163,13 +166,37 @@ class Study(object):
             RNAstructure_use_temp (bool, optional): Use temperature for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
             models (List[str], optional): Models to fit on the data using scipy.optimize.curve_fit. Under the form ``'lambda x, a, b: a*x+b'`` where ``x`` is the variable. Defaults to [].
             savefile (str, optional): Path to save the plot. Defaults to None.
+            use_iplot(bool, optional): Use iplot instead of plot (for Jupyter notebooks). Defaults to True.
+            title(str, optional): Title of the plot. Defaults to None, in which case a standard name is given.
 
         Returns:
-            OutputPlot: Figure, axis and data of the output plot.
+            dict: Figure and data of the output plot.
         """
         return plotter.exp_variable_across_samples(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in  list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.exp_variable_across_samples.__code__.co_varnames})
-        
+    
+    def auc(self, **kwargs)->dict:
+        """Plot the AUC for each mutation profile of the selected data. 
 
+        Args:
+            sample (list, int, str, optional): Filter rows by sample (list of samples or just a sample). Defaults to None.
+            construct (list, int, str, optional): Filter rows by construct (list of constructs or just a construct). Defaults to None.
+            section (list, int, str, optional): Filter rows by section (list of sections or just a section). Defaults to None.
+            cluster (list, int, str, optional): Filter rows by cluster (list of clusters or just a cluster). Defaults to None.
+            min_cov_bases (int, optional): Filter rows by a minimum threshold for base coverage. Defaults to 0.
+            base_index (list, int, str, optional): Filter per-base attributes (mut_rates, sequence, etc) by base index. Can be a unique sequence in the row's sequence, a list of indexes or a single index. Defaults to None.
+            base_type (list, str, optional): Filter per-base attributes (mut_rates, sequence, etc) by base type. Defaults to ['A','C','G','T'].
+            base_pairing (bool, optional): Filter per-base attributes (mut_rates, sequence, etc) by predicted base pairing. See RNAstructure_use_XXX arguments. Defaults to None.
+            RNAstructure_use_DMS (bool, optional): Use DMS for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
+            RNAstructure_use_temp (bool, optional): Use temperature for the RNAstructure prediction when filtering by base pairing and predicting deltaG. Defaults to False.
+            savefile(str, optional): Path to save the plot. Defaults to None.
+            use_iplot(bool, optional): Use iplot instead of plot (for Jupyter notebooks). Defaults to True.
+            title(str, optional): Title of the plot. Defaults to None, in which case a standard name is given.
+            **kwargs: Additional arguments to pass to filter rows by. Ex: flank='flank_1' will keep only rows with flank=flank_1. 
+    
+        Returns:
+            dict: Figure and data of the output plot.
+        """
+        return plotter.auc(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.auc.__code__.co_varnames})
 
     def base_coverage(self, **kwargs):
         """Plot the base coverage of several constructs in a sample.
@@ -185,9 +212,11 @@ class Study(object):
             structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
             show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
             savefile (str, optional): Path to save the plot. Defaults to None.
-    
+        use_iplot(bool, optional): Use iplot instead of plot (for Jupyter notebooks). Defaults to True.
+            title(str, optional): Title of the plot. Defaults to None, in which case a standard name is given.
+
         Returns:
-            OutputPlot: Figure, axis and data of the output plot.
+            dict: Figure and data of the output plot.
 
         """
         return 0# plotter.base_coverage(self._df, **kwargs)
