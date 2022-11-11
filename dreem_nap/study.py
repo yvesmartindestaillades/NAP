@@ -72,6 +72,9 @@ class Study(object):
         if filter_by == 'study':
             self.filter_by_study(inplace=True)
         
+        for attr in ['sample','construct']:
+            self.df[attr] = self.df[attr].astype(str)
+        
         for attr in ['section','cluster']:
             if attr not in self.df.columns:
                 self.df[attr] = 0
@@ -103,6 +106,7 @@ class Study(object):
 
     def mutation_fraction(self, **kwargs)->dict:
         """Plot the mutation rates as histograms.
+
         Args:
             sample (list, int, str, optional): Filter rows by sample (list of samples or just a sample). Defaults to None.
             construct (list, int, str, optional): Filter rows by construct (list of constructs or just a construct). Defaults to None.
@@ -124,7 +128,7 @@ class Study(object):
 
         return plotter.mutation_fraction(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.mutation_fraction.__code__.co_varnames})
 
-    def deltaG_per_sample(self, **kwargs)->dict:
+    def deltaG_vs_mut_rates(self, **kwargs)->dict:
         """Plot the mutation rate of each paired-predicted base of the ROI for each construct of a sample, w.r.t the deltaG estimation.
 
         Args:
@@ -147,7 +151,7 @@ class Study(object):
         Returns:
             dict: Figure and data of the output plot.
         """
-        return plotter.deltaG_per_sample(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_per_sample.__code__.co_varnames})
+        return plotter.deltaG_vs_mut_rates(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.deltaG_vs_mut_rates.__code__.co_varnames})
 
     
     def exp_variable_across_samples(self, **kwargs)->dict:
@@ -198,6 +202,36 @@ class Study(object):
         """
         return plotter.auc(manipulator.get_df(self.df, **{k:v for k,v in kwargs.items() if k in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)}), **{k:v for k,v in kwargs.items() if k in plotter.auc.__code__.co_varnames})
 
+
+    def mutation_fraction_delta(self, **kwargs)->dict:
+        """Plot the mutation rate difference between two mutation profiles.
+        sample1: sample of the first mutation profile.
+        sample2: sample of the second mutation profile.
+        construct1: construct of the first mutation profile.
+        construct2: construct of the second mutation profile.
+        section1: section of the first mutation profile.
+        section2: section of the second mutation profile.
+        cluster1: cluster of the first mutation profile.
+        cluster2: cluster of the second mutation profile.
+        base_index1: base index of the first mutation profile.
+        base_index2: base index of the second mutation profile.
+        base_type1: base type of the first mutation profile.
+        base_type2: base type of the second mutation profile.
+        base_pairing1: base pairing of the first mutation profile.
+        base_pairing2: base pairing of the second mutation profile.
+        savefile(str, optional): Path to save the plot. Defaults to None.
+        use_iplot(bool, optional): Use iplot instead of plot (for Jupyter notebooks). Defaults to True.
+        title(str, optional): Title of the plot. Defaults to None, in which case a standard name is given.        
+        """
+        
+        df1 = manipulator.get_df(self.df, **{k[:-1]:v for k,v in kwargs.items() if k.endswith('1') and k[:-1] in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)})
+        assert len(df1)>0, 'No rows found for the first mutation profile.'
+        assert len(df1)==1, 'More than one row found for the first mutation profile.'
+        df2 = manipulator.get_df(self.df, **{k[:-1]:v for k,v in kwargs.items() if k.endswith('2') and k[:-1] in list(self.df.columns)+ list(manipulator.get_df.__code__.co_varnames)})
+        assert len(df2)>0, 'No rows found for the second mutation profile.'
+        assert len(df2)==1, 'Only one row should be selected for the second mutation profile.'
+        return plotter.mutation_fraction_delta(pd.concat([df1, df2]).reset_index(drop=True), **{k:v for k,v in kwargs.items() if k in plotter.mutation_fraction_delta.__code__.co_varnames})
+
     def base_coverage(self, **kwargs):
         """Plot the base coverage of several constructs in a sample.
 
@@ -212,7 +246,7 @@ class Study(object):
             structure (str, optional): Structure to use for base_paired filtering. Defaults to 'structure'.
             show_ci (bool, optional): Show confidence interval on the histogram. Defaults to True.
             savefile (str, optional): Path to save the plot. Defaults to None.
-        use_iplot(bool, optional): Use iplot instead of plot (for Jupyter notebooks). Defaults to True.
+            use_iplot(bool, optional): Use iplot instead of plot (for Jupyter notebooks). Defaults to True.
             title(str, optional): Title of the plot. Defaults to None, in which case a standard name is given.
 
         Returns:

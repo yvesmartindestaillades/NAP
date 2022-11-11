@@ -39,7 +39,7 @@ Then run the following code:
 
 More about this function:
 
-.. autofunction:: dreem_nap.manipulator.Manipulator.get_SCC
+.. autofunction:: dreem_nap.study.Study.get_df
 
 
 

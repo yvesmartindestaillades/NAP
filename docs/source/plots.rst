@@ -36,7 +36,7 @@ DeltaG along a single sample for multiple constructs
 
 .. code-block:: python
 
-    study.deltaG_per_sample(samp=472, 
+    study.deltaG_vs_mut_rates(samp=472, 
                         structure='structure', 
                         deltaG='deltaG_min', 
                         max_mutation=0.15, 
@@ -44,7 +44,7 @@ DeltaG along a single sample for multiple constructs
                         index=list(range(19,42)),
                         savefile='deltaG_sample')
 
-.. autofunction:: dreem_nap.study.Study.deltaG_per_sample
+.. autofunction:: dreem_nap.study.Study.deltaG_vs_mut_rates
     :noindex:
 
 

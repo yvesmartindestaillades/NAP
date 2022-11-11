@@ -26,7 +26,7 @@ def __index_selected(row, base_index, base_type, base_pairing, RNAstructure_use_
     return index
 
 
-def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_bases=0, base_index=None, base_type=['A','C','G','T'], base_pairing=None, RNAstructure_use_DMS=False, RNAstructure_use_temp=False, **kwargs)->pd.DataFrame:
+def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_bases=0, base_index=None, base_type=['A','C','G','T'], base_pairing=None, RNAstructure_use_DMS=False, RNAstructure_use_temp=False, selected_cols=True, **kwargs)->pd.DataFrame:
     """Get a dataframe with filtered data
 
     Args:
@@ -51,11 +51,10 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
     assert df.shape[0] > 0, "Empty dataframe"
 
     # filter mutation profiles
-    df = df[df.worst_cov_bases >= min_cov_bases]
+    df = df.loc[df.worst_cov_bases >= min_cov_bases,:]
     for key, value in kwargs.items():
         locals()[key] = value
     mp_attr = ['sample', 'construct', 'section', 'cluster'] + list(kwargs.keys())
-
     for attr in mp_attr:
         assert attr in df.columns, f"Attribute {attr} not found in dataframe"
         if eval(attr) is not None:
@@ -65,11 +64,11 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
                 df = df[df[attr] == eval(attr)]
 
     # filter base profiles
-    df['structure_selected'] = df['structure'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')] 
-    df['deltaG_selected'] = df['deltaG_min'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')] 
+    df.loc[:,'structure_selected'] = df['structure'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')] 
+    df.loc[:,'deltaG_selected'] = df['deltaG_min'+('_DMS' if RNAstructure_use_DMS else '')+('_T' if RNAstructure_use_temp else '')] 
     temp = df.apply(lambda row: __index_selected(row, base_index, base_type, base_pairing, RNAstructure_use_DMS, RNAstructure_use_temp), axis=1)
     df.loc[:,'index_selected'] = temp
-    df = df[df.index_selected.apply(lambda x: len(x) > 0)]
+    df = df.loc[df.index_selected.apply(lambda x: len(x) > 0),:]
 
     bp_attr = ['sequence', 'mut_bases', 'info_bases','del_bases','ins_bases','cov_bases','mut_rates'] + \
         [c for c in df.columns.tolist() if (c.startswith('structure') or c.startswith('mod_bases') or c.startswith('poisson'))]
@@ -88,4 +87,6 @@ def get_df(df, sample=None, construct=None, section=None, cluster=None, min_cov_
         else:
             pass
 
+    if not selected_cols:
+        df = df.drop(columns=['index_selected', 'structure_selected', 'deltaG_selected'])
     return df.copy()

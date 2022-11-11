@@ -45,11 +45,11 @@ Manipulator module
 
 Just a few fonctions to navigate through your dataframes with ease, and to save data to csv files. 
 
-.. autofunction:: dreem_nap.manipulator.Manipulator.get_SCC
+.. autofunction:: dreem_nap.study.Study.get_df
 
    .. code-block:: python
 
-      df = salt.mani.get_SCC(samp='C6',
+      df = salt.get_df(samp='C6',
                               construct='9572', 
                               cols=['mut_rates','sequence','structure','cov_bases'],
                               base_type=['A','C'], 
@@ -66,18 +66,6 @@ Just a few fonctions to navigate through your dataframes with ease, and to save 
    ===== ======================= ======= ============ ========= 
 
 
-
-.. _loader_module:
-
-Loader module
---------------------
-
-Load and filter DREEM's MutationHistogram pickle files.
-
-.. automodule:: dreem_nap.loader
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 
 

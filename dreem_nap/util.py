@@ -17,34 +17,6 @@ def Setshape(x):
         vals = SymbolValidator().values
         return vals[3*x]
 
-class OutputPlot(object):
-    def __init__(self,data, fig) -> None:
-        self.data = data
-        self.fig = fig
-
-class SubDF(object):
-    def __init__(self, samp=None,construct=None, cluster=0, structure='structure', base_paired=None, index='all', base_type=['A','C']) -> None:
-        for k,v in locals().items():
-            setattr(self, k, v)
-
-    def update(self, **kwargs):
-        for k,v in kwargs.items():
-            setattr(self, k, v)
-            
-    @classmethod
-    def from_locals(cls, loc):
-        return cls(**{k:v for k,v in loc.items() if (k in SubDF.__init__.__code__.co_varnames and k !='self')})
-
-
-class MplAttr(object):
-    def __init__(self, figsize=(10,20), title_fontsize=40, x_ticks_fontsize=30, y_ticks_fontsize=30,  dpi=300) -> None:
-        for k,v in locals().items():
-            setattr(self, k, v)
-
-    @classmethod
-    def from_locals(cls, loc):
-        return cls(**{k:v for k,v in loc.items() if (k in MplAttr.__init__.__code__.co_varnames and k !='self')})
-        
 
 def make_path(path:str)->str:
     """Create directories until path exists on your computer. Turns the keyword 'date' into today's date.
@@ -210,9 +182,17 @@ class RNAstructure(object):
                     out["p"]+=[float(ls[2])]
         return self.__cast_pairing_prob(out)
 
-    def draw(self, savefig, dpi=72):
+    def draw(self, savefig, mut_rates = [], dpi=72):
         self.predict_construct_deltaG()
-        self.__run_command(self.rnastructure_path+'draw '+self.ct_file + ' --svg '+self.svg_file+' -n -1')
+        if len(mut_rates):
+            mut_rates = np.array(mut_rates).reshape(-1,1)
+            with open(self.s_file, 'w') as f:
+                for i in range(len(mut_rates)):
+                    f.write(f'{i+1} {mut_rates[i][0] if mut_rates[i][0] != np.nan else -999 } \n')
+                f.close()
+            
+        cmd = self.rnastructure_path+'draw '+self.ct_file + ' --svg '+self.svg_file+' -n -1'
+        self.__run_command(cmd if len(mut_rates) == 0 else cmd+' -s '+self.s_file)
         svg_code = self.__read_svg()
         drawing = svg2rlg(self.svg_file)
         renderPM.drawToFile(drawing, self.png_file, fmt="PNG", dpi=dpi)
@@ -229,7 +209,8 @@ class RNAstructure(object):
         cmd = f"{self.rnastructure_path}Fold {self.fasta_file} {self.ct_file} -d" + suffix
         self.__run_command(cmd)
         assert os.path.getsize(self.ct_file) != 0, f"{self.ct_file} is empty, check that RNAstructure works"
-        return self.__extract_deltaG_struct()
+        self.deltaG, self.structure =  self.__extract_deltaG_struct()
+        return self.deltaG, self.structure
 
     def __make_temp_folder(self, temp_folder):
         isExist = os.path.exists(temp_folder)
@@ -245,6 +226,7 @@ class RNAstructure(object):
         self.prob_file = temp_prefix+'_prob.txt'
         self.svg_file = temp_prefix+'.svg'
         self.png_file = temp_prefix+'.png'
+        self.s_file = temp_prefix+'_s.txt'
 
     def __create_fasta_file(self, construct, sequence):
         # push the ref into a temp file

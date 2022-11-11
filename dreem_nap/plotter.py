@@ -6,7 +6,6 @@ from dreem_nap.util import *
 import plotly.graph_objects as go
 from plotly.offline import plot, iplot
 
-from dreem_nap.util import OutputPlot, MplAttr, SubDF
 from dreem_nap import  util
 from itertools import cycle
 from typing import Tuple, List
@@ -57,7 +56,7 @@ def mutation_fraction(df, show_ci:bool=True, savefile=None, auto_open=False, use
 
     fig = go.Figure(data=traces, layout=mut_fig_layout)
 
-    fig.update_layout(title=f"{mh['sample']} - {mh['construct']} - {mh['section']} - {mh['cluster']}",
+    fig.update_layout(title=f"{mh['sample']} - {mh['construct']} - {mh['section']} - {mh['cluster']} - {mh['num_reads']} reads",
                         xaxis=dict(title="Sequence"),
                         yaxis=dict(title="Mutation rate", range=[0, 0.1]))
    
@@ -87,14 +86,16 @@ def mutation_fraction(df, show_ci:bool=True, savefile=None, auto_open=False, use
     return {'fig':fig, 'df':mh}
 
 
-def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True, title=None)->dict:
+def deltaG_vs_mut_rates(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto_open=False, use_iplot=True, title=None)->dict:
 
     df_temp = pd.DataFrame()
     for _, row in df.iterrows():
-        df_temp = pd.concat([df_temp, pd.DataFrame({'construct':row.construct, 'index':row.index_selected, 'mut_rates':row.mut_rates, 'deltaG':row['deltaG_selected'],'base':list(row.sequence), 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.index_selected))))])
+        df_temp = pd.concat([df_temp, pd.DataFrame({'construct':row.construct, 'index':row.index_selected, 'mut_rates':row.mut_rates, 'num_reads':row.num_reads, 'deltaG':row['deltaG_selected'],'base':list(row.sequence), 'paired':[s !='.' for s in row.structure_selected]}, index=list(range(len(row.index_selected))))])
+    
+    assert len(df_temp) > 0, "No data to plot"
     df = df_temp.reset_index()
 
-    hover_attr = ['mut_rates','base','index','construct','deltaG']
+    hover_attr = ['num_reads','mut_rates','base','index','construct','deltaG']
     tra = {}
     for is_paired, prefix in zip([True,False], ['Paired ','Unpaired ']):
         markers = cycle(list(range(153)))
@@ -104,6 +105,7 @@ def deltaG_per_sample(df:pd.DataFrame, models:List[str]=[],  savefile=None, auto
             x=x,
             y=y,
             text = df[df.paired == is_paired][hover_attr],
+            marker_size= df[df.paired == is_paired]['num_reads']/200,
             mode='markers',
             name=prefix,
             hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)]),
@@ -188,7 +190,7 @@ def exp_variable_across_samples(df:pd.DataFrame, experimental_variable:str, mode
 
 
 
-def auc(df:pd.DataFrame,  savefile=None, auto_open=False, use_iplot=True)->dict:
+def auc(df:pd.DataFrame,  savefile=None, auto_open=False, use_iplot=True, title=None)->dict:
     def make_roc_curve(X, y, y_pred, fig, title):
         fpr, tpr, thresholds = metrics.roc_curve(y, y_pred)
         roc_auc = metrics.auc(fpr, tpr)
@@ -218,17 +220,73 @@ def auc(df:pd.DataFrame,  savefile=None, auto_open=False, use_iplot=True)->dict:
     fig.update_yaxes(scaleanchor="x", scaleratio=1)
     fig.update_xaxes(constrain='domain')
 
-    if use_iplot:
-        iplot(fig)
-
-    if savefile != None:
-        plot(fig, filename = savefile, auto_open=auto_open)
+    fig = __layout_routine(fig, savefile, auto_open, use_iplot, title)
 
     return {'fig':fig, 'df':df}
+
+
+def mutation_fraction_delta(df, savefile=None, auto_open=False, use_iplot=True, title=None)->dict:
+    assert len(df) == 2, "df must have 2 row"
+    mp_attr = ['sample', 'construct', 'section', 'cluster']
+    df['unique_id'] = df.apply(lambda row: ' - '.join([str(row[attr]) for attr in mp_attr]), axis=1)
+
+    mh = pd.Series(
+        {
+            'mut_rates': df['mut_rates'].values[0] - df['mut_rates'].values[1],
+            'sequence': ''.join([c1 if c1 == c2 else '-' for c1,c2 in zip(df['sequence'].values[0],df['sequence'].values[1])]),
+            'title': "{} - {} reads vs {} - {} reads".format(df['unique_id'].values[0], df['num_reads'].values[0], df['unique_id'].values[1], df['num_reads'].values[1])
+        }
+    )
+    cmap = {"A": "red", "T": "green", "G": "orange", "C": "blue", '-':'grey'}  # Color map
+    
+    traces, layouts = [], []
+    mh_unrolled = pd.DataFrame({'mut_rate':list(mh.mut_rates), 'base':list(mh.sequence), 'index_reset':list(range(len(mh.sequence)))})
+
+    for bt in set(mh['sequence']):
+        df_loc = mh_unrolled[mh_unrolled['base'] == bt]
+        if len(df_loc) == 0:
+            continue
+
+        hover_attr = pd.DataFrame({'mut_rate':list(df_loc.mut_rate),
+                                        'base':list(df_loc.base)})
+        traces.append(go.Bar(
+            x= np.array(df_loc['index_reset']),
+            y= np.array(df_loc['mut_rate']),
+            name=bt,
+            marker_color=cmap[bt],
+            text = hover_attr,
+            hovertemplate = ''.join(["<b>"+ha+": %{text["+str(i)+"]}<br>" for i, ha in enumerate(hover_attr)]),
+            ))
+    
+
+    fig = go.Figure(data=traces, 
+                    layout=go.Layout(
+                        title=go.layout.Title(text=mh['title']),
+                        xaxis=dict(title="Sequence"),
+                        yaxis=dict(title="Mutation rate", range=[0, 0.1])))
+
+    fig.update_yaxes(
+            gridcolor='lightgray',
+            linewidth=1,
+            linecolor='black',
+            mirror=True,
+            autorange=True
+    )
+    fig.update_xaxes(
+            linewidth=1,
+            linecolor='black',
+            mirror=True,
+            autorange=True
+    )
+
+    fig = __layout_routine(fig, savefile, auto_open, use_iplot, title)
+    
+    return {'fig':fig, 'df':mh}
  
 
-def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int=None, savefile=None, auto_open=False, use_iplot=True, title=None)->OutputPlot:
-    if constructs == 'all':
+def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int=None, savefile=None, auto_open=False, use_iplot=True, title=None)->dict:
+    return 0
+    """if constructs == 'all':
         constructs = list(df[df.samp==samp]['construct'].unique())
     trace = [
         go.Scatter(
@@ -259,11 +317,11 @@ def base_coverage(df, samp:str, constructs:str='all', gene:str=None, cluster:int
     
     fig = __layout_routine(fig, savefile, auto_open, use_iplot, title)
 
-    return {'fig':fig, 'df':pd.DataFrame({t['name']:{'x':t['x'], 'y':t['y']} for t in trace}).T}
+    return {'fig':fig, 'df':pd.DataFrame({t['name']:{'x':t['x'], 'y':t['y']} for t in trace}).T}"""
 
 def __layout_routine(fig, savefile, auto_open, use_iplot, title):
     if title != None:
-        fig.update_layout(title=title)
+        fig['layout']['title'] = title
     if use_iplot:
         iplot(fig)
     if savefile != None:
